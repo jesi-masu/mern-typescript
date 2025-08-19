@@ -10,7 +10,7 @@ export interface IUser extends Document {
   role: "client" | "personnel" | "admin";
   address: {
     street: string;
-    barangay: string;
+    barangaySubdivision: string;
     city: string;
     province: string;
     postalCode: string;
@@ -43,7 +43,7 @@ const userSchema: Schema = new Schema(
     address: {
       type: {
         street: { type: String, required: true, trim: true },
-        barangay: { type: String, required: true, trim: true },
+        barangaySubdivision: { type: String, required: true, trim: true },
         city: { type: String, required: true, trim: true },
         province: { type: String, required: true, trim: true },
         postalCode: { type: String, required: true, trim: true },

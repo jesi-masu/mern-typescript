@@ -4,10 +4,6 @@ import { useAuth } from "@/context/AuthContext"; // Import useAuth to get the to
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
-// ===========================================
-// Public Functions (No Token Needed)
-// ===========================================
-
 // GET ALL Products
 export const fetchProducts = async (): Promise<Product[]> => {
   const response = await fetch(`${API_BASE_URL}/api/products`);
@@ -30,10 +26,6 @@ export const fetchProductById = async (id: string): Promise<Product> => {
   }
   return response.json();
 };
-
-// ===========================================
-// Protected Functions (Token Required)
-// ===========================================
 
 // CREATE A Product
 export const createProduct = async (

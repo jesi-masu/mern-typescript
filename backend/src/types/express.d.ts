@@ -37,7 +37,7 @@ export interface AuthRegisterBody {
   password: string;
   address: {
     street: string;
-    barangay: string;
+    barangaySubdivision: string;
     city: string;
     province: string;
     postalCode: string;
