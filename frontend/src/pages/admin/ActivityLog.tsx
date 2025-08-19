@@ -1,5 +1,4 @@
-
-import ActivityLog from '@/components/admin/ActivityLog';
+import ActivityLog from "@/components/admin/ActivityLog";
 
 const ActivityLogPage = () => {
   return <ActivityLog />;

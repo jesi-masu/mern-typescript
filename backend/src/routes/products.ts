@@ -13,7 +13,7 @@ import { checkRole } from "../middleware/checkRole";
 
 const router = express.Router();
 
-// ===========================================
+// ==========================================
 // Public Routes (No Authentication Required)
 // ===========================================
 
