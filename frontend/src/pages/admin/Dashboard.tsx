@@ -1,3 +1,4 @@
+// adjusted fetch enabling and headers so the page can render for AdminAuthContext demo logins
 import { useQuery } from "@tanstack/react-query";
 import {
   Card,
@@ -19,6 +20,8 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { useContext } from "react";
+import { AdminAuthContext } from "@/context/AdminAuthContext";
 
 // Define the expected structure for the dashboard statistics from the API
 interface DashboardStats {
@@ -48,29 +51,22 @@ const formatNumber = (value: number) => {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { token } = useAuth();
+  const adminContext = useContext(AdminAuthContext);
+  const isAdminLoggedInDemo = adminContext?.isAuthenticated === true;
 
   // --- Data Fetching using React Query ---
-  // This function fetches the dashboard stats from your backend.
-  // IMPORTANT: You need to create a GET endpoint at `/api/dashboard/stats` on your backend.
-  // This endpoint should be protected and require an admin/personnel token.
-  // Expected JSON response from the backend:
-  // {
-  //   "totalRevenue": 2340000,
-  //   "activeOrders": 156,
-  //   "totalCustomers": 1234,
-  //   "productsSold": 2891,
-  //   "revenueChange": 12.5,
-  //   "ordersChange": 8.2,
-  //   "customersChange": 15.3,
-  //   "productsChange": 23.1
-  // }
   const fetchDashboardStats = async (): Promise<DashboardStats> => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    // If token is absent but admin demo login is active, we still attempt the request (may fail on protected backend).
     const response = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/dashboard/stats`,
       {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers,
       }
     );
     if (!response.ok) {
@@ -80,6 +76,7 @@ const Dashboard = () => {
   };
 
   // useQuery hook to manage the fetching, caching, loading, and error states
+  // Enabled when we have a real token OR when admin demo is logged in (so page is accessible).
   const {
     data: stats,
     isLoading,
@@ -87,7 +84,7 @@ const Dashboard = () => {
   } = useQuery<DashboardStats>({
     queryKey: ["dashboardStats"],
     queryFn: fetchDashboardStats,
-    enabled: !!token, // Only run the query if the token is available
+    enabled: !!token || isAdminLoggedInDemo, // run if token exists or demo admin is logged in
   });
 
   const handleQuickAction = (action: string) => {
@@ -96,7 +93,7 @@ const Dashboard = () => {
 
   // --- UI States ---
 
-  // Loading State
+  // Loading State - combine both loaders
   if (isLoading) {
     return (
       <div className="flex h-full w-full items-center justify-center">

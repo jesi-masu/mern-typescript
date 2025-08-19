@@ -5,6 +5,7 @@ import cors from "cors";
 
 import authRoutes from "./routes/authRoutes";
 import productRoutes from "./routes/products";
+import userRoutes from "./routes/userRoutes"; // <- new
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ app.use((req, res, next) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/users", userRoutes); // <- new
 
 app.use((req, res, next) => {
   res.status(404).json({ message: "API route not found" });

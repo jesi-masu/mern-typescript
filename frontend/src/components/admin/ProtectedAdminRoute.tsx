@@ -1,7 +1,9 @@
 // frontend/src/components/admin/ProtectedAdminRoutes.tsx
-import React from "react";
+// updated to allow access when either AuthContext or AdminAuthContext indicates admin login
+import React, { useContext } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { AdminAuthContext } from "@/context/AdminAuthContext";
 import { Loader2 } from "lucide-react";
 
 interface ProtectedAdminRouteProps {
@@ -11,7 +13,8 @@ interface ProtectedAdminRouteProps {
 const ProtectedAdminRoute: React.FC<ProtectedAdminRouteProps> = ({
   component: Component,
 }) => {
-  const { isAuthenticated, user, isLoading } = useAuth();
+  const { isAuthenticated: isAuthAuthenticated, user, isLoading } = useAuth();
+  const adminContext = useContext(AdminAuthContext); // may be undefined if AdminAuthProvider not mounted
   const location = useLocation();
 
   if (isLoading) {
@@ -23,18 +26,21 @@ const ProtectedAdminRoute: React.FC<ProtectedAdminRouteProps> = ({
     );
   }
 
-  // Check for authentication and correct role
-  const isAuthorized =
-    isAuthenticated &&
+  // Check for authentication and correct role either from AuthContext or AdminAuthContext
+  const isAuthorizedFromAuth =
+    isAuthAuthenticated &&
     user &&
     (user.role === "admin" || user.role === "personnel");
 
+  const isAuthorizedFromAdmin = adminContext?.isAuthenticated === true;
+
+  const isAuthorized = isAuthorizedFromAuth || isAuthorizedFromAdmin;
+
   if (!isAuthorized) {
-    // Redirect to login page if not authorized, saving the intended destination
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    // Redirect to admin login page if not authorized, saving the intended destination
+    return <Navigate to="/admin-login" state={{ from: location }} replace />;
   }
 
-  // Render the component if authorized
   return <Component />;
 };
 
