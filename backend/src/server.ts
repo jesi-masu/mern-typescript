@@ -7,6 +7,8 @@ import authRoutes from "./routes/authRoutes";
 import productRoutes from "./routes/products";
 import userRoutes from "./routes/userRoutes"; // <- new
 
+import dashboardRoutes from "./routes/dashboardRoutes"; // <-- add
+
 dotenv.config();
 
 const app = express();
@@ -23,6 +25,7 @@ app.use((req, res, next) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/users", userRoutes); // <- new
+app.use("/api/dashboard", dashboardRoutes);
 
 app.use((req, res, next) => {
   res.status(404).json({ message: "API route not found" });

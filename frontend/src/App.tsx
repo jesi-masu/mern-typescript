@@ -51,6 +51,7 @@ import ActivityLog from "./pages/admin/ActivityLog";
 import ProtectedAdminRoute from "./components/admin/ProtectedAdminRoute";
 import ProtectedCustomerRoute from "./components/ProtectedCustomerRoute";
 import AdminLayout from "./components/admin/AdminLayout";
+import { AdminAuthProvider } from "@/context/AdminAuthContext"; // adjust path to your provider
 
 const queryClient = new QueryClient();
 
@@ -131,51 +132,62 @@ function App() {
                     <Route
                       path="/admin/*"
                       element={
-                        <ProtectedAdminRoute
-                          component={() => (
-                            <AdminLayout>
-                              <Routes>
-                                <Route
-                                  path="dashboard"
-                                  element={<Dashboard />}
-                                />
-                                <Route path="products" element={<Products />} />
-                                <Route path="orders" element={<Orders />} />
-                                <Route
-                                  path="customers"
-                                  element={<Customers />}
-                                />
-                                <Route path="reports" element={<Reports />} />
-                                <Route path="settings" element={<Settings />} />
-                                <Route
-                                  path="projects"
-                                  element={<AdminProjects />}
-                                />
-                                <Route
-                                  path="contracts"
-                                  element={<Contracts />}
-                                />
-                                <Route path="messages" element={<Messages />} />
-                                <Route
-                                  path="customer-uploads"
-                                  element={<CustomerUploads />}
-                                />
-                                <Route
-                                  path="personnel"
-                                  element={<ManagePersonnel />}
-                                />
-                                <Route
-                                  path="records"
-                                  element={<RecordsUpload />}
-                                />
-                                <Route
-                                  path="activity"
-                                  element={<ActivityLog />}
-                                />
-                              </Routes>
-                            </AdminLayout>
-                          )}
-                        />
+                        <AdminAuthProvider>
+                          <ProtectedAdminRoute
+                            component={() => (
+                              <AdminLayout>
+                                <Routes>
+                                  <Route
+                                    path="dashboard"
+                                    element={<Dashboard />}
+                                  />
+                                  <Route
+                                    path="products"
+                                    element={<Products />}
+                                  />
+                                  <Route path="orders" element={<Orders />} />
+                                  <Route
+                                    path="customers"
+                                    element={<Customers />}
+                                  />
+                                  <Route path="reports" element={<Reports />} />
+                                  <Route
+                                    path="settings"
+                                    element={<Settings />}
+                                  />
+                                  <Route
+                                    path="projects"
+                                    element={<AdminProjects />}
+                                  />
+                                  <Route
+                                    path="contracts"
+                                    element={<Contracts />}
+                                  />
+                                  <Route
+                                    path="messages"
+                                    element={<Messages />}
+                                  />
+                                  <Route
+                                    path="customer-uploads"
+                                    element={<CustomerUploads />}
+                                  />
+                                  <Route
+                                    path="personnel"
+                                    element={<ManagePersonnel />}
+                                  />
+                                  <Route
+                                    path="records"
+                                    element={<RecordsUpload />}
+                                  />
+                                  <Route
+                                    path="activity"
+                                    element={<ActivityLog />}
+                                  />
+                                </Routes>
+                              </AdminLayout>
+                            )}
+                          />
+                        </AdminAuthProvider>
                       }
                     />
 
