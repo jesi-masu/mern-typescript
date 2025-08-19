@@ -1,5 +1,3 @@
-// backend/src/controllers/productController.ts
-
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import Product, { IProduct } from "../models/productModel";
@@ -9,8 +7,13 @@ export const getProducts = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const products: IProduct[] = await Product.find({}).sort({ createdAt: -1 });
-  res.status(200).json(products);
+  try {
+    const products: IProduct[] = await Product.find({}).sort({ createdAt: -1 });
+    res.status(200).json(products);
+  } catch (error: any) {
+    console.error("Error fetching products:", error);
+    res.status(500).json({ error: "Failed to fetch products." });
+  }
 };
 
 export const getProduct = async (
@@ -25,18 +28,23 @@ export const getProduct = async (
   }
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    res.status(404).json({ mssg: "No such product" });
+    res.status(400).json({ mssg: "Invalid product ID format" });
     return;
   }
 
-  const product: IProduct | null = await Product.findById(id);
+  try {
+    const product: IProduct | null = await Product.findById(id);
 
-  if (!product) {
-    res.status(404).json({ mssg: "No such product" });
-    return;
+    if (!product) {
+      res.status(404).json({ mssg: "No such product" });
+      return;
+    }
+
+    res.status(200).json(product);
+  } catch (error: any) {
+    console.error("Error fetching product:", error);
+    res.status(500).json({ error: "Failed to fetch product." });
   }
-
-  res.status(200).json(product);
 };
 
 export const createProduct = async (
@@ -59,10 +67,16 @@ export const createProduct = async (
     leadTime,
   } = req.body;
 
-  if (!productName || !productPrice || !category) {
+  // Validate required fields (schema requires squareFeet)
+  if (
+    !productName ||
+    productPrice === undefined ||
+    !category ||
+    squareFeet === undefined
+  ) {
     res.status(400).json({
       error:
-        "Please include all required fields: productName, productPrice, category.",
+        "Please include all required fields: productName, productPrice, category, squareFeet.",
     });
     return;
   }
@@ -83,10 +97,16 @@ export const createProduct = async (
       inclusion,
       leadTime,
     });
-    res.status(200).json(product);
+
+    // Use 201 for resource creation
+    res.status(201).json(product);
   } catch (error: any) {
-    console.error("Error creating product:", error.message);
-    res.status(400).json({ error: error.message });
+    console.error("Error creating product:", error);
+    // If validation error, return 400
+    const status = error?.name === "ValidationError" ? 400 : 500;
+    res
+      .status(status)
+      .json({ error: error?.message || "Failed to create product." });
   }
 };
 
@@ -102,18 +122,25 @@ export const deleteProduct = async (
   }
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    res.status(404).json({ mssg: "No such product" });
+    res.status(400).json({ mssg: "Invalid product ID format" });
     return;
   }
 
-  const product: IProduct | null = await Product.findOneAndDelete({ _id: id });
+  try {
+    const product: IProduct | null = await Product.findOneAndDelete({
+      _id: id,
+    });
 
-  if (!product) {
-    res.status(400).json({ mssg: "No such product" });
-    return;
+    if (!product) {
+      res.status(404).json({ mssg: "No such product" });
+      return;
+    }
+
+    res.status(200).json(product);
+  } catch (error: any) {
+    console.error("Error deleting product:", error);
+    res.status(500).json({ error: "Failed to delete product." });
   }
-
-  res.status(200).json(product);
 };
 
 export const updateProduct = async (
@@ -131,7 +158,7 @@ export const updateProduct = async (
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     console.log("Backend: Invalid ID format:", id);
-    res.status(404).json({ mssg: "No such product" });
+    res.status(400).json({ mssg: "Invalid product ID format" });
     return;
   }
 
@@ -141,23 +168,22 @@ export const updateProduct = async (
       {
         ...req.body,
       },
-      { new: true }
+      { new: true, runValidators: true }
     );
 
     if (!product) {
       console.log("Backend: Product not found for ID:", id);
-      res.status(400).json({ mssg: "No such product" });
+      res.status(404).json({ mssg: "No such product" });
       return;
     }
 
     console.log("Backend: Product updated successfully:", product);
     res.status(200).json(product);
   } catch (error: any) {
-    console.error(
-      "Backend: Error during product update:",
-      error.message,
-      error
-    );
-    res.status(400).json({ error: error.message });
+    console.error("Backend: Error during product update:", error);
+    const status = error?.name === "ValidationError" ? 400 : 500;
+    res
+      .status(status)
+      .json({ error: error?.message || "Product update failed." });
   }
 };

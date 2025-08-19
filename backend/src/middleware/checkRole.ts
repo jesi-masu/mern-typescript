@@ -4,12 +4,6 @@ import { Request, Response, NextFunction } from "express";
 // Define the role type for consistency across the application
 type UserRole = "client" | "personnel" | "admin";
 
-/**
- * Middleware factory to check if a user has one of the required roles.
- * This middleware should always be used AFTER the authMiddleware.
- * @param allowedRoles An array of roles that are permitted to access the route.
- * @returns An Express middleware function.
- */
 export const checkRole = (allowedRoles: UserRole[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     // Check if the user object was attached by the authMiddleware.

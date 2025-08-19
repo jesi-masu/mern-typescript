@@ -1,10 +1,6 @@
-// backend/src/types/express.d.ts
 import { Request } from "express";
-import { IUser } from "../models/userModel";
 
-// ===================================
-// Product Types
-// ===================================
+// Product DTOs (unchanged)
 export interface ProductSpecifications {
   dimensions: string;
   height: string;
@@ -32,16 +28,33 @@ export interface ProductRequestBody {
   leadTime?: string;
 }
 
-// ===================================
-// Auth Types
-// ===================================
-// Use the IUser interface for the body type to ensure consistency
-export type AuthRequestBody = Omit<IUser, "createdAt" | "updatedAt">;
+// Auth DTOs (explicit separate types instead of using IUser)
+export interface AuthRegisterBody {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  password: string;
+  address: {
+    street: string;
+    barangay: string;
+    city: string;
+    province: string;
+    postalCode: string;
+    country: string;
+  };
+  role?: "client" | "personnel" | "admin";
+}
 
-// ===================================
-// Extend Express Request for custom properties
-// ===================================
-// This is used by our authentication middleware
+export interface AuthLoginBody {
+  email: string;
+  password: string;
+}
+
+// Use the register DTO as the request body type for register handlers
+export type AuthRequestBody = AuthRegisterBody;
+
+// Extend Express Request for custom properties (module augmentation)
 declare global {
   namespace Express {
     interface Request {

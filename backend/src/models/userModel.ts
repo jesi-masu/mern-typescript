@@ -1,8 +1,6 @@
-// backend/ src/models/userModel.ts
 import mongoose, { Document, Schema } from "mongoose";
 import bcrypt from "bcryptjs";
 
-// Define an interface for the User document
 export interface IUser extends Document {
   firstName: string;
   lastName: string;
@@ -19,22 +17,14 @@ export interface IUser extends Document {
     country: string;
   };
   createdAt: Date;
-  updatedAt: Date; // Add the custom method to the interface
+  updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
 const userSchema: Schema = new Schema(
   {
-    firstName: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    lastName: {
-      type: String,
-      required: true,
-      trim: true,
-    },
+    firstName: { type: String, required: true, trim: true },
+    lastName: { type: String, required: true, trim: true },
     email: {
       type: String,
       required: true,
@@ -42,15 +32,8 @@ const userSchema: Schema = new Schema(
       lowercase: true,
       trim: true,
     },
-    phoneNumber: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    password: {
-      type: String,
-      required: true,
-    },
+    phoneNumber: { type: String, required: true, trim: true },
+    password: { type: String, required: true },
     role: {
       type: String,
       enum: ["client", "personnel", "admin"],
@@ -73,13 +56,15 @@ const userSchema: Schema = new Schema(
   { timestamps: true }
 );
 
-// Mongoose Pre-save hook for password hashing
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) {
-    return next();
-  }
-
+// Use a typed pre-hook to avoid TypeScript issues with `this`
+// Note: don't import HookNextFunction — many mongoose versions don't export it.
+// Use a simple callback type instead.
+userSchema.pre<IUser>("save", async function (next: (err?: any) => void) {
   try {
+    if (!this.isModified("password")) {
+      return next();
+    }
+
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password as string, salt);
     next();
@@ -88,14 +73,12 @@ userSchema.pre("save", async function (next) {
   }
 });
 
-// A method to compare a provided password with the stored hashed password
 userSchema.methods.comparePassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Use IUser as the generic type for mongoose.model
 const User = mongoose.model<IUser>("User", userSchema);
 
 export default User;
