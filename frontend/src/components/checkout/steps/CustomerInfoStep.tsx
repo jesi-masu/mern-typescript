@@ -321,12 +321,12 @@ const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({
       </div>
 
       <div>
-        <Label htmlFor="notes">Additional Notes</Label>
+        <Label htmlFor="notes">Additional Address Line</Label>
         <Textarea
           id="notes"
           value={customerInfo.notes || ""}
           onChange={(e) => onChange({ notes: e.target.value })}
-          placeholder="Any special instructions or requirements..."
+          placeholder="Any supplementary address. Building names, or other specific locations..."
         />
       </div>
     </div>

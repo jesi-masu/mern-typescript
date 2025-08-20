@@ -485,7 +485,7 @@ const SignUp = () => {
                     htmlFor="city"
                     className="text-sm font-medium text-white/90"
                   >
-                    City
+                    City / Municipality
                   </label>
                   <Input
                     id="city"

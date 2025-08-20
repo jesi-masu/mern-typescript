@@ -1,17 +1,20 @@
-// frontend/src/App.tsx
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-// Import the single, unified AuthProvider
+// Main (customer) auth + app-level providers
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { OrderProvider } from "@/context/OrderContext";
 import { OrderUpdatesProvider } from "@/context/OrderUpdatesContext";
 
-// Page Imports
+// Admin auth provider and protected route wrapper
+import { AdminAuthProvider } from "@/context/AdminAuthContext";
+import ProtectedAdminRoute from "./components/admin/ProtectedAdminRoute";
+
+// Public / Customer pages
 import Index from "./pages/Index";
 import Home from "./pages/Home";
 import About from "./pages/About";
@@ -32,7 +35,8 @@ import OrderHistory from "./pages/OrderHistory";
 import OrderTracking from "./pages/OrderTracking";
 import NotFound from "./pages/NotFound";
 
-// Admin Page Imports
+// Admin pages & layout
+import AdminLayout from "./components/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import Products from "./pages/admin/Products";
 import Orders from "./pages/admin/Orders";
@@ -47,11 +51,8 @@ import ManagePersonnel from "./pages/admin/ManagePersonnel";
 import RecordsUpload from "./pages/admin/RecordsUpload";
 import ActivityLog from "./pages/admin/ActivityLog";
 
-// Import Protected Route Components
-import ProtectedAdminRoute from "./components/admin/ProtectedAdminRoute";
+// Customer-protected route component
 import ProtectedCustomerRoute from "./components/ProtectedCustomerRoute";
-import AdminLayout from "./components/admin/AdminLayout";
-import { AdminAuthProvider } from "@/context/AdminAuthContext"; // adjust path to your provider
 
 const queryClient = new QueryClient();
 
@@ -62,7 +63,7 @@ function App() {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          {/* Use the single AuthProvider to wrap everything */}
+          {/* Global providers: AuthProvider wraps the whole app (customer auth) */}
           <AuthProvider>
             <OrderUpdatesProvider>
               <CartProvider>
@@ -128,70 +129,44 @@ function App() {
                       }
                     />
 
-                    {/* Admin and Personnel Protected Routes */}
+                    {/*
+                      Admin route tree:
+                      - Wrap the entire admin route tree with AdminAuthProvider so all admin pages
+                        and AdminLayout share the same admin context instance.
+                      - Use ProtectedAdminRoute as a wrapper to gate access; it now accepts children.
+                      - AdminLayout should render <Outlet /> to show the nested admin pages.
+                    */}
                     <Route
-                      path="/admin/*"
+                      path="/admin"
                       element={
                         <AdminAuthProvider>
-                          <ProtectedAdminRoute
-                            component={() => (
-                              <AdminLayout>
-                                <Routes>
-                                  <Route
-                                    path="dashboard"
-                                    element={<Dashboard />}
-                                  />
-                                  <Route
-                                    path="products"
-                                    element={<Products />}
-                                  />
-                                  <Route path="orders" element={<Orders />} />
-                                  <Route
-                                    path="customers"
-                                    element={<Customers />}
-                                  />
-                                  <Route path="reports" element={<Reports />} />
-                                  <Route
-                                    path="settings"
-                                    element={<Settings />}
-                                  />
-                                  <Route
-                                    path="projects"
-                                    element={<AdminProjects />}
-                                  />
-                                  <Route
-                                    path="contracts"
-                                    element={<Contracts />}
-                                  />
-                                  <Route
-                                    path="messages"
-                                    element={<Messages />}
-                                  />
-                                  <Route
-                                    path="customer-uploads"
-                                    element={<CustomerUploads />}
-                                  />
-                                  <Route
-                                    path="personnel"
-                                    element={<ManagePersonnel />}
-                                  />
-                                  <Route
-                                    path="records"
-                                    element={<RecordsUpload />}
-                                  />
-                                  <Route
-                                    path="activity"
-                                    element={<ActivityLog />}
-                                  />
-                                </Routes>
-                              </AdminLayout>
-                            )}
-                          />
+                          <ProtectedAdminRoute>
+                            <AdminLayout />
+                          </ProtectedAdminRoute>
                         </AdminAuthProvider>
                       }
-                    />
+                    >
+                      {/* Nested admin routes, rendered inside AdminLayout's <Outlet /> */}
+                      <Route index element={<Dashboard />} />
+                      <Route path="dashboard" element={<Dashboard />} />
+                      <Route path="products" element={<Products />} />
+                      <Route path="orders" element={<Orders />} />
+                      <Route path="customers" element={<Customers />} />
+                      <Route path="reports" element={<Reports />} />
+                      <Route path="settings" element={<Settings />} />
+                      <Route path="projects" element={<AdminProjects />} />
+                      <Route path="contracts" element={<Contracts />} />
+                      <Route path="messages" element={<Messages />} />
+                      <Route
+                        path="customer-uploads"
+                        element={<CustomerUploads />}
+                      />
+                      <Route path="personnel" element={<ManagePersonnel />} />
+                      <Route path="records" element={<RecordsUpload />} />
+                      <Route path="activity" element={<ActivityLog />} />
+                    </Route>
 
-                    {/* 404 Not Found Route */}
+                    {/* 404 Not Found */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </OrderProvider>
