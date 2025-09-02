@@ -5,7 +5,6 @@ import { AuthRegisterBody } from "../types/express";
 
 /**
  * GET /api/users
- * Protected: admin or personnel (enforced on the route)
  */
 export const getAllUsers: RequestHandler = async (req, res) => {
   try {
@@ -19,14 +18,10 @@ export const getAllUsers: RequestHandler = async (req, res) => {
 
 /**
  * GET /api/users/:id
- * Controller enforces that a user may fetch:
- *  - their own record OR
- *  - any record if they are admin or personnel
  */
 export const getUserById: RequestHandler<{ id: string }> = async (req, res) => {
   const { id } = req.params;
 
-  // Basic validation of id
   if (!mongoose.Types.ObjectId.isValid(id)) {
     res.status(400).json({ error: "Invalid user id." });
     return;
@@ -58,7 +53,6 @@ export const getUserById: RequestHandler<{ id: string }> = async (req, res) => {
 
 /**
  * POST /api/users
- * Create a new user. Route should be protected (admin/personnel) via middleware.
  */
 export const createUser: RequestHandler<{}, any, AuthRegisterBody> = async (
   req,
@@ -93,7 +87,6 @@ export const createUser: RequestHandler<{}, any, AuthRegisterBody> = async (
       return;
     }
 
-    // Use User.create so pre-save hook hashes password
     const newUser = await User.create({
       firstName,
       lastName,
@@ -116,12 +109,6 @@ export const createUser: RequestHandler<{}, any, AuthRegisterBody> = async (
 
 /**
  * PATCH /api/users/:id
- * Update a user. Allowed when:
- *  - requester is admin or personnel OR
- *  - requester is the same user (self update)
- *
- * If password is provided, this code assigns it to the document and calls save()
- * so the model pre('save') hook runs and hashes the password.
  */
 export const updateUser: RequestHandler<
   { id: string },
@@ -142,7 +129,6 @@ export const updateUser: RequestHandler<
       return;
     }
 
-    // Permission check: admin/personnel OR owner
     if (
       !req.user ||
       !(
@@ -155,41 +141,32 @@ export const updateUser: RequestHandler<
       return;
     }
 
-    const { firstName, lastName, email, phoneNumber, address, role, password } =
-      req.body;
+    const { email, password, role, ...otherUpdates } = req.body;
 
-    // If email is changed, ensure uniqueness
+    Object.assign(user, otherUpdates);
+
     if (email && email !== user.email) {
-      const other = await User.findOne({ email });
-      if (other && other.id !== user.id) {
-        res
-          .status(400)
-          .json({ error: "Email already in use by another user." });
+      const existing = await User.findOne({ email });
+      if (existing && existing.id !== user.id) {
+        res.status(400).json({ error: "Email already in use." });
         return;
       }
       user.email = email;
     }
 
-    if (firstName !== undefined) user.firstName = firstName;
-    if (lastName !== undefined) user.lastName = lastName;
-    if (phoneNumber !== undefined) user.phoneNumber = phoneNumber;
-    if (address !== undefined) user.address = address;
-    if (role !== undefined && req.user.role === "admin") {
-      // Only allow admin to change role (simple safeguard)
+    if (role && req.user?.role === "admin") {
       user.role = role;
     }
 
-    if (password !== undefined) {
-      // Assign password and call save() so pre('save') hook hashes it
+    if (password) {
       user.password = password;
     }
 
-    const saved = await user.save();
+    const updatedUser = await user.save();
+    const userObj = updatedUser.toObject();
+    delete (userObj as any).password;
 
-    const savedObj = saved.toObject();
-    delete (savedObj as any).password;
-
-    res.status(200).json(savedObj);
+    res.status(200).json(userObj);
   } catch (error: any) {
     console.error("Error updating user:", error?.message || error);
     res.status(400).json({ error: error?.message || "Invalid request." });
@@ -198,7 +175,6 @@ export const updateUser: RequestHandler<
 
 /**
  * DELETE /api/users/:id
- * Delete a user. Route should be protected (admin only) via middleware.
  */
 export const deleteUser: RequestHandler<{ id: string }> = async (req, res) => {
   const { id } = req.params;
@@ -215,7 +191,6 @@ export const deleteUser: RequestHandler<{ id: string }> = async (req, res) => {
       return;
     }
 
-    // Route-level middleware should restrict to admin, but double-check:
     if (!req.user || req.user.role !== "admin") {
       res.status(403).json({ error: "Forbidden: admin only." });
       return;

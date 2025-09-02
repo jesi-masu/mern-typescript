@@ -1,6 +1,6 @@
+// backend/src/types/express.d.ts
 import { Request } from "express";
 
-// Product DTOs (unchanged)
 export interface ProductSpecifications {
   dimensions: string;
   height: string;

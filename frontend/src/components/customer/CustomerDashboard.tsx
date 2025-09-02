@@ -1,4 +1,3 @@
-// frontend/src/components/customer/CustomerDashboard.tsx
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -381,6 +380,50 @@ const CustomerDashboard = () => {
                     Customer ID
                   </label>
                   <p className="text-lg">{user?._id}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">
+                    Phone Number
+                  </label>
+                  <p className="text-lg">{user?.phoneNumber}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">
+                    Street
+                  </label>
+                  <p className="text-lg">{user?.address?.street}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">
+                    Barangay/Subdivision
+                  </label>
+                  <p className="text-lg">
+                    {user?.address?.barangaySubdivision}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">
+                    City
+                  </label>
+                  <p className="text-lg">{user?.address?.city}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">
+                    Province
+                  </label>
+                  <p className="text-lg">{user?.address?.province}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">
+                    Postal Code
+                  </label>
+                  <p className="text-lg">{user?.address?.postalCode}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">
+                    Country
+                  </label>
+                  <p className="text-lg">{user?.address?.country}</p>
                 </div>
               </div>
             </CardContent>

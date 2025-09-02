@@ -1,5 +1,4 @@
 // backend/src/controllers/authController.ts
-
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import User, { IUser } from "../models/userModel";
@@ -19,20 +18,9 @@ export const registerUser = async (
   req: Request<any, any, AuthRequestBody>,
   res: Response
 ): Promise<void> => {
+  // No need for manual validation here anymore
   const { firstName, lastName, email, phoneNumber, password, address, role } =
     req.body;
-
-  if (
-    !firstName ||
-    !lastName ||
-    !email ||
-    !phoneNumber ||
-    !password ||
-    !address
-  ) {
-    res.status(400).json({ error: "Please include all required fields." });
-    return;
-  }
 
   try {
     const existingUser = await User.findOne({ email });
@@ -71,12 +59,8 @@ export const loginUser = async (
   req: Request<any, any, Pick<IUser, "email" | "password">>,
   res: Response
 ): Promise<void> => {
+  // No need for manual validation here anymore
   const { email, password } = req.body;
-
-  if (!email || !password) {
-    res.status(400).json({ error: "Please enter both email and password." });
-    return;
-  }
 
   try {
     const user: IUser | null = await User.findOne({ email });

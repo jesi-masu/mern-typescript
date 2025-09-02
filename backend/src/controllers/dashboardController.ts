@@ -1,14 +1,5 @@
+// backend/src/controllers/dashboardController.ts
 import { RequestHandler } from "express";
-
-/**
- * Minimal dashboard stats endpoint.
- * Protected by authMiddleware + checkRole(["admin","personnel"])
- *
- * Important: do NOT `return res.status(...).json(...)` because that makes the async
- * function return a `Response` which is not assignable to Express's expected
- * handler return type (void | Promise<void>). Instead call res.status(...).json(...)
- * and then `return;` so the function's Promise resolves to void.
- */
 export const getDashboardStats: RequestHandler = async (req, res) => {
   try {
     // Example static values — replace with DB queries/aggregations later.

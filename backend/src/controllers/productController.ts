@@ -1,3 +1,4 @@
+// backend/src/controllers/productController.ts
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import Product, { IProduct } from "../models/productModel";
