@@ -39,6 +39,8 @@ import NotFound from "./pages/NotFound";
 import AdminLayout from "./components/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import Products from "./pages/admin/Products";
+import ProductFormPage from "./pages/admin/ProductFormPage"; // <--- ADD THIS LINE
+import ProductViewPage from "./pages/admin/ProductViewPage";
 import Orders from "./pages/admin/Orders";
 import Customers from "./pages/admin/Customers";
 import Reports from "./pages/admin/Reports";
@@ -53,6 +55,7 @@ import ActivityLog from "./pages/admin/ActivityLog";
 
 // Customer-protected route component
 import ProtectedCustomerRoute from "./components/ProtectedCustomerRoute";
+import ProductForm from "./pages/admin/ProductFormPage";
 
 const queryClient = new QueryClient();
 
@@ -129,13 +132,7 @@ function App() {
                       }
                     />
 
-                    {/*
-                      Admin route tree:
-                      - Wrap the entire admin route tree with AdminAuthProvider so all admin pages
-                        and AdminLayout share the same admin context instance.
-                      - Use ProtectedAdminRoute as a wrapper to gate access; it now accepts children.
-                      - AdminLayout should render <Outlet /> to show the nested admin pages.
-                    */}
+                    {/* Admin route tree */}
                     <Route
                       path="/admin"
                       element={
@@ -150,6 +147,19 @@ function App() {
                       <Route index element={<Dashboard />} />
                       <Route path="dashboard" element={<Dashboard />} />
                       <Route path="products" element={<Products />} />
+                      <Route
+                        path="products/new"
+                        element={<ProductFormPage />}
+                      />
+                      <Route
+                        path="products/edit/:id"
+                        element={<ProductFormPage />}
+                      />
+                      <Route
+                        path="products/view/:id"
+                        element={<ProductViewPage />}
+                      />
+                      {/* END: ADD THESE TWO LINES */}
                       <Route path="orders" element={<Orders />} />
                       <Route path="customers" element={<Customers />} />
                       <Route path="reports" element={<Reports />} />

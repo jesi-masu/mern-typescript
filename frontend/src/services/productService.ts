@@ -1,4 +1,3 @@
-// frontend/src/services/productService.ts
 // Product service: reads token from localStorage ("token") and attaches Authorization header.
 // This file intentionally does NOT import React hooks so it can be used from anywhere.
 
@@ -81,7 +80,7 @@ export const updateProduct = async (
   productData: Partial<Product>
 ): Promise<Product> => {
   const res = await fetch(`${BASE}/${id}`, {
-    method: "PUT",
+    method: "PATCH", // <-- FIX: Changed from PUT to PATCH
     headers: getJsonHeaders(),
     body: JSON.stringify(productData),
   });
