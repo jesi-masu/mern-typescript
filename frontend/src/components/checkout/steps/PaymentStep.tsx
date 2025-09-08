@@ -4,27 +4,32 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, Receipt, X } from "lucide-react";
+import { MapPin, Receipt, X, Info } from "lucide-react";
 import { PaymentInfo } from "@/types/checkout";
-import { Product } from "@/data/products";
-import PaymentMethodSelector from "../PaymentMethodSelector";
-import InstallmentStageSelector from "../InstallmentStageSelector";
+import { Product } from "@/types/product";
+import { formatPrice } from "@/lib/formatters";
+import PaymentSelector from "../PaymentSelector";
 
-// Extend the PaymentInfo interface to include delivery address fields
+// Define the full shape of the payment information object
 interface ExtendedPaymentInfo extends PaymentInfo {
-  deliveryAddress: {
+  deliveryAddress?: {
     street: string;
     subdivision: string;
     cityMunicipality: string;
     province: string;
     postalCode: string;
     country: string;
+    additionalAddressLine: string;
   };
+  paymentMethod: "installment" | "full" | "";
+  installmentStage: "initial" | "pre_delivery" | "final" | "";
+  paymentMode: "cash" | "bank" | "cheque" | "gcash" | "";
+  paymentTiming: "now" | "later" | "";
 }
 
 interface PaymentStepProps {
-  paymentInfo: ExtendedPaymentInfo; // Use the extended interface
-  onChange: (info: Partial<ExtendedPaymentInfo>) => void; // Update onChange to accept extended info
+  paymentInfo: ExtendedPaymentInfo;
+  onChange: (info: Partial<ExtendedPaymentInfo>) => void;
   product: Product;
 }
 
@@ -33,34 +38,26 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   onChange,
   product,
 }) => {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
   const getCurrentPaymentAmount = () => {
     if (paymentInfo.paymentMethod === "full") {
-      return product.price;
+      return product.productPrice;
     } else if (paymentInfo.paymentMethod === "installment") {
       switch (paymentInfo.installmentStage) {
         case "initial":
-          return Math.round(product.price * 0.5);
+          return Math.round(product.productPrice * 0.5);
         case "pre_delivery":
-          return Math.round(product.price * 0.4);
+          return Math.round(product.productPrice * 0.4);
         case "final":
           return (
-            product.price -
-            Math.round(product.price * 0.5) -
-            Math.round(product.price * 0.4)
+            product.productPrice -
+            Math.round(product.productPrice * 0.5) -
+            Math.round(product.productPrice * 0.4)
           );
         default:
-          return Math.round(product.price * 0.5);
+          return 0;
       }
     }
-    return product.price;
+    return 0;
   };
 
   const handlePaymentReceiptChange = (
@@ -85,9 +82,9 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
     const { name, value } = e.target;
     onChange({
       deliveryAddress: {
-        ...paymentInfo.deliveryAddress,
+        ...(paymentInfo.deliveryAddress || {}),
         [name]: value,
-      },
+      } as ExtendedPaymentInfo["deliveryAddress"],
     });
   };
 
@@ -105,41 +102,37 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
     onChange({ locationImages: updatedFiles });
   };
 
-  // Ensure deliveryAddress is initialized if it doesn't exist
-  React.useEffect(() => {
-    if (!paymentInfo.deliveryAddress) {
-      onChange({
-        deliveryAddress: {
-          street: "",
-          subdivision: "",
-          cityMunicipality: "",
-          province: "",
-          postalCode: "",
-          country: "Philippines",
-        },
-      });
+  // START: ADDED LOGIC TO CLEAR STATE ON CHANGE
+  const handlePaymentTimingChange = (timing: "now" | "later" | "") => {
+    const updates: Partial<ExtendedPaymentInfo> = { paymentTiming: timing };
+    // If the user selects "Pay Later," we must clear any receipts they may have uploaded.
+    if (timing === "later") {
+      updates.paymentReceipts = [];
     }
-  }, [paymentInfo.deliveryAddress, onChange]);
+    onChange(updates);
+  };
+  // END: ADDED LOGIC TO CLEAR STATE ON CHANGE
 
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-semibold">Payment & Location</h3>
 
-      <PaymentMethodSelector
-        paymentMethod={paymentInfo.paymentMethod}
-        onChange={(method) => onChange({ paymentMethod: method })}
+      <PaymentSelector
         product={product}
+        paymentMethod={paymentInfo.paymentMethod}
+        onPaymentMethodChange={(method) => onChange({ paymentMethod: method })}
+        installmentStage={paymentInfo.installmentStage}
+        onInstallmentStageChange={(stage) =>
+          onChange({ installmentStage: stage })
+        }
+        paymentMode={paymentInfo.paymentMode}
+        onPaymentModeChange={(mode) => onChange({ paymentMode: mode })}
+        paymentTiming={paymentInfo.paymentTiming}
+        onPaymentTimingChange={handlePaymentTimingChange} // Use the new handler
       />
 
-      {paymentInfo.paymentMethod === "installment" && (
-        <InstallmentStageSelector
-          installmentStage={paymentInfo.installmentStage || "initial"}
-          onChange={(stage) => onChange({ installmentStage: stage })}
-          product={product}
-        />
-      )}
-
-      {paymentInfo.paymentMethod && (
+      {/* This section now correctly appears only when "Pay Now" is selected */}
+      {paymentInfo.paymentTiming === "now" && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -154,7 +147,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
                 <p className="text-sm text-gray-600 mb-2">
                   Amount Due:{" "}
                   <span className="font-semibold">
-                    {formatCurrency(getCurrentPaymentAmount())}
+                    {formatPrice(getCurrentPaymentAmount())}
                   </span>
                 </p>
                 <p className="text-sm text-gray-600">
@@ -174,8 +167,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
                   />
                 </div>
                 <p className="text-sm text-gray-500 mt-1">
-                  Upload your payment receipts (PNG, JPG, or PDF). You can
-                  select multiple files.
+                  Upload your payment receipts (PNG, JPG, or PDF).
                 </p>
 
                 {paymentInfo.paymentReceipts &&
@@ -208,7 +200,26 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
         </Card>
       )}
 
-      {/* Delivery Address Card */}
+      {/* This message correctly appears only when "Pay Later" is selected */}
+      {paymentInfo.paymentTiming === "later" && (
+        <Card className="bg-amber-50 border-amber-200">
+          <CardContent className="p-4 flex items-start gap-4">
+            <Info className="h-5 w-5 text-amber-600 mt-1 flex-shrink-0" />
+            <div>
+              <h4 className="font-semibold text-amber-800">
+                Pay Later Selected
+              </h4>
+              <p className="text-sm text-amber-700">
+                You have chosen to submit your order now and upload the payment
+                receipt later. You can find this order in your dashboard to
+                complete the payment.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* --- Delivery Address and Location Cards (No Changes) --- */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -221,8 +232,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
             <div className="bg-red-50 p-4 rounded-lg">
               <h4 className="font-medium mb-2">Delivery Address Required</h4>
               <p className="text-sm text-gray-600">
-                To ensure our team is ready for the prefab unit's delivery,
-                please insert the exact delivery address.
+                Please provide the exact delivery address.
               </p>
             </div>
             <div className="form-group">
@@ -237,7 +247,6 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
                 required
               />
             </div>
-
             <div className="form-group">
               <Label htmlFor="subdivision">Subdivision/Barangay *</Label>
               <Input
@@ -250,7 +259,19 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
                 required
               />
             </div>
-
+            <div className="form-group">
+              <Label htmlFor="additionalAddressLine">
+                Additional Address Line (Optional)
+              </Label>
+              <Input
+                id="additionalAddressLine"
+                name="additionalAddressLine"
+                type="text"
+                placeholder="Any supplementary address or other specific location..."
+                value={paymentInfo.deliveryAddress?.additionalAddressLine || ""}
+                onChange={handleAddressChange}
+              />
+            </div>
             <div className="form-group">
               <Label htmlFor="cityMunicipality">City/Municipality *</Label>
               <Input
@@ -263,7 +284,6 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
                 required
               />
             </div>
-
             <div className="form-group">
               <Label htmlFor="province">Province *</Label>
               <Input
@@ -276,7 +296,6 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
                 required
               />
             </div>
-
             <div className="form-group">
               <Label htmlFor="postalCode">Postal Code *</Label>
               <Input
@@ -291,30 +310,23 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
                 required
               />
             </div>
-
             <div className="form-group">
               <Label htmlFor="country">Country *</Label>
               <select
                 id="country"
                 name="country"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={paymentInfo.deliveryAddress?.country || ""}
                 onChange={handleAddressChange}
                 required
               >
-                <option value="">Select Country</option>
                 <option value="Philippines">Philippines</option>
-                <option value="USA">United States</option>
-                <option value="Canada">Canada</option>
-                <option value="Australia">Australia</option>
-                <option value="UK">United Kingdom</option>
               </select>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Installation Location Card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -328,8 +340,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
               <h4 className="font-medium mb-2">Location Images Required</h4>
               <p className="text-sm text-gray-600">
                 Please provide images of where the prefab unit will be
-                installed. This helps our team prepare for delivery and
-                installation.
+                installed.
               </p>
             </div>
 
@@ -345,8 +356,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
                 />
               </div>
               <p className="text-sm text-gray-500 mt-1">
-                Upload clear images of the installation site. You can select
-                multiple files.
+                Upload clear images of the installation site.
               </p>
 
               {paymentInfo.locationImages &&

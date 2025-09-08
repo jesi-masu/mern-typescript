@@ -1,5 +1,5 @@
-
-import React from 'react';
+//frontend/src/components/checkout/CheckoutSteps.tsx
+import React from "react";
 import { CheckCircle } from "lucide-react";
 
 interface Step {
@@ -13,14 +13,17 @@ interface CheckoutStepsProps {
   steps: Step[];
 }
 
-const CheckoutSteps: React.FC<CheckoutStepsProps> = ({ currentStep, steps }) => {
+const CheckoutSteps: React.FC<CheckoutStepsProps> = ({
+  currentStep,
+  steps,
+}) => {
   return (
     <div className="flex items-center space-x-4">
       {steps.map((step) => (
         <div
           key={step.number}
           className={`flex items-center space-x-2 ${
-            step.number <= currentStep ? 'text-blue-600' : 'text-gray-400'
+            step.number <= currentStep ? "text-blue-600" : "text-gray-400"
           }`}
         >
           {step.number < currentStep ? (
@@ -29,8 +32,8 @@ const CheckoutSteps: React.FC<CheckoutStepsProps> = ({ currentStep, steps }) => 
             <div
               className={`w-5 h-5 rounded-full border-2 flex items-center justify-center text-xs ${
                 step.number === currentStep
-                  ? 'border-blue-600 bg-blue-600 text-white'
-                  : 'border-gray-300'
+                  ? "border-blue-600 bg-blue-600 text-white"
+                  : "border-gray-300"
               }`}
             >
               {step.number}

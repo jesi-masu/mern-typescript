@@ -1,3 +1,4 @@
+//frontend/src/components/checkout/MultiStepCheckout.tsx
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

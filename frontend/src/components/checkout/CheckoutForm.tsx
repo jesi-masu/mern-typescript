@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+//frontend/src/components/checkout/CheckoutForm.tsx
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from 'react-router-dom';
-import { useOrders } from '@/context/OrderContext';
-import { OrderStatus, PaymentStatus } from '@/data/orders';
+import { useNavigate } from "react-router-dom";
+import { useOrders } from "@/context/OrderContext";
+import { OrderStatus, PaymentStatus } from "@/data/orders";
 
 interface CheckoutFormProps {
   product: {
@@ -30,13 +31,13 @@ interface OrderData {
 
 const CheckoutForm = ({ product }: CheckoutFormProps) => {
   const [orderData, setOrderData] = useState<OrderData>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    address: '',
-    city: '',
-    state: '',
-    zipCode: '',
+    firstName: "",
+    lastName: "",
+    email: "",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
   });
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -44,7 +45,7 @@ const CheckoutForm = ({ product }: CheckoutFormProps) => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setOrderData(prevData => ({
+    setOrderData((prevData) => ({
       ...prevData,
       [name]: value,
     }));

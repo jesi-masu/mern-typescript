@@ -1,5 +1,5 @@
-
-import React from 'react';
+//frontend/src/components/checkout/CheckoutNavigation.tsx
+import React from "react";
 import { Button } from "@/components/ui/button";
 
 interface CheckoutNavigationProps {
@@ -17,7 +17,7 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
   isStepValid,
   onPrevious,
   onNext,
-  onSubmit
+  onSubmit,
 }) => {
   return (
     <div className="flex justify-between mt-8">
@@ -29,10 +29,7 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
         Previous
       </Button>
       {currentStep < totalSteps ? (
-        <Button
-          onClick={onNext}
-          disabled={!isStepValid}
-        >
+        <Button onClick={onNext} disabled={!isStepValid}>
           Next Step
         </Button>
       ) : (

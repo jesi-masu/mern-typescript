@@ -1,18 +1,17 @@
+// frontend/src/components/checkout/OrderSummary.tsx
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-// Assuming Product type is now imported from "@/types/product"
-import { Product } from "@/types/product"; // Corrected import path
-import { formatPriceFromUSD } from "@/lib/formatters";
+import { Product } from "@/types/product";
+// START: UPDATED LINE - Changed the import to the direct formatter
+import { formatPrice } from "@/lib/formatters";
+// END: UPDATED LINE
 
 interface OrderSummaryProps {
   product: Product;
 }
 
 const OrderSummary: React.FC<OrderSummaryProps> = ({ product }) => {
-  // Use a constant for the price formatting function to avoid recreation on every render
-  const formatPrice = (price: number) => {
-    return formatPriceFromUSD(price);
-  };
+  // REMOVED: The unnecessary local formatPrice function that was converting from USD.
 
   return (
     <Card className="sticky top-6">
@@ -24,22 +23,20 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ product }) => {
         <div className="flex items-center space-x-4 mb-6">
           <div className="h-16 w-16 rounded overflow-hidden flex-shrink-0">
             <img
-              // Use product.image or fallback to product.images[0] if available
               src={
                 product.images && product.images.length > 0
                   ? product.images[0]
                   : product.image
               }
-              alt={product.productName} // Use productName
+              alt={product.productName}
               className="w-full h-full object-cover"
             />
           </div>
           <div>
-            <h3 className="font-medium text-lg">{product.productName}</h3>{" "}
-            {/* Use productName */}
+            <h3 className="font-medium text-lg">{product.productName}</h3>
             <p className="text-sm text-gray-600">{product.squareFeet} sq ft</p>
             <p className="text-blue-600 font-semibold mt-1">
-              {formatPrice(product.productPrice)} {/* Use productPrice */}
+              {formatPrice(product.productPrice)}
             </p>
           </div>
         </div>
@@ -48,8 +45,8 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ product }) => {
         <div className="space-y-3 border-t pt-4 text-sm">
           <div className="flex justify-between">
             <span>Subtotal</span>
-            <span>{formatPrice(product.productPrice)}</span>{" "}
-            {/* Use productPrice for subtotal */}
+            {/* The formatPrice function now directly formats the PHP value */}
+            <span>{formatPrice(product.productPrice)}</span>
           </div>
           <div className="flex justify-between">
             <span>Quantity</span>
@@ -70,8 +67,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ product }) => {
           <span>Total</span>
           <span className="text-blue-600">
             {formatPrice(product.productPrice)}
-          </span>{" "}
-          {/* Use productPrice for total */}
+          </span>
         </div>
 
         {/* Lead time notice */}
