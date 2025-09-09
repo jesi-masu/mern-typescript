@@ -1,19 +1,15 @@
-//frontend/src/components/checkout/MultiStepCheckout.tsx
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { useOrders } from "@/context/OrderContext";
+import { useAuth } from "@/context/AuthContext";
+// --- UPDATED: Import the new custom hook ---
 import { useCheckoutState } from "@/hooks/useCheckoutState";
 import { isStepValid } from "@/utils/checkoutValidation";
-import { OrderStatus, PaymentStatus } from "@/data/orders";
 
-// Import the Product type and the API service function
 import { Product } from "@/types/product";
 import { fetchProductById } from "@/services/productService";
-
-// Import the refactored ProductNotFound component
 import ProductNotFound from "@/components/common/ProductNotFound";
 
 import CustomerInfoStep from "./steps/CustomerInfoStep";
@@ -23,45 +19,55 @@ import OrderSummary from "./OrderSummary";
 import CheckoutSteps from "./CheckoutSteps";
 import CheckoutNavigation from "./CheckoutNavigation";
 
+const uploadFileToCloudinary = async (file: File): Promise<string> => {
+  const signatureResponse = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/api/upload/signature`,
+    {
+      method: "POST",
+    }
+  );
+  if (!signatureResponse.ok) {
+    throw new Error("Failed to get a signature from the server.");
+  }
+  const { timestamp, signature } = await signatureResponse.json();
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("timestamp", timestamp);
+  formData.append("signature", signature);
+  formData.append("api_key", import.meta.env.VITE_CLOUDINARY_API_KEY as string);
+
+  const uploadResponse = await fetch(
+    `https://api.cloudinary.com/v1_1/${
+      import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+    }/image/upload`,
+    {
+      method: "POST",
+      body: formData,
+    }
+  );
+
+  if (!uploadResponse.ok) {
+    const errorData = await uploadResponse.json();
+    throw new Error(`Cloudinary upload failed: ${errorData.error.message}`);
+  }
+
+  const uploadResult = await uploadResponse.json();
+  return uploadResult.secure_url;
+};
+
 const MultiStepCheckout = () => {
-  const { id } = useParams<{ id: string }>(); // 'id' from URL
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { addNewOrder } = useOrders();
+  const { token } = useAuth();
 
-  // State for fetching product data
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // State to handle order submission loading
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Effect hook to fetch product data from the API
-  useEffect(() => {
-    const getProduct = async () => {
-      if (!id) {
-        setError("Product ID is missing.");
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
-        const fetchedProduct = await fetchProductById(id);
-        setProduct(fetchedProduct);
-      } catch (err: any) {
-        setError(err.message || "Failed to load product details.");
-        console.error("Error fetching product:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getProduct();
-  }, [id]);
-
+  // --- UPDATED: All local state management is now handled by the custom hook ---
   const {
     currentStep,
     customerInfo,
@@ -74,7 +80,27 @@ const MultiStepCheckout = () => {
     handlePrevious,
   } = useCheckoutState();
 
-  // Handle loading state while fetching product
+  useEffect(() => {
+    const getProduct = async () => {
+      if (!id) {
+        setError("Product ID is missing.");
+        setLoading(false);
+        return;
+      }
+      try {
+        setLoading(true);
+        setError(null);
+        const fetchedProduct = await fetchProductById(id);
+        setProduct(fetchedProduct);
+      } catch (err: any) {
+        setError(err.message || "Failed to load product details.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    getProduct();
+  }, [id]);
+
   if (loading) {
     return (
       <div className="container py-12 text-center">
@@ -84,7 +110,6 @@ const MultiStepCheckout = () => {
     );
   }
 
-  // Handle error or product not found
   if (error || !product) {
     return <ProductNotFound />;
   }
@@ -110,44 +135,83 @@ const MultiStepCheckout = () => {
   const progress = (currentStep / steps.length) * 100;
 
   const handleOrderSubmit = async () => {
-    // Prevent double submissions
     if (isSubmitting) return;
-
     setIsSubmitting(true);
 
-    const orderData = {
-      firstName: customerInfo.firstName,
-      lastName: customerInfo.lastName,
-      email: customerInfo.email,
-      address: customerInfo.address1,
-      city: customerInfo.city,
-      state: customerInfo.state,
-      zipCode: customerInfo.postalCode,
-    };
-
     try {
-      // Use the fetched product's properties for the new order
-      const newOrder = addNewOrder({
-        customerId: orderData.email,
-        customerName: `${orderData.firstName} ${orderData.lastName}`,
-        customerEmail: orderData.email,
-        products: [{ productId: product._id, quantity: 1 }],
-        status: "Pending" as OrderStatus,
-        paymentStatus: "Pending" as PaymentStatus,
-        totalAmount: product.productPrice,
-      });
+      const paymentReceiptUploads = (paymentInfo.paymentReceipts || []).map(
+        (file) => uploadFileToCloudinary(file as File)
+      );
+      const locationImageUploads = (paymentInfo.locationImages || []).map(
+        (file) => uploadFileToCloudinary(file as File)
+      );
 
+      const paymentReceiptsUrls = await Promise.all(paymentReceiptUploads);
+      const locationImagesUrls = await Promise.all(locationImageUploads);
+
+      const orderPayload = {
+        productId: product._id,
+        customerInfo: {
+          firstName: customerInfo.firstName,
+          lastName: customerInfo.lastName,
+          email: customerInfo.email,
+          phoneNumber: customerInfo.phoneNumber,
+          deliveryAddress: {
+            street: paymentInfo.deliveryAddress?.street ?? "",
+            subdivision: paymentInfo.deliveryAddress?.subdivision ?? "",
+            additionalAddressLine:
+              paymentInfo.deliveryAddress?.additionalAddressLine ?? "",
+            cityMunicipality:
+              paymentInfo.deliveryAddress?.cityMunicipality ?? "",
+            province: paymentInfo.deliveryAddress?.province ?? "",
+            postalCode: paymentInfo.deliveryAddress?.postalCode ?? "",
+            country: paymentInfo.deliveryAddress?.country ?? "",
+          },
+        },
+        paymentInfo: {
+          paymentMethod: paymentInfo.paymentMethod,
+          installmentStage: paymentInfo.installmentStage,
+          paymentMode: paymentInfo.paymentMode,
+          paymentTiming: paymentInfo.paymentTiming,
+          paymentReceipts: paymentReceiptsUrls,
+        },
+        contractInfo: {
+          signature: contractInfo.signature,
+          agreedToTerms: contractInfo.agreedToTerms,
+        },
+        locationImages: locationImagesUrls,
+        totalAmount: product.productPrice,
+      };
+
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/orders`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(orderPayload),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create the order.");
+      }
+
+      const newOrder = await response.json();
       toast({
         title: "Order placed successfully!",
-        description: `Order #${newOrder.id} has been created. You will receive a confirmation email shortly.`,
+        description: `Order #${newOrder._id} has been created.`,
       });
-
       navigate("/order-history");
-    } catch (submitError) {
+    } catch (submitError: any) {
       console.error("Failed to place order:", submitError);
       toast({
         title: "Order Failed",
-        description: "There was an error placing your order. Please try again.",
+        description:
+          submitError.message || "There was an error placing your order.",
         variant: "destructive",
       });
     } finally {
@@ -199,7 +263,6 @@ const MultiStepCheckout = () => {
                   product={product}
                 />
               )}
-
               <CheckoutNavigation
                 currentStep={currentStep}
                 totalSteps={steps.length}
@@ -207,12 +270,11 @@ const MultiStepCheckout = () => {
                 onPrevious={handlePrevious}
                 onNext={handleNext}
                 onSubmit={handleOrderSubmit}
-                isSubmitting={isSubmitting} // Pass the new prop
+                isSubmitting={isSubmitting}
               />
             </CardContent>
           </Card>
         </div>
-
         <div className="lg:col-span-1">
           <OrderSummary product={product} />
         </div>

@@ -1,4 +1,3 @@
-// backend/src/types/express.d.ts
 import { Request } from "express";
 
 export interface ProductSpecifications {
@@ -38,6 +37,7 @@ export interface AuthRegisterBody {
   address: {
     street: string;
     barangaySubdivision: string;
+    additionalAddressLine?: string; // <-- ADDED: New optional field
     city: string;
     province: string;
     postalCode: string;

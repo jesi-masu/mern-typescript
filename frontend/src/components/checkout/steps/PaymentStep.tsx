@@ -1,4 +1,3 @@
-//frontend/src/components/checkout/steps/PaymentStep.tsx
 import React from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -9,6 +8,8 @@ import { PaymentInfo } from "@/types/checkout";
 import { Product } from "@/types/product";
 import { formatPrice } from "@/lib/formatters";
 import PaymentSelector from "../PaymentSelector";
+// --- ADDED: Import the new address component ---
+import DeliveryAddressStep from "./DeliveryAddressStep";
 
 // Define the full shape of the payment information object
 interface ExtendedPaymentInfo extends PaymentInfo {
@@ -60,6 +61,16 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
     return 0;
   };
 
+  const handlePaymentMethodChange = (method: "installment" | "full" | "") => {
+    const updates: Partial<ExtendedPaymentInfo> = { paymentMethod: method };
+    if (method === "installment") {
+      updates.installmentStage = "initial";
+    } else {
+      updates.installmentStage = "";
+    }
+    onChange(updates);
+  };
+
   const handlePaymentReceiptChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -76,16 +87,11 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
     onChange({ locationImages: [...existingFiles, ...files] });
   };
 
+  // --- REFACTORED: This now handles updates from the new component ---
   const handleAddressChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    addressInfo: Partial<PaymentInfo["deliveryAddress"]>
   ) => {
-    const { name, value } = e.target;
-    onChange({
-      deliveryAddress: {
-        ...(paymentInfo.deliveryAddress || {}),
-        [name]: value,
-      } as ExtendedPaymentInfo["deliveryAddress"],
-    });
+    onChange({ deliveryAddress: addressInfo });
   };
 
   const removePaymentReceipt = (index: number) => {
@@ -102,16 +108,13 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
     onChange({ locationImages: updatedFiles });
   };
 
-  // START: ADDED LOGIC TO CLEAR STATE ON CHANGE
   const handlePaymentTimingChange = (timing: "now" | "later" | "") => {
     const updates: Partial<ExtendedPaymentInfo> = { paymentTiming: timing };
-    // If the user selects "Pay Later," we must clear any receipts they may have uploaded.
     if (timing === "later") {
       updates.paymentReceipts = [];
     }
     onChange(updates);
   };
-  // END: ADDED LOGIC TO CLEAR STATE ON CHANGE
 
   return (
     <div className="space-y-6">
@@ -120,7 +123,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       <PaymentSelector
         product={product}
         paymentMethod={paymentInfo.paymentMethod}
-        onPaymentMethodChange={(method) => onChange({ paymentMethod: method })}
+        onPaymentMethodChange={handlePaymentMethodChange}
         installmentStage={paymentInfo.installmentStage}
         onInstallmentStageChange={(stage) =>
           onChange({ installmentStage: stage })
@@ -128,10 +131,9 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
         paymentMode={paymentInfo.paymentMode}
         onPaymentModeChange={(mode) => onChange({ paymentMode: mode })}
         paymentTiming={paymentInfo.paymentTiming}
-        onPaymentTimingChange={handlePaymentTimingChange} // Use the new handler
+        onPaymentTimingChange={handlePaymentTimingChange}
       />
 
-      {/* This section now correctly appears only when "Pay Now" is selected */}
       {paymentInfo.paymentTiming === "now" && (
         <Card>
           <CardHeader>
@@ -200,7 +202,6 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
         </Card>
       )}
 
-      {/* This message correctly appears only when "Pay Later" is selected */}
       {paymentInfo.paymentTiming === "later" && (
         <Card className="bg-amber-50 border-amber-200">
           <CardContent className="p-4 flex items-start gap-4">
@@ -219,113 +220,11 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
         </Card>
       )}
 
-      {/* --- Delivery Address and Location Cards (No Changes) --- */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MapPin className="h-5 w-5" />
-            Delivery Address
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="bg-red-50 p-4 rounded-lg">
-              <h4 className="font-medium mb-2">Delivery Address Required</h4>
-              <p className="text-sm text-gray-600">
-                Please provide the exact delivery address.
-              </p>
-            </div>
-            <div className="form-group">
-              <Label htmlFor="street">Street Address *</Label>
-              <Input
-                id="street"
-                name="street"
-                type="text"
-                placeholder="e.g., Block 12 Lot 34 Mango Street"
-                value={paymentInfo.deliveryAddress?.street || ""}
-                onChange={handleAddressChange}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <Label htmlFor="subdivision">Subdivision/Barangay *</Label>
-              <Input
-                id="subdivision"
-                name="subdivision"
-                type="text"
-                placeholder="e.g., Greenland Subdivision, Poblacion"
-                value={paymentInfo.deliveryAddress?.subdivision || ""}
-                onChange={handleAddressChange}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <Label htmlFor="additionalAddressLine">
-                Additional Address Line (Optional)
-              </Label>
-              <Input
-                id="additionalAddressLine"
-                name="additionalAddressLine"
-                type="text"
-                placeholder="Any supplementary address or other specific location..."
-                value={paymentInfo.deliveryAddress?.additionalAddressLine || ""}
-                onChange={handleAddressChange}
-              />
-            </div>
-            <div className="form-group">
-              <Label htmlFor="cityMunicipality">City/Municipality *</Label>
-              <Input
-                id="cityMunicipality"
-                name="cityMunicipality"
-                type="text"
-                placeholder="e.g., Cagayan de Oro City"
-                value={paymentInfo.deliveryAddress?.cityMunicipality || ""}
-                onChange={handleAddressChange}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <Label htmlFor="province">Province *</Label>
-              <Input
-                id="province"
-                name="province"
-                type="text"
-                placeholder="e.g., Misamis Oriental"
-                value={paymentInfo.deliveryAddress?.province || ""}
-                onChange={handleAddressChange}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <Label htmlFor="postalCode">Postal Code *</Label>
-              <Input
-                id="postalCode"
-                name="postalCode"
-                type="text"
-                placeholder="e.g., 9000"
-                pattern="[0-9]{4}"
-                title="Please enter a 4-digit postal code"
-                value={paymentInfo.deliveryAddress?.postalCode || ""}
-                onChange={handleAddressChange}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <Label htmlFor="country">Country *</Label>
-              <select
-                id="country"
-                name="country"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={paymentInfo.deliveryAddress?.country || ""}
-                onChange={handleAddressChange}
-                required
-              >
-                <option value="Philippines">Philippines</option>
-              </select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* --- REPLACED: The old form is now a dedicated component --- */}
+      <DeliveryAddressStep
+        deliveryAddress={paymentInfo.deliveryAddress}
+        onChange={handleAddressChange}
+      />
 
       <Card>
         <CardHeader>

@@ -1,4 +1,3 @@
-// backend/src/models/userModel.ts
 import mongoose, { Document, Schema } from "mongoose";
 import bcrypt from "bcryptjs";
 
@@ -12,6 +11,7 @@ export interface IUser extends Document {
   address: {
     street: string;
     barangaySubdivision: string;
+    additionalAddressLine?: string;
     city: string;
     province: string;
     postalCode: string;
@@ -45,6 +45,7 @@ const userSchema: Schema = new Schema(
       type: {
         street: { type: String, required: true, trim: true },
         barangaySubdivision: { type: String, required: true, trim: true },
+        additionalAddressLine: { type: String, required: false, trim: true },
         city: { type: String, required: true, trim: true },
         province: { type: String, required: true, trim: true },
         postalCode: { type: String, required: true, trim: true },
@@ -57,9 +58,6 @@ const userSchema: Schema = new Schema(
   { timestamps: true }
 );
 
-// Use a typed pre-hook to avoid TypeScript issues with `this`
-// Note: don't import HookNextFunction — many mongoose versions don't export it.
-// Use a simple callback type instead.
 userSchema.pre<IUser>("save", async function (next: (err?: any) => void) {
   try {
     if (!this.isModified("password")) {

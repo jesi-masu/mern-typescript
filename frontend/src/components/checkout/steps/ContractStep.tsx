@@ -1,13 +1,23 @@
-
-import React, { useState } from 'react';
+//frontend/src/components/checkout/steps/ContractStep.tsx
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { FileText, User, Package, Eye, EyeOff, Shield, CheckCircle, AlertCircle } from "lucide-react";
+import {
+  FileText,
+  User,
+  Package,
+  Eye,
+  EyeOff,
+  Shield,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
 import { ContractInfo, CustomerInfo } from "@/types/checkout";
-import { Product } from "@/data/products";
+import { Product } from "@/types/product"; // Corrected: Import from types
+import { formatPrice } from "@/lib/formatters"; // Corrected: Import the correct formatter
 import SignaturePad from "@/components/contract/SignaturePad";
 
 interface ContractStepProps {
@@ -17,40 +27,43 @@ interface ContractStepProps {
   product: Product;
 }
 
-const ContractStep: React.FC<ContractStepProps> = ({ 
-  contractInfo, 
-  onChange, 
-  customerInfo, 
-  product 
+const ContractStep: React.FC<ContractStepProps> = ({
+  contractInfo,
+  onChange,
+  customerInfo,
+  product,
 }) => {
   const [showContract, setShowContract] = useState(false);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
+  // REMOVED: The local formatCurrency function that formatted to USD.
 
   const handleSignatureSave = (signature: string) => {
     onChange({ signature });
     setShowContract(true);
   };
 
-  const isContractComplete = contractInfo.signature && contractInfo.agreedToTerms;
+  const isContractComplete =
+    contractInfo.signature && contractInfo.agreedToTerms;
 
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="text-center space-y-2">
-        <h3 className="text-2xl font-bold text-gray-900">Contract & Finalization</h3>
-        <p className="text-gray-600">Review your order details and complete the digital signing process</p>
+        <h3 className="text-2xl font-bold text-gray-900">
+          Contract & Finalization
+        </h3>
+        <p className="text-gray-600">
+          Review your order details and complete the digital signing process
+        </p>
       </div>
 
       {/* Progress Indicator */}
       <div className="flex items-center justify-center space-x-4">
-        <div className={`flex items-center space-x-2 ${contractInfo.agreedToTerms ? 'text-green-600' : 'text-gray-400'}`}>
+        <div
+          className={`flex items-center space-x-2 ${
+            contractInfo.agreedToTerms ? "text-green-600" : "text-gray-400"
+          }`}
+        >
           {contractInfo.agreedToTerms ? (
             <CheckCircle className="h-5 w-5" />
           ) : (
@@ -59,7 +72,11 @@ const ContractStep: React.FC<ContractStepProps> = ({
           <span className="text-sm font-medium">Terms Agreed</span>
         </div>
         <div className="h-px w-8 bg-gray-300"></div>
-        <div className={`flex items-center space-x-2 ${contractInfo.signature ? 'text-green-600' : 'text-gray-400'}`}>
+        <div
+          className={`flex items-center space-x-2 ${
+            contractInfo.signature ? "text-green-600" : "text-gray-400"
+          }`}
+        >
           {contractInfo.signature ? (
             <CheckCircle className="h-5 w-5" />
           ) : (
@@ -68,7 +85,7 @@ const ContractStep: React.FC<ContractStepProps> = ({
           <span className="text-sm font-medium">Digitally Signed</span>
         </div>
       </div>
-      
+
       {/* Order Summary */}
       <Card className="border-2 border-gray-100">
         <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
@@ -82,24 +99,35 @@ const ContractStep: React.FC<ContractStepProps> = ({
             <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
               <User className="h-6 w-6 text-gray-500" />
               <div className="flex-1">
-                <p className="font-semibold text-gray-900">{customerInfo.firstName} {customerInfo.lastName}</p>
+                <p className="font-semibold text-gray-900">
+                  {customerInfo.firstName} {customerInfo.lastName}
+                </p>
                 <p className="text-sm text-gray-600">{customerInfo.email}</p>
-                <p className="text-sm text-gray-600">{customerInfo.phone}</p>
+                {/* Corrected: Use phoneNumber */}
+                <p className="text-sm text-gray-600">
+                  {customerInfo.phoneNumber}
+                </p>
               </div>
             </div>
-            
+
             <Separator />
-            
+
             <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
               <Package className="h-6 w-6 text-gray-500" />
               <div className="flex-1">
-                <p className="font-semibold text-gray-900">{product.name}</p>
-                <p className="text-2xl font-bold text-blue-600">{formatCurrency(product.price)}</p>
+                {/* Corrected: Use productName */}
+                <p className="font-semibold text-gray-900">
+                  {product.productName}
+                </p>
+                {/* Corrected: Use productPrice and formatPrice */}
+                <p className="text-2xl font-bold text-blue-600">
+                  {formatPrice(product.productPrice)}
+                </p>
               </div>
             </div>
-            
+
             <Separator />
-            
+
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
               <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
                 <Shield className="h-4 w-4" />
@@ -108,7 +136,10 @@ const ContractStep: React.FC<ContractStepProps> = ({
               <div className="text-sm text-blue-800 space-y-1">
                 <p>{customerInfo.address1}</p>
                 {customerInfo.address2 && <p>{customerInfo.address2}</p>}
-                <p>{customerInfo.city}, {customerInfo.state} {customerInfo.postalCode}</p>
+                <p>
+                  {customerInfo.city}, {customerInfo.province}{" "}
+                  {customerInfo.postalCode}
+                </p>
                 <p>{customerInfo.country}</p>
               </div>
             </div>
@@ -124,7 +155,9 @@ const ContractStep: React.FC<ContractStepProps> = ({
         <CardContent className="pt-6">
           <div className="space-y-4">
             <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-              <h4 className="font-semibold text-gray-900 mb-3">Contract Terms</h4>
+              <h4 className="font-semibold text-gray-900 mb-3">
+                Contract Terms
+              </h4>
               <ul className="space-y-2 text-sm text-gray-700">
                 <li className="flex items-start gap-2">
                   <span className="text-blue-600 font-bold">•</span>
@@ -148,19 +181,23 @@ const ContractStep: React.FC<ContractStepProps> = ({
                 </li>
               </ul>
             </div>
-            
+
             <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
               <Checkbox
                 id="terms"
                 checked={contractInfo.agreedToTerms}
-                onCheckedChange={(checked) => 
+                onCheckedChange={(checked) =>
                   onChange({ agreedToTerms: checked === true })
                 }
                 className="mt-1"
               />
-              <label htmlFor="terms" className="text-sm text-blue-900 cursor-pointer">
-                <span className="font-medium">I acknowledge and agree</span> to the terms and conditions stated above, 
-                and I understand that my digital signature will be legally binding.
+              <label
+                htmlFor="terms"
+                className="text-sm text-blue-900 cursor-pointer"
+              >
+                <span className="font-medium">I acknowledge and agree</span> to
+                the terms and conditions stated above, and I understand that my
+                digital signature will be legally binding.
               </label>
             </div>
           </div>
@@ -183,12 +220,14 @@ const ContractStep: React.FC<ContractStepProps> = ({
             <div className="mb-6 p-4 bg-white rounded-lg border border-green-200">
               <div className="flex items-center gap-2 mb-2">
                 <CheckCircle className="h-4 w-4 text-green-600" />
-                <span className="text-sm font-medium text-green-800">Signature Captured</span>
+                <span className="text-sm font-medium text-green-800">
+                  Signature Captured
+                </span>
                 <Badge className="bg-green-100 text-green-800">Verified</Badge>
               </div>
-              <img 
-                src={contractInfo.signature} 
-                alt="Digital Signature" 
+              <img
+                src={contractInfo.signature}
+                alt="Digital Signature"
                 className="border border-gray-300 rounded-lg max-w-xs bg-white p-2"
               />
             </div>
@@ -213,8 +252,12 @@ const ContractStep: React.FC<ContractStepProps> = ({
                 onClick={() => setShowContract(!showContract)}
                 className="flex items-center gap-2 border-green-300 hover:bg-green-100"
               >
-                {showContract ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                {showContract ? 'Hide' : 'View'} Contract
+                {showContract ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+                {showContract ? "Hide" : "View"} Contract
               </Button>
             </CardTitle>
           </CardHeader>
@@ -222,25 +265,47 @@ const ContractStep: React.FC<ContractStepProps> = ({
             <CardContent>
               <div className="bg-white p-6 rounded-lg border space-y-6">
                 <div className="text-center border-b pb-4">
-                  <h2 className="text-xl font-bold">PREFAB CONSTRUCTION CONTRACT</h2>
-                  <p className="text-sm text-gray-600 mt-2">Contract No: PC-{Date.now()}</p>
+                  <h2 className="text-xl font-bold">
+                    PREFAB CONSTRUCTION CONTRACT
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-2">
+                    Contract No: PC-{Date.now()}
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <h3 className="font-semibold mb-2">Customer Information</h3>
                     <div className="text-sm space-y-1">
-                      <p><strong>Name:</strong> {customerInfo.firstName} {customerInfo.lastName}</p>
-                      <p><strong>Email:</strong> {customerInfo.email}</p>
-                      <p><strong>Phone:</strong> {customerInfo.phone}</p>
+                      <p>
+                        <strong>Name:</strong> {customerInfo.firstName}{" "}
+                        {customerInfo.lastName}
+                      </p>
+                      <p>
+                        <strong>Email:</strong> {customerInfo.email}
+                      </p>
+                      {/* Corrected: Use phoneNumber */}
+                      <p>
+                        <strong>Phone:</strong> {customerInfo.phoneNumber}
+                      </p>
                     </div>
                   </div>
                   <div>
                     <h3 className="font-semibold mb-2">Product Details</h3>
                     <div className="text-sm space-y-1">
-                      <p><strong>Product:</strong> {product.name}</p>
-                      <p><strong>Price:</strong> {formatCurrency(product.price)}</p>
-                      <p><strong>Contract Date:</strong> {new Date().toLocaleDateString()}</p>
+                      {/* Corrected: Use productName */}
+                      <p>
+                        <strong>Product:</strong> {product.productName}
+                      </p>
+                      {/* Corrected: Use productPrice and formatPrice */}
+                      <p>
+                        <strong>Price:</strong>{" "}
+                        {formatPrice(product.productPrice)}
+                      </p>
+                      <p>
+                        <strong>Contract Date:</strong>{" "}
+                        {new Date().toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -248,9 +313,17 @@ const ContractStep: React.FC<ContractStepProps> = ({
                 <div>
                   <h3 className="font-semibold mb-2">Delivery Address</h3>
                   <div className="text-sm bg-gray-50 p-3 rounded">
-                    {customerInfo.address1}<br />
-                    {customerInfo.address2 && <>{customerInfo.address2}<br /></>}
-                    {customerInfo.city}, {customerInfo.state} {customerInfo.postalCode}<br />
+                    {customerInfo.address1}
+                    <br />
+                    {customerInfo.address2 && (
+                      <>
+                        {customerInfo.address2}
+                        <br />
+                      </>
+                    )}
+                    {customerInfo.city}, {customerInfo.province}{" "}
+                    {customerInfo.postalCode}
+                    <br />
                     {customerInfo.country}
                   </div>
                 </div>
@@ -258,26 +331,48 @@ const ContractStep: React.FC<ContractStepProps> = ({
                 <div>
                   <h3 className="font-semibold mb-2">Terms and Conditions</h3>
                   <div className="text-sm space-y-2">
-                    <p>1. <strong>Delivery Timeline:</strong> 8-12 weeks from order confirmation</p>
-                    <p>2. <strong>Payment Terms:</strong> Full payment required before delivery</p>
-                    <p>3. <strong>Installation:</strong> Professional installation included</p>
-                    <p>4. <strong>Warranty:</strong> Standard manufacturer warranty applies</p>
-                    <p>5. <strong>Modifications:</strong> Any changes must be agreed upon in writing</p>
+                    <p>
+                      1. <strong>Delivery Timeline:</strong> 8-12 weeks from
+                      order confirmation
+                    </p>
+                    <p>
+                      2. <strong>Payment Terms:</strong> Full payment required
+                      before delivery
+                    </p>
+                    <p>
+                      3. <strong>Installation:</strong> Professional
+                      installation included
+                    </p>
+                    <p>
+                      4. <strong>Warranty:</strong> Standard manufacturer
+                      warranty applies
+                    </p>
+                    <p>
+                      5. <strong>Modifications:</strong> Any changes must be
+                      agreed upon in writing
+                    </p>
                   </div>
                 </div>
 
                 <div className="border-t pt-4">
                   <h3 className="font-semibold mb-2">Customer Signature</h3>
                   <div className="flex items-center gap-4">
-                    <img 
-                      src={contractInfo.signature} 
-                      alt="Customer Signature" 
+                    <img
+                      src={contractInfo.signature}
+                      alt="Customer Signature"
                       className="border border-gray-300 rounded max-w-48"
                     />
                     <div className="text-sm">
-                      <p><strong>Signed by:</strong> {customerInfo.firstName} {customerInfo.lastName}</p>
-                      <p><strong>Date:</strong> {new Date().toLocaleDateString()}</p>
-                      <p><strong>Time:</strong> {new Date().toLocaleTimeString()}</p>
+                      <p>
+                        <strong>Signed by:</strong> {customerInfo.firstName}{" "}
+                        {customerInfo.lastName}
+                      </p>
+                      <p>
+                        <strong>Date:</strong> {new Date().toLocaleDateString()}
+                      </p>
+                      <p>
+                        <strong>Time:</strong> {new Date().toLocaleTimeString()}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -293,10 +388,13 @@ const ContractStep: React.FC<ContractStepProps> = ({
           <CardContent className="pt-6">
             <div className="flex items-center justify-center gap-3 text-green-800">
               <CheckCircle className="h-6 w-6" />
-              <span className="text-lg font-semibold">Contract Ready for Finalization</span>
+              <span className="text-lg font-semibold">
+                Contract Ready for Finalization
+              </span>
             </div>
             <p className="text-center text-sm text-green-700 mt-2">
-              All requirements have been met. You may now proceed to place your order.
+              All requirements have been met. You may now proceed to place your
+              order.
             </p>
           </CardContent>
         </Card>

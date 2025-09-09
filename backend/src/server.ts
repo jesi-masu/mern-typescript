@@ -1,4 +1,3 @@
-// backend/src/server.ts
 import dotenv from "dotenv";
 import express from "express";
 import mongoose from "mongoose";
@@ -6,16 +5,16 @@ import cors from "cors";
 
 import authRoutes from "./routes/authRoutes";
 import productRoutes from "./routes/products";
-import userRoutes from "./routes/userRoutes"; // <- new
-
-import dashboardRoutes from "./routes/dashboardRoutes"; // <-- add
+import userRoutes from "./routes/userRoutes";
+import dashboardRoutes from "./routes/dashboardRoutes";
+import orderRoutes from "./routes/orderRoutes";
+import uploadRoutes from "./routes/uploadRoutes"; // <-- ADDED: Import for the upload routes
 
 dotenv.config();
 
 const app = express();
 
 app.use(express.json());
-// Consider limiting origins in production
 app.use(cors());
 
 app.use((req, res, next) => {
@@ -25,8 +24,10 @@ app.use((req, res, next) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
-app.use("/api/users", userRoutes); // <- new
+app.use("/api/users", userRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/upload", uploadRoutes); // <-- ADDED: Use the new upload routes
 
 app.use((req, res, next) => {
   res.status(404).json({ message: "API route not found" });
