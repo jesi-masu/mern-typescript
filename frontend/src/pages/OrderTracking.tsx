@@ -1,6 +1,6 @@
-// frontend/src/pages/OrderTracking.tsx
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,28 +14,183 @@ import {
   MapPin,
   Phone,
   Mail,
+  Loader2,
+  AlertCircle,
+  Wallet,
+  Percent,
 } from "lucide-react";
-import { getOrderStatusColor, getOrderStatusProgress } from "@/data/orders";
-import { products } from "@/data/products";
-// Import the unified useAuth hook
 import { useAuth } from "@/context/AuthContext";
-import { useOrderUpdates } from "@/context/OrderUpdatesContext";
-// Import the updated notifications component
 import CustomerNotifications from "@/components/customer/CustomerNotifications";
+
+// --- TYPE DEFINITIONS FOR A DETAILED ORDER ---
+type PaymentStatus =
+  | "Pending Payment"
+  | "50% Complete Paid"
+  | "90% Complete Paid"
+  | "100% Complete Paid";
+
+interface Product {
+  _id: string;
+  productName: string;
+  productPrice: number;
+  squareFeet: number;
+  image?: string;
+}
+
+interface OrderDetail {
+  _id: string;
+  orderStatus:
+    | "Pending"
+    | "Processing"
+    | "In Production"
+    | "Shipped"
+    | "Delivered"
+    | "Completed"
+    | "Cancelled";
+  paymentStatus: PaymentStatus;
+  totalAmount: number;
+  createdAt: string;
+  estimatedDelivery?: string;
+  trackingUpdates?: { status: string; message: string; timestamp: string }[];
+  productId: Product;
+}
+
+// --- API FETCHING FUNCTION ---
+const fetchOrderById = async (
+  orderId: string,
+  token: string | null
+): Promise<OrderDetail> => {
+  if (!token) {
+    throw new Error("You must be logged in to view order details.");
+  }
+  const response = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/api/orders/${orderId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  if (!response.ok) {
+    throw new Error("Failed to fetch order details.");
+  }
+  return response.json();
+};
 
 const OrderTracking = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  // Use the new, unified auth context
-  const { isAuthenticated } = useAuth();
-  const { getOrderById } = useOrderUpdates();
+  const { token } = useAuth();
 
-  // NOTE: This component assumes `useOrderUpdates` and `products` data sources are correctly set up.
-  // The primary fix here is updating the authentication context hook.
-  const order = getOrderById(id || "");
-  const product = order
-    ? products.find((p) => p.id === order.products[0]?.productId)
-    : null;
+  const {
+    data: order,
+    isLoading,
+    isError,
+    error,
+  } = useQuery<OrderDetail>({
+    queryKey: ["order", id],
+    queryFn: () => fetchOrderById(id!, token),
+    enabled: !!id && !!token,
+  });
+
+  // --- HELPER FUNCTIONS ---
+  const getOrderStatusColor = (status: OrderDetail["orderStatus"]) => {
+    const colorMap: Record<OrderDetail["orderStatus"], string> = {
+      Pending: "bg-yellow-100 text-yellow-800",
+      Processing: "bg-blue-100 text-blue-800",
+      "In Production": "bg-purple-100 text-purple-800",
+      Shipped: "bg-indigo-100 text-indigo-800",
+      Delivered: "bg-green-100 text-green-800",
+      Completed: "bg-green-100 text-green-800",
+      Cancelled: "bg-red-100 text-red-800",
+    };
+    return colorMap[status] || "bg-gray-100 text-gray-800";
+  };
+
+  const getPaymentStatusColor = (status: PaymentStatus) => {
+    const colorMap: Record<PaymentStatus, string> = {
+      "Pending Payment": "bg-yellow-100 text-yellow-800",
+      "50% Complete Paid": "bg-blue-100 text-blue-800",
+      "90% Complete Paid": "bg-indigo-100 text-indigo-800",
+      "100% Complete Paid": "bg-green-100 text-green-800",
+    };
+    return colorMap[status] || "bg-gray-100 text-gray-800";
+  };
+
+  const getOrderStatusProgress = (status: OrderDetail["orderStatus"]) => {
+    const progressMap: Record<OrderDetail["orderStatus"], number> = {
+      Pending: 10,
+      Processing: 30,
+      "In Production": 50,
+      Shipped: 75,
+      Delivered: 100,
+      Completed: 100,
+      Cancelled: 0,
+    };
+    return progressMap[status] || 0;
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("en-PH", {
+      style: "currency",
+      currency: "PHP",
+    }).format(price);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  // --- STEP DEFINITIONS ---
+  const orderStatusSteps = [
+    { key: "Pending", label: "Order Placed", icon: Package },
+    { key: "Processing", label: "Processing", icon: Clock },
+    { key: "In Production", label: "In Production", icon: Package },
+    { key: "Shipped", label: "Shipped", icon: Truck },
+    { key: "Completed", label: "Completed", icon: CheckCircle },
+  ];
+
+  const paymentStatusSteps = [
+    { key: "Pending Payment", label: "Pending", icon: Wallet },
+    { key: "50% Complete Paid", label: "50% Paid", icon: Percent },
+    { key: "90% Complete Paid", label: "90% Paid", icon: Percent },
+    { key: "100% Complete Paid", label: "Fully Paid", icon: CheckCircle },
+  ];
+
+  // --- LOADING, ERROR, AND NOT-FOUND STATES ---
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container py-12 text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <h1 className="text-2xl font-bold">Loading Order Details...</h1>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Layout>
+        <div className="container py-12 text-center bg-red-50 p-8 rounded-lg">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-red-800 mb-4">
+            Could Not Load Order
+          </h1>
+          <p className="mb-6 text-red-600">{(error as Error).message}</p>
+          <Button onClick={() => navigate("/order-history")}>
+            Return to Order History
+          </Button>
+        </div>
+      </Layout>
+    );
+  }
 
   if (!order) {
     return (
@@ -51,36 +206,14 @@ const OrderTracking = () => {
     );
   }
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const statusSteps = [
-    { key: "Pending", label: "Order Placed", icon: Package },
-    { key: "In Review", label: "Under Review", icon: Clock },
-    { key: "In Production", label: "In Production", icon: Package },
-    { key: "Ready for Delivery", label: "Ready for Delivery", icon: Truck },
-    { key: "Delivered", label: "Delivered", icon: CheckCircle },
-  ];
-
-  const currentStepIndex = statusSteps.findIndex(
-    (step) => step.key === order.status
+  const currentOrderStatusIndex = orderStatusSteps.findIndex(
+    (step) => step.key === order.orderStatus
   );
-  const progress = getOrderStatusProgress(order.status);
+  const orderProgress = getOrderStatusProgress(order.orderStatus);
+
+  const currentPaymentStatusIndex = paymentStatusSteps.findIndex(
+    (step) => step.key === order.paymentStatus
+  );
 
   return (
     <Layout>
@@ -88,10 +221,9 @@ const OrderTracking = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold">Order Tracking</h1>
-            <p className="text-gray-600">Order #{order.id}</p>
+            <p className="text-gray-600">Order #{order._id}</p>
           </div>
           <div className="flex items-center gap-3">
-            {/* The CustomerNotifications component now handles its own visibility based on auth state. */}
             <CustomerNotifications />
             <Button
               variant="outline"
@@ -104,29 +236,25 @@ const OrderTracking = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Tracking Information */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Current Status */}
+            {/* --- Order Status Card --- */}
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle>Current Status</CardTitle>
-                  <Badge className={getOrderStatusColor(order.status)}>
-                    {order.status}
+                  <CardTitle>Order Status</CardTitle>
+                  <Badge className={getOrderStatusColor(order.orderStatus)}>
+                    {order.orderStatus}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <Progress value={progress} className="h-3" />
-
-                  {/* Status Timeline */}
+                  <Progress value={orderProgress} className="h-3" />
                   <div className="flex justify-between items-center pt-4">
-                    {statusSteps.map((step, index) => {
-                      const isCompleted = index <= currentStepIndex;
-                      const isCurrent = index === currentStepIndex;
+                    {orderStatusSteps.map((step, index) => {
+                      const isCompleted = index < currentOrderStatusIndex;
+                      const isCurrent = index === currentOrderStatusIndex;
                       const Icon = step.icon;
-
                       return (
                         <div
                           key={step.key}
@@ -156,7 +284,6 @@ const OrderTracking = () => {
                       );
                     })}
                   </div>
-
                   {order.estimatedDelivery && (
                     <div className="mt-4 p-3 bg-blue-50 rounded-lg">
                       <p className="text-sm text-blue-800">
@@ -169,78 +296,99 @@ const OrderTracking = () => {
               </CardContent>
             </Card>
 
-            {/* Tracking Updates */}
+            {/* --- Payment Status Indicator Card --- */}
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Payment Status</CardTitle>
+                  <Badge className={getPaymentStatusColor(order.paymentStatus)}>
+                    {order.paymentStatus}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-between items-center pt-4">
+                  {paymentStatusSteps.map((step, index) => {
+                    // --- THE FIX IS APPLIED HERE ---
+                    const isCompleted = index < currentPaymentStatusIndex;
+                    const isCurrent = index === currentPaymentStatusIndex;
+                    const Icon = step.icon;
+                    return (
+                      <div
+                        key={step.key}
+                        className="flex flex-col items-center text-center w-1/4"
+                      >
+                        <div
+                          className={`flex items-center justify-center w-10 h-10 rounded-full border-2 mb-2 ${
+                            isCompleted
+                              ? "bg-green-100 border-green-500 text-green-600"
+                              : isCurrent
+                              ? "bg-blue-100 border-blue-500 text-blue-600"
+                              : "bg-gray-100 border-gray-300 text-gray-400"
+                          }`}
+                        >
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <p
+                          className={`text-xs font-medium ${
+                            isCompleted || isCurrent
+                              ? "text-gray-900"
+                              : "text-gray-500"
+                          }`}
+                        >
+                          {step.label}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle>Tracking Updates</CardTitle>
               </CardHeader>
               <CardContent>
-                {order.trackingUpdates && order.trackingUpdates.length > 0 ? (
-                  <div className="space-y-4">
-                    {order.trackingUpdates
-                      .slice()
-                      .reverse()
-                      .map((update, index) => (
-                        <div
-                          key={index}
-                          className="flex items-start space-x-3 pb-4 border-b border-gray-100 last:border-b-0"
-                        >
-                          <div className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                          <div className="flex-1">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <p className="font-medium">{update.status}</p>
-                                <p className="text-sm text-gray-600">
-                                  {update.message}
-                                </p>
-                              </div>
-                              <p className="text-xs text-gray-500">
-                                {formatDate(update.timestamp)}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500">
-                    No tracking updates available yet.
-                  </p>
-                )}
+                <p className="text-gray-500">
+                  No real-time tracking updates available yet.
+                </p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Order Details Sidebar */}
           <div className="space-y-6">
-            {/* Product Information */}
-            {product && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Product Details</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="w-full h-32 object-cover rounded"
-                    />
-                    <div>
-                      <h3 className="font-medium">{product.name}</h3>
-                      <p className="text-sm text-gray-600">
-                        {product.squareFeet} sq ft
-                      </p>
-                      <p className="text-blue-600 font-semibold">
-                        {formatPrice(product.price)}
-                      </p>
-                    </div>
+            {/* --- Product Details Card --- */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Product Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <img
+                    src={
+                      order.productId.image ||
+                      "https://placehold.co/400x300/E2E8F0/4A5568?text=No+Image"
+                    }
+                    alt={order.productId.productName}
+                    className="w-full h-32 object-cover rounded"
+                  />
+                  <div>
+                    <h3 className="font-medium">
+                      {order.productId.productName}
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      {order.productId.squareFeet} sq ft
+                    </p>
+                    <p className="text-blue-600 font-semibold">
+                      {formatPrice(order.productId.productPrice)}
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                </div>
+              </CardContent>
+            </Card>
 
-            {/* Order Summary */}
+            {/* --- Order Summary Card --- */}
             <Card>
               <CardHeader>
                 <CardTitle>Order Summary</CardTitle>
@@ -251,10 +399,6 @@ const OrderTracking = () => {
                     <span>Order Date:</span>
                     <span>{formatDate(order.createdAt)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Quantity:</span>
-                    <span>{order.products[0]?.quantity || 1}</span>
-                  </div>
                   <div className="flex justify-between font-semibold pt-2 border-t">
                     <span>Total:</span>
                     <span>{formatPrice(order.totalAmount)}</span>
@@ -263,7 +407,7 @@ const OrderTracking = () => {
               </CardContent>
             </Card>
 
-            {/* Contact Information */}
+            {/* --- Contact/Help Card --- */}
             <Card>
               <CardHeader>
                 <CardTitle>Need Help?</CardTitle>

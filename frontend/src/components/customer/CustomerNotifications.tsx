@@ -1,5 +1,4 @@
-// frontend/src/components/customer/CustomerNotifications.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Bell, CheckCircle, Clock, FileText, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,10 +8,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useAuth } from "@/context/AuthContext"; // FIX: Use the unified AuthContext
+import { useAuth } from "@/context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
+// This interface must match the one used in AdminAuthContext
 interface CustomerNotification {
   id: string;
+  customerId: string; // Used to filter notifications for the current user
   orderId: string;
   message: string;
   type:
@@ -25,44 +27,79 @@ interface CustomerNotification {
   fromPersonnel?: string;
 }
 
-// MOCK DATA: In a real app, this would come from a context or an API call.
-const mockNotifications: CustomerNotification[] = [
-  {
-    id: "1",
-    orderId: "ORD-123",
-    message: 'Your order status has been updated to "In Production".',
-    type: "order_update",
-    timestamp: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-    read: false,
-    fromPersonnel: "John Doe",
-  },
-  {
-    id: "2",
-    orderId: "ORD-122",
-    message: "Payment of ₱850,000 has been confirmed.",
-    type: "payment_confirmed",
-    timestamp: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-    read: true,
-  },
-];
+const NOTIFICATIONS_STORAGE_KEY = "customerNotifications";
 
 const CustomerNotifications: React.FC = () => {
-  const { isAuthenticated } = useAuth(); // FIX: Use the unified AuthContext
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<CustomerNotification[]>(
     []
   );
   const [isOpen, setIsOpen] = useState(false);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      setNotifications(mockNotifications);
+  // --- NEW: useCallback for stable state updates ---
+  const loadNotifications = useCallback(() => {
+    if (isAuthenticated && user) {
+      try {
+        const allNotifications: CustomerNotification[] = JSON.parse(
+          localStorage.getItem(NOTIFICATIONS_STORAGE_KEY) || "[]"
+        );
+        // Filter notifications for the currently logged-in user
+        const userNotifications = allNotifications.filter(
+          (n) => n.customerId === user._id
+        );
+        setNotifications(userNotifications);
+      } catch (error) {
+        console.error("Failed to load notifications from storage:", error);
+        setNotifications([]);
+      }
+    } else {
+      setNotifications([]);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
+
+  // --- NEW: useEffect to listen for real-time storage changes ---
+  useEffect(() => {
+    // Initial load
+    loadNotifications();
+
+    // Listen for changes from other tabs/windows (e.g., admin panel)
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === NOTIFICATIONS_STORAGE_KEY) {
+        loadNotifications();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    // Cleanup listener on component unmount
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, [loadNotifications]);
 
   const markNotificationAsRead = (notificationId: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
+    const updatedNotifications = notifications.map((n) =>
+      n.id === notificationId ? { ...n, read: true } : n
     );
+    // Update local state immediately for a responsive UI
+    setNotifications(updatedNotifications);
+
+    // Persist the change to localStorage
+    try {
+      const allNotifications: CustomerNotification[] = JSON.parse(
+        localStorage.getItem(NOTIFICATIONS_STORAGE_KEY) || "[]"
+      );
+      const updatedAll = allNotifications.map((n) =>
+        n.id === notificationId ? { ...n, read: true } : n
+      );
+      localStorage.setItem(
+        NOTIFICATIONS_STORAGE_KEY,
+        JSON.stringify(updatedAll)
+      );
+    } catch (error) {
+      console.error("Failed to save notification update to storage:", error);
+    }
   };
 
   const unreadNotifications = notifications.filter((n) => !n.read).length;
@@ -110,7 +147,9 @@ const CustomerNotifications: React.FC = () => {
     if (!notification.read) {
       markNotificationAsRead(notification.id);
     }
-    // You could also add navigation logic here, e.g., navigate(`/order-tracking/${notification.orderId}`)
+    // Navigate to the relevant order tracking page
+    navigate(`/order-tracking/${notification.orderId}`);
+    setIsOpen(false); // Close the popover after navigation
   };
 
   if (!isAuthenticated) {

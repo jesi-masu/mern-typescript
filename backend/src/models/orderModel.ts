@@ -42,7 +42,11 @@ export interface IOrder extends Document {
     | "Delivered"
     | "Completed"
     | "Cancelled";
-  paymentStatus: "Pending" | "Paid" | "Partially Paid" | "Refunded";
+  paymentStatus:
+    | "Pending"
+    | "50% Complete Paid"
+    | "90% Complete Paid"
+    | "100% Complete Paid";
 }
 
 const orderSchema: Schema = new Schema(
@@ -128,7 +132,12 @@ const orderSchema: Schema = new Schema(
     },
     paymentStatus: {
       type: String,
-      enum: ["Pending", "Paid", "Partially Paid", "Refunded"],
+      enum: [
+        "Pending",
+        "50% Complete Paid",
+        "90% Complete Paid",
+        "100% Complete Paid",
+      ],
       default: "Pending",
     },
   },

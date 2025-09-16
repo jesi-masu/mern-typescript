@@ -1,9 +1,34 @@
-// backend/src/controllers/orderController.ts
 import { RequestHandler } from "express";
 import mongoose from "mongoose";
 import Order, { IOrder } from "../models/orderModel";
 import User from "../models/userModel";
 import Product from "../models/productModel";
+
+/**
+ * @desc    Get orders for the logged-in user
+ * @route   GET /api/orders/my-orders
+ * @access  Private (Client)
+ */
+export const getUserOrders: RequestHandler = async (req, res) => {
+  try {
+    const userId = req.user?._id;
+    if (!userId) {
+      res.status(401).json({ message: "User not authenticated." });
+      return;
+    }
+
+    const orders = await Order.find({ userId })
+      .populate("productId", "productName image") // Populate with specific product fields
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(orders);
+  } catch (error: any) {
+    console.error("Error fetching user orders:", error.message);
+    res
+      .status(500)
+      .json({ message: "Server error while fetching user orders." });
+  }
+};
 
 /**
  * @desc    Create a new order
@@ -15,7 +40,6 @@ export const createOrder: RequestHandler = async (req, res) => {
     const { productId, customerInfo, paymentInfo, contractInfo, totalAmount } =
       req.body;
 
-    // Basic validation
     if (
       !productId ||
       !customerInfo ||
@@ -29,14 +53,12 @@ export const createOrder: RequestHandler = async (req, res) => {
       return;
     }
 
-    // Check if the user ID from the token exists
     const userId = req.user?._id;
     if (!userId) {
       res.status(401).json({ message: "User not authenticated." });
       return;
     }
 
-    // Verify that the user and product exist in the database
     const userExists = await User.findById(userId);
     const productExists = await Product.findById(productId);
 
@@ -52,7 +74,6 @@ export const createOrder: RequestHandler = async (req, res) => {
       paymentInfo,
       contractInfo,
       totalAmount,
-      // Default statuses are set in the model
     });
 
     res.status(201).json(newOrder);
@@ -70,8 +91,8 @@ export const createOrder: RequestHandler = async (req, res) => {
 export const getOrders: RequestHandler = async (req, res) => {
   try {
     const orders = await Order.find({})
-      .populate("userId", "firstName lastName email") // Populate with user details
-      .populate("productId", "productName productPrice") // Populate with product details
+      .populate("userId", "firstName lastName email")
+      .populate("productId", "productName productPrice")
       .sort({ createdAt: -1 });
     res.status(200).json(orders);
   } catch (error: any) {
@@ -96,18 +117,19 @@ export const getOrderById: RequestHandler = async (req, res) => {
   try {
     const order = await Order.findById(id)
       .populate("userId", "firstName lastName email")
-      .populate("productId"); // Populate with full product details
+      .populate("productId");
 
     if (!order) {
       res.status(404).json({ message: "Order not found." });
       return;
     }
 
-    // Security Check: Ensure the requester is either an admin/personnel or the user who owns the order
-    if (
-      req.user?.role === "client" &&
-      order.userId.toString() !== req.user?._id
-    ) {
+    // --- CORRECTED SECURITY CHECK ---
+    // The `userId` from the order document is an ObjectId, so we must convert it to a string
+    // to reliably compare it with the `_id` from the request's user object.
+    const orderOwnerId = (order.userId as any)._id.toString();
+
+    if (req.user?.role === "client" && orderOwnerId !== req.user?._id) {
       res.status(403).json({
         message: "Forbidden: You are not authorized to view this order.",
       });
@@ -135,12 +157,10 @@ export const updateOrder: RequestHandler = async (req, res) => {
     return;
   }
 
-  // Build an object with the fields to update
   const updateData: { orderStatus?: string; paymentStatus?: string } = {};
   if (orderStatus) updateData.orderStatus = orderStatus;
   if (paymentStatus) updateData.paymentStatus = paymentStatus;
 
-  // Check if there is anything to update
   if (Object.keys(updateData).length === 0) {
     res.status(400).json({
       message: "Please provide at least one field to update.",
@@ -150,8 +170,8 @@ export const updateOrder: RequestHandler = async (req, res) => {
 
   try {
     const updatedOrder = await Order.findByIdAndUpdate(id, updateData, {
-      new: true, // Return the updated document
-      runValidators: true, // Run schema validators on update
+      new: true,
+      runValidators: true,
     });
 
     if (!updatedOrder) {
@@ -162,12 +182,9 @@ export const updateOrder: RequestHandler = async (req, res) => {
     res.status(200).json(updatedOrder);
   } catch (error: any) {
     console.error("Error updating order:", error.message);
-    // Handle potential validation errors from the schema
     const status = error?.name === "ValidationError" ? 400 : 500;
-    res
-      .status(status)
-      .json({
-        message: error?.message || "Server error while updating order.",
-      });
+    res.status(status).json({
+      message: error?.message || "Server error while updating order.",
+    });
   }
 };

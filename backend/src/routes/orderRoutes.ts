@@ -1,15 +1,18 @@
-// backend/src/routes/orderRoutes.ts
 import express from "express";
 import {
   createOrder,
   getOrders,
   getOrderById,
-  updateOrder, // <-- ADDED: Import the new update controller
+  updateOrder,
+  getUserOrders, // <-- ADDED: Import the new controller
 } from "../controllers/orderController";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { checkRole } from "../middleware/checkRole";
 
 const router = express.Router();
+
+// --- NEW ROUTE for logged-in users to get their own orders ---
+router.get("/my-orders", authMiddleware, checkRole(["client"]), getUserOrders);
 
 // POST /api/orders - Create a new order (for logged-in clients)
 router.post("/", authMiddleware, checkRole(["client"]), createOrder);

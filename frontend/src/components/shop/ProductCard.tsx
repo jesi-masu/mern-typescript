@@ -92,11 +92,11 @@ const ProductCard = ({ product }: ProductCardProps) => {
             View Details
           </Button>
           <Button
-            className="bg-prefab-600 hover:bg-prefab-700 text-white flex items-center gap-2"
+            className="bg-prefab-600 hover:bg-prefab-700 text-white flex items-center gap-1"
             onClick={handleAddToCart}
           >
             <ShoppingCart className="h-4 w-4" />
-            Add to Cart
+            Add to Wishlist
           </Button>
         </div>
       </CardFooter>
