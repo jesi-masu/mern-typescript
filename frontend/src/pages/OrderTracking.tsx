@@ -147,6 +147,22 @@ const OrderTracking = () => {
     });
   };
 
+  // --- PAYMENT CALCULATION ---
+  const getPaymentDetails = (
+    status: PaymentStatus,
+    totalAmount: number
+  ): { paidAmount: number; remainingAmount: number; percentage: number } => {
+    let percentage = 0;
+    if (status === "50% Complete Paid") percentage = 50;
+    else if (status === "90% Complete Paid") percentage = 90;
+    else if (status === "100% Complete Paid") percentage = 100;
+
+    const paidAmount = (totalAmount * percentage) / 100;
+    const remainingAmount = totalAmount - paidAmount;
+
+    return { paidAmount, remainingAmount, percentage };
+  };
+
   // --- STEP DEFINITIONS ---
   const orderStatusSteps = [
     { key: "Pending", label: "Order Placed", icon: Package },
@@ -213,6 +229,11 @@ const OrderTracking = () => {
 
   const currentPaymentStatusIndex = paymentStatusSteps.findIndex(
     (step) => step.key === order.paymentStatus
+  );
+
+  const { remainingAmount, percentage } = getPaymentDetails(
+    order.paymentStatus,
+    order.totalAmount
   );
 
   return (
@@ -307,40 +328,56 @@ const OrderTracking = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="flex justify-between items-center pt-4">
-                  {paymentStatusSteps.map((step, index) => {
-                    // --- THE FIX IS APPLIED HERE ---
-                    const isCompleted = index < currentPaymentStatusIndex;
-                    const isCurrent = index === currentPaymentStatusIndex;
-                    const Icon = step.icon;
-                    return (
-                      <div
-                        key={step.key}
-                        className="flex flex-col items-center text-center w-1/4"
-                      >
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center pt-4">
+                    {paymentStatusSteps.map((step, index) => {
+                      const isCompleted = index < currentPaymentStatusIndex;
+                      const isCurrent = index === currentPaymentStatusIndex;
+                      const Icon = step.icon;
+                      return (
                         <div
-                          className={`flex items-center justify-center w-10 h-10 rounded-full border-2 mb-2 ${
-                            isCompleted
-                              ? "bg-green-100 border-green-500 text-green-600"
-                              : isCurrent
-                              ? "bg-blue-100 border-blue-500 text-blue-600"
-                              : "bg-gray-100 border-gray-300 text-gray-400"
-                          }`}
+                          key={step.key}
+                          className="flex flex-col items-center text-center w-1/4"
                         >
-                          <Icon className="h-5 w-5" />
+                          <div
+                            className={`flex items-center justify-center w-10 h-10 rounded-full border-2 mb-2 ${
+                              isCompleted
+                                ? "bg-green-100 border-green-500 text-green-600"
+                                : isCurrent
+                                ? "bg-blue-100 border-blue-500 text-blue-600"
+                                : "bg-gray-100 border-gray-300 text-gray-400"
+                            }`}
+                          >
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <p
+                            className={`text-xs font-medium ${
+                              isCompleted || isCurrent
+                                ? "text-gray-900"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            {step.label}
+                          </p>
                         </div>
-                        <p
-                          className={`text-xs font-medium ${
-                            isCompleted || isCurrent
-                              ? "text-gray-900"
-                              : "text-gray-500"
-                          }`}
-                        >
-                          {step.label}
-                        </p>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
+                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="text-gray-600">Payment Progress:</span>
+                      <span className="font-semibold text-blue-600">
+                        {percentage}%
+                      </span>
+                    </div>
+                    <Progress value={percentage} className="h-2" />
+                    <div className="flex justify-between text-sm mt-2">
+                      <span className="text-gray-600">Remaining Balance:</span>
+                      <span className="font-semibold text-red-600">
+                        {formatPrice(remainingAmount)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
