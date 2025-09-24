@@ -1,4 +1,4 @@
-import { RequestHandler } from "express";
+import { Request, Response, RequestHandler } from "express";
 import mongoose from "mongoose";
 import Order, { IOrder } from "../models/orderModel";
 import User from "../models/userModel";
@@ -124,9 +124,6 @@ export const getOrderById: RequestHandler = async (req, res) => {
       return;
     }
 
-    // --- CORRECTED SECURITY CHECK ---
-    // The `userId` from the order document is an ObjectId, so we must convert it to a string
-    // to reliably compare it with the `_id` from the request's user object.
     const orderOwnerId = (order.userId as any)._id.toString();
 
     if (req.user?.role === "client" && orderOwnerId !== req.user?._id) {
@@ -144,40 +141,74 @@ export const getOrderById: RequestHandler = async (req, res) => {
 };
 
 /**
- * @desc    Update an order's status
+ * @desc    Update an order (status or add payment receipt)
  * @route   PATCH /api/orders/:id
- * @access  Private (Admin/Personnel)
+ * @access  Private (Admin/Personnel for status, Client for uploads)
  */
-export const updateOrder: RequestHandler = async (req, res) => {
+export const updateOrder = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   const { id } = req.params;
-  const { orderStatus, paymentStatus } = req.body;
+  const { orderStatus, paymentStatus, paymentReceiptUrl } = req.body;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     res.status(400).json({ message: "Invalid Order ID format." });
     return;
   }
 
-  const updateData: { orderStatus?: string; paymentStatus?: string } = {};
-  if (orderStatus) updateData.orderStatus = orderStatus;
-  if (paymentStatus) updateData.paymentStatus = paymentStatus;
-
-  if (Object.keys(updateData).length === 0) {
-    res.status(400).json({
-      message: "Please provide at least one field to update.",
-    });
-    return;
-  }
-
   try {
+    const order = await Order.findById(id);
+    if (!order) {
+      res.status(404).json({ message: "Order not found." });
+      return;
+    }
+
+    // Security check: Ensure clients can only update their own orders
+    if (
+      req.user?.role === "client" &&
+      order.userId.toString() !== req.user?._id
+    ) {
+      res
+        .status(403)
+        .json({ message: "Forbidden: You can only update your own orders." });
+      return;
+    }
+
+    const updateData: {
+      $set?: { orderStatus?: string; paymentStatus?: string };
+      $push?: { paymentReceipts: string };
+    } = {};
+
+    const fieldsToSet: { orderStatus?: string; paymentStatus?: string } = {};
+    if (orderStatus) fieldsToSet.orderStatus = orderStatus;
+    if (paymentStatus) fieldsToSet.paymentStatus = paymentStatus;
+
+    if (Object.keys(fieldsToSet).length > 0) {
+      if (req.user?.role === "client") {
+        res
+          .status(403)
+          .json({ message: "Clients cannot update order status." });
+        return;
+      }
+      updateData.$set = fieldsToSet;
+    }
+
+    if (paymentReceiptUrl) {
+      updateData.$push = { paymentReceipts: paymentReceiptUrl };
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      res.status(400).json({
+        message: "Please provide at least one field to update.",
+      });
+      return;
+    }
+
     const updatedOrder = await Order.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
     });
-
-    if (!updatedOrder) {
-      res.status(404).json({ message: "Order not found." });
-      return;
-    }
 
     res.status(200).json(updatedOrder);
   } catch (error: any) {

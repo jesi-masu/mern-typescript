@@ -1,44 +1,34 @@
-// --- UPDATED: New PaymentStatus type ---
+// --- TYPE DEFINITIONS FOR A DETAILED ORDER ---
+
 export type PaymentStatus =
   | "Pending"
   | "50% Complete Paid"
   | "90% Complete Paid"
   | "100% Complete Paid";
 
-export type OrderStatus =
-  | "Pending"
-  | "Processing"
-  | "In Production"
-  | "Shipped"
-  | "Delivered"
-  | "Completed"
-  | "Cancelled";
-
-export interface Order {
+export interface Product {
   _id: string;
-  orderStatus: OrderStatus;
+  productName: string;
+  productPrice: number;
+  squareFeet: number;
+  image?: string;
+}
+
+export interface OrderDetail {
+  _id: string;
+  orderStatus:
+    | "Pending"
+    | "Processing"
+    | "In Production"
+    | "Shipped"
+    | "Delivered"
+    | "Completed"
+    | "Cancelled";
   paymentStatus: PaymentStatus;
   totalAmount: number;
   createdAt: string;
-  updatedAt: string;
-  userId: {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-  productId: {
-    _id: string;
-    productName: string;
-    image?: string;
-  };
-  customerInfo: {
-    deliveryAddress?: {
-      street: string;
-      subdivision: string;
-      cityMunicipality: string;
-    };
-  };
-  paymentInfo: any;
-  contractInfo: any;
+  estimatedDelivery?: string;
+  trackingUpdates?: { status: string; message: string; timestamp: string }[];
+  productId: Product;
+  paymentReceipts?: string[];
 }
