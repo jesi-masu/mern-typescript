@@ -35,9 +35,9 @@ const Navbar = () => {
           <div className="flex items-center">
             <Link
               to="/"
-              className="text-2xl font-bold text-gray-800 transition-colors duration-300 hover:text-blue-600"
+              className="text-2xl font-bold text-blue-950 transition-colors duration-300 hover:text-blue-600"
             >
-              PrefabPlus
+              Camco Prefab
             </Link>
           </div>
 

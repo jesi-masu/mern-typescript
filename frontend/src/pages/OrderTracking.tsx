@@ -24,7 +24,7 @@ import CustomerNotifications from "@/components/customer/CustomerNotifications";
 
 // --- TYPE DEFINITIONS FOR A DETAILED ORDER ---
 type PaymentStatus =
-  | "Pending Payment"
+  | "Pending"
   | "50% Complete Paid"
   | "90% Complete Paid"
   | "100% Complete Paid";
@@ -109,7 +109,7 @@ const OrderTracking = () => {
 
   const getPaymentStatusColor = (status: PaymentStatus) => {
     const colorMap: Record<PaymentStatus, string> = {
-      "Pending Payment": "bg-yellow-100 text-yellow-800",
+      Pending: "bg-yellow-100 text-yellow-800",
       "50% Complete Paid": "bg-blue-100 text-blue-800",
       "90% Complete Paid": "bg-indigo-100 text-indigo-800",
       "100% Complete Paid": "bg-green-100 text-green-800",
@@ -157,7 +157,7 @@ const OrderTracking = () => {
   ];
 
   const paymentStatusSteps = [
-    { key: "Pending Payment", label: "Pending", icon: Wallet },
+    { key: "Pending", label: "Pending", icon: Wallet },
     { key: "50% Complete Paid", label: "50% Paid", icon: Percent },
     { key: "90% Complete Paid", label: "90% Paid", icon: Percent },
     { key: "100% Complete Paid", label: "Fully Paid", icon: CheckCircle },
