@@ -1,9 +1,9 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 
-interface CartItem {
-  productId: number;
+// --- [MODIFIED] Using 'id: string' for consistency ---
+export interface CartItem {
+  id: string; // Changed from productId: number
   name: string;
   price: number;
   image: string;
@@ -12,9 +12,9 @@ interface CartItem {
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (product: { id: number; name: string; price: number; image: string }, quantity?: number) => void;
-  removeFromCart: (productId: number) => void;
-  updateQuantity: (productId: number, quantity: number) => void;
+  addToCart: (item: Omit<CartItem, "quantity">) => void;
+  removeItems: (itemIds: string[]) => void; // New function
+  updateQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
   getTotalItems: () => number;
   getTotalPrice: () => number;
@@ -27,7 +27,6 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Load cart from localStorage on mount
     const savedCart = localStorage.getItem("cart");
     if (savedCart) {
       try {
@@ -39,58 +38,45 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    // Save cart to localStorage whenever items change
     localStorage.setItem("cart", JSON.stringify(items));
   }, [items]);
 
-  const addToCart = (product: { id: number; name: string; price: number; image: string }, quantity: number = 1) => {
-    setItems(currentItems => {
-      const existingItem = currentItems.find(item => item.productId === product.id);
-      
+  const addToCart = (product: Omit<CartItem, "quantity">) => {
+    setItems((currentItems) => {
+      const existingItem = currentItems.find((item) => item.id === product.id);
+
       if (existingItem) {
-        // Update quantity if item already exists
-        return currentItems.map(item =>
-          item.productId === product.id
-            ? { ...item, quantity: item.quantity + quantity }
+        return currentItems.map((item) =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       } else {
-        // Add new item
-        return [...currentItems, {
-          productId: product.id,
-          name: product.name,
-          price: product.price,
-          image: product.image,
-          quantity
-        }];
+        return [...currentItems, { ...product, quantity: 1 }];
       }
     });
+  };
 
+  const removeItems = (itemIdsToRemove: string[]) => {
+    setItems((currentItems) =>
+      currentItems.filter((item) => !itemIdsToRemove.includes(item.id))
+    );
     toast({
-      title: "Added to cart",
-      description: `${product.name} has been added to your cart.`,
+      title: "Items Removed",
+      description: `${itemIdsToRemove.length} item(s) have been removed from your cart.`,
     });
   };
 
-  const removeFromCart = (productId: number) => {
-    setItems(currentItems => currentItems.filter(item => item.productId !== productId));
-    toast({
-      title: "Removed from cart",
-      description: "Item has been removed from your cart.",
-    });
-  };
-
-  const updateQuantity = (productId: number, quantity: number) => {
+  const updateQuantity = (itemId: string, quantity: number) => {
     if (quantity <= 0) {
-      removeFromCart(productId);
+      // Use the new removeItems function for a single item
+      removeItems([itemId]);
       return;
     }
 
-    setItems(currentItems =>
-      currentItems.map(item =>
-        item.productId === productId
-          ? { ...item, quantity }
-          : item
+    setItems((currentItems) =>
+      currentItems.map((item) =>
+        item.id === itemId ? { ...item, quantity } : item
       )
     );
   };
@@ -98,7 +84,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const clearCart = () => {
     setItems([]);
     toast({
-      title: "Cart cleared",
+      title: "Cart Cleared",
       description: "All items have been removed from your cart.",
     });
   };
@@ -108,19 +94,21 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const getTotalPrice = () => {
-    return items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return items.reduce((total, item) => total + item.price * item.quantity, 0);
   };
 
   return (
-    <CartContext.Provider value={{
-      items,
-      addToCart,
-      removeFromCart,
-      updateQuantity,
-      clearCart,
-      getTotalItems,
-      getTotalPrice
-    }}>
+    <CartContext.Provider
+      value={{
+        items,
+        addToCart,
+        removeItems, // Expose the new function
+        updateQuantity,
+        clearCart,
+        getTotalItems,
+        getTotalPrice,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );

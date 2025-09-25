@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Phone, Mail } from "lucide-react";
+import { MapPin, Phone, Mail, User, Landmark } from "lucide-react"; // Added User and Landmark icons
 import { OrderDetail } from "../../types/order";
 
 interface OrderDetailsSidebarProps {
@@ -22,9 +22,29 @@ const formatDate = (dateString: string) => {
   });
 };
 
+// --- [NEW] Helper function to format the full address ---
+const formatFullAddress = (
+  address: OrderDetail["customerInfo"]["deliveryAddress"]
+) => {
+  if (!address) return "Address not available";
+  // This array filters out any empty parts (like a missing street or subdivision)
+  // to avoid awkward commas like ", , City"
+  return [
+    address.street,
+    address.subdivision,
+    address.cityMunicipality,
+    address.province,
+  ]
+    .filter(Boolean)
+    .join(", ");
+};
+
 export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
   order,
 }) => {
+  const customer = order.customerInfo;
+  const address = customer?.deliveryAddress;
+
   return (
     <div className="space-y-6">
       {/* --- Product Details Card --- */}
@@ -52,6 +72,49 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
               </p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* --- [NEW] Customer & Delivery Details Card --- */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Customer & Delivery</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          {customer && (
+            <>
+              <div className="flex items-start gap-3">
+                <User className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                <span className="font-medium">
+                  {customer.firstName} {customer.lastName}
+                </span>
+              </div>
+              <div className="flex items-start gap-3">
+                <Mail className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                <span>{customer.email}</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <Phone className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                <span>{customer.phoneNumber}</span>
+              </div>
+            </>
+          )}
+
+          {address && (
+            <div className="space-y-3 pt-3 border-t">
+              <div className="flex items-start gap-3">
+                <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                <span>{formatFullAddress(address)}</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <Landmark className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                <span>
+                  {address.additionalAddressLine ||
+                    "No landmarks or notes provided"}
+                </span>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
