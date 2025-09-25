@@ -105,6 +105,8 @@ const OrderTable: React.FC<{
             <TableHead>Order ID</TableHead>
             <TableHead>Customer</TableHead>
             <TableHead>Delivery Location</TableHead>
+            {/* --- [NEW] Added Table Header for Additional Address Line --- */}
+            <TableHead>Landmarks/Notes</TableHead>
             <TableHead>Date</TableHead>
             <TableHead className="text-right">Total</TableHead>
             <TableHead className="text-center">Payment</TableHead>
@@ -123,6 +125,11 @@ const OrderTable: React.FC<{
               </TableCell>
               <TableCell>
                 {formatAddress(order.customerInfo.deliveryAddress)}
+              </TableCell>
+              {/* --- [NEW] Added Table Cell for Additional Address Line --- */}
+              <TableCell>
+                {order.customerInfo.deliveryAddress?.additionalAddressLine ||
+                  "N/A"}
               </TableCell>
               <TableCell>
                 {new Date(order.createdAt).toLocaleDateString()}
@@ -221,13 +228,34 @@ const Orders: React.FC = () => {
     },
   });
 
+  // --- [MODIFIED] Added additionalAddressLine to the search filter ---
   const filteredOrders = orders.filter((order) => {
     const searchLower = searchQuery.toLowerCase();
+
+    // Safely access nested properties for searching
+    const address = order.customerInfo?.deliveryAddress;
+    const province = address?.province?.toLowerCase() ?? "";
+    const city = address?.cityMunicipality?.toLowerCase() ?? "";
+    const subdivision = address?.subdivision?.toLowerCase() ?? "";
+    const street = address?.street?.toLowerCase() ?? "";
+    const additionalInfo = address?.additionalAddressLine?.toLowerCase() ?? "";
+    const productName = order.productId?.productName?.toLowerCase() ?? "";
+    const orderDate = new Date(order.createdAt)
+      .toLocaleDateString()
+      .toLowerCase();
+
     const matchesSearch =
       order._id.toLowerCase().includes(searchLower) ||
       order.customerInfo.firstName.toLowerCase().includes(searchLower) ||
       order.customerInfo.lastName.toLowerCase().includes(searchLower) ||
-      order.customerInfo.email.toLowerCase().includes(searchLower);
+      order.customerInfo.email.toLowerCase().includes(searchLower) ||
+      productName.includes(searchLower) ||
+      orderDate.includes(searchLower) ||
+      province.includes(searchLower) ||
+      city.includes(searchLower) ||
+      subdivision.includes(searchLower) ||
+      street.includes(searchLower) ||
+      additionalInfo.includes(searchLower);
 
     const matchesStatus =
       statusFilter === "all" || order.orderStatus === statusFilter;
@@ -288,7 +316,7 @@ const Orders: React.FC = () => {
             Order Management
           </h1>
           <p className="text-gray-600 mt-1">
-            Track and manage customer orders from start to finish.
+            Track and manage customer orders from start to finish
           </p>
         </div>
       </div>
@@ -303,7 +331,7 @@ const Orders: React.FC = () => {
               <div className="relative flex-grow">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
                 <Input
-                  placeholder="Search by ID, customer name, or email..."
+                  placeholder="Search by ID, name, date, product, or address..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-12 pr-4 py-2 rounded-lg border border-gray-300 w-full"
@@ -341,7 +369,6 @@ const Orders: React.FC = () => {
         </CardHeader>
       </Card>
 
-      {/* --- [NEW] Label for total and filtered order counts --- */}
       <div className="text-sm text-muted-foreground">
         Showing <strong>{filteredOrders.length}</strong> of{" "}
         <strong>{orders.length}</strong> total orders.
