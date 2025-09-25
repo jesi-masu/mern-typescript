@@ -2,13 +2,12 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Order, OrderStatus } from "@/types/order";
+import { Order, OrderStatus, PaymentStatus } from "@/types/order";
 import { formatPrice } from "@/lib/formatters";
-import { Eye, CreditCard, Calendar, MapPin } from "lucide-react";
+import { Eye, CreditCard, Calendar, MapPin, Package, User } from "lucide-react";
 
 interface OrderCardProps {
   order: Order;
-  onStatusUpdate: (orderId: string, newStatus: OrderStatus) => void;
   onViewDetails: (order: Order) => void;
   onConfirmPayment: (order: Order) => void;
 }
@@ -18,117 +17,148 @@ const OrderCard: React.FC<OrderCardProps> = ({
   onViewDetails,
   onConfirmPayment,
 }) => {
-  const getOrderStatusColor = (status: OrderStatus): string => {
-    const colorMap: Record<OrderStatus, string> = {
-      Pending: "bg-yellow-100 text-yellow-800",
-      Processing: "bg-blue-100 text-blue-800",
-      "In Production": "bg-purple-100 text-purple-800",
-      Shipped: "bg-indigo-100 text-indigo-800",
-      Delivered: "bg-green-100 text-green-800",
-      Completed: "bg-green-100 text-green-800",
-      Cancelled: "bg-red-100 text-red-800",
-    };
-    return colorMap[status] || "bg-gray-100 text-gray-800";
+  const getStatusClasses = (
+    status: OrderStatus | PaymentStatus | undefined
+  ): string => {
+    const baseClasses = "font-semibold border-transparent text-xs px-2 py-1";
+    switch (status) {
+      // Order Statuses
+      case "Pending":
+        return `bg-yellow-100 text-yellow-800 ${baseClasses}`;
+      case "Processing":
+        return `bg-blue-100 text-blue-800 ${baseClasses}`;
+      case "In Production":
+        return `bg-purple-100 text-purple-800 ${baseClasses}`;
+      case "Shipped":
+        return `bg-indigo-100 text-indigo-800 ${baseClasses}`;
+      case "Delivered":
+      case "Completed":
+        return `bg-green-100 text-green-800 ${baseClasses}`;
+      case "Cancelled":
+        return `bg-red-100 text-red-800 ${baseClasses}`;
+
+      // Payment Statuses
+      case "50% Complete Paid":
+        return `bg-blue-100 text-blue-800 ${baseClasses}`;
+      case "90% Complete Paid":
+        return `bg-indigo-100 text-indigo-800 ${baseClasses}`;
+      case "100% Complete Paid":
+        return `bg-green-100 text-green-800 ${baseClasses}`;
+
+      default:
+        return `bg-gray-100 text-gray-800 ${baseClasses}`;
+    }
   };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
-      month: "short",
+      month: "long",
       day: "numeric",
     });
   };
 
-  // --- NEW: Format the address for display ---
-  // Safely access the nested delivery address from the customerInfo object.
+  // --- [MODIFIED] Added subdivision and improved formatting logic ---
   const deliveryAddress = order.customerInfo?.deliveryAddress;
   const formattedAddress = deliveryAddress
-    ? `${deliveryAddress.street}, ${deliveryAddress.subdivision}, ${deliveryAddress.cityMunicipality}, ${deliveryAddress.province}`
-    : "Address not available";
+    ? [
+        deliveryAddress.street,
+        deliveryAddress.subdivision,
+        deliveryAddress.cityMunicipality,
+        deliveryAddress.province,
+      ]
+        .filter(Boolean) // Removes any empty parts of the address
+        .join(", ")
+    : "No address provided";
 
   return (
-    <Card className="border rounded-lg hover:shadow-md transition-shadow">
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between mb-3">
+    <Card className="flex flex-col justify-between rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
+      <CardContent className="p-5 space-y-4">
+        {/* --- Header Section --- */}
+        <div className="flex justify-between items-start">
           <div>
-            <h3 className="font-bold text-xs text-gray-900">
-              Order ID #{order._id}
+            <h3 className="font-bold text-gray-800">
+              Order #{order._id.slice(-6)}
             </h3>
-            <Badge className={getOrderStatusColor(order.orderStatus)}>
-              {order.orderStatus}
-            </Badge>
+            <p className="text-sm text-muted-foreground">Total Amount</p>
           </div>
-          <div className="text-right">
-            <p className="font-bold text-xl text-green-600">
-              {formatPrice(order.totalAmount)}
-            </p>
-            <Badge
-              variant={order.paymentStatus === "Paid" ? "default" : "secondary"}
-            >
-              {order.paymentStatus}
-            </Badge>
-          </div>
-        </div>
-
-        <div className="mb-3">
-          <p className="text-sm text-gray-500">Customer</p>
-          <p className="text-sm text-gray-900">
-            {order.userId.firstName} {order.userId.lastName}
+          <p className="font-extrabold text-xl text-green-600">
+            {formatPrice(order.totalAmount)}
           </p>
         </div>
 
-        <div className="mb-3">
-          <p className="text-sm text-gray-500">Product</p>
-          <p className="text-sm text-gray-900">{order.productId.productName}</p>
-        </div>
-
-        {/* --- REVISED STRUCTURE for better readability --- */}
-        <div className="mb-3">
-          <p className="text-sm text-gray-500 flex items-center">
-            <Calendar className="inline h-4 w-4 mr-2" />
-            Order Date
-          </p>
-          <p className="text-sm text-gray-900 ml-6">
-            {formatDate(order.createdAt)}
-          </p>
-        </div>
-
-        {/* --- UPDATED: Delivery address is now displayed --- */}
-        <div className="mb-3">
-          <p className="text-sm text-gray-500 flex items-center">
-            <MapPin className="inline h-4 w-4 mr-2" />
-            Delivery Address
-          </p>
-          <p
-            className="text-sm text-gray-900 ml-6 truncate"
-            title={formattedAddress}
-          >
-            {formattedAddress}
-          </p>
-        </div>
-
+        {/* --- Status Badges Section --- */}
         <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onViewDetails(order)}
-          >
-            <Eye className="h-4 w-4 mr-2" />
-            View Details
-          </Button>
+          <Badge className={getStatusClasses(order.orderStatus)}>
+            {order.orderStatus}
+          </Badge>
+          <Badge className={getStatusClasses(order.paymentStatus)}>
+            {order.paymentStatus}
+          </Badge>
+        </div>
 
-          {order.paymentStatus !== "Paid" && (
-            <Button
-              size="sm"
-              onClick={() => onConfirmPayment(order)}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <CreditCard className="h-4 w-4 mr-2" />
-              Confirm Payment
-            </Button>
-          )}
+        {/* --- Details Section with Labels --- */}
+        <div className="border-t pt-4 space-y-3 text-sm">
+          <div className="flex items-start">
+            <Package className="h-4 w-4 mr-3 mt-1 flex-shrink-0 text-muted-foreground" />
+            <div>
+              <p className="text-xs text-muted-foreground">Prefab name</p>
+              <p className="font-medium text-gray-800">
+                {order.productId.productName}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start">
+            <User className="h-4 w-4 mr-3 mt-1 flex-shrink-0 text-muted-foreground" />
+            <div>
+              <p className="text-xs text-muted-foreground">Customer</p>
+              <p className="font-medium text-gray-800">
+                {order.customerInfo.firstName} {order.customerInfo.lastName}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start">
+            <Calendar className="h-4 w-4 mr-3 mt-1 flex-shrink-0 text-muted-foreground" />
+            <div>
+              <p className="text-xs text-muted-foreground">Order Placed</p>
+              <p className="font-medium text-gray-800">
+                {formatDate(order.createdAt)}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start">
+            <MapPin className="h-4 w-4 mr-3 mt-1 flex-shrink-0 text-muted-foreground" />
+            <div>
+              <p className="text-xs text-muted-foreground">Delivery address</p>
+              <p className="font-medium text-gray-800" title={formattedAddress}>
+                {formattedAddress}
+              </p>
+            </div>
+          </div>
         </div>
       </CardContent>
+
+      {/* --- Actions Section --- */}
+      <div className="bg-gray-50 p-4 flex gap-3 rounded-b-xl border-t">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1"
+          onClick={() => onViewDetails(order)}
+        >
+          <Eye className="h-4 w-4 mr-2" />
+          Details
+        </Button>
+        <Button
+          size="sm"
+          className="flex-1 bg-green-600 hover:bg-green-700"
+          onClick={() => onConfirmPayment(order)}
+          disabled={order.paymentStatus === "100% Complete Paid"}
+        >
+          <CreditCard className="h-4 w-4 mr-2" />
+          Update Payment
+        </Button>
+      </div>
     </Card>
   );
 };
