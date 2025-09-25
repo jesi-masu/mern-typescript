@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -9,6 +10,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useToast } from "@/hooks/use-toast";
 import OrderCard from "@/components/admin/orders/OrderCard";
@@ -19,8 +35,141 @@ import {
   updateOrderStatusAdmin,
 } from "@/services/orderService";
 import { Order, OrderStatus, PaymentStatus } from "@/types/order";
-import { Search, Filter, Package, Loader2, AlertCircle } from "lucide-react";
+import {
+  Search,
+  Filter,
+  Package,
+  Loader2,
+  AlertCircle,
+  MoreHorizontal,
+  LayoutGrid,
+  List,
+} from "lucide-react";
 
+// --- OrderTable Component ---
+const OrderTable: React.FC<{
+  orders: Order[];
+  onStatusUpdate: (orderId: string, newStatus: OrderStatus) => void;
+  onViewDetails: (order: Order) => void;
+  onConfirmPayment: (order: Order) => void;
+}> = ({ orders, onViewDetails, onConfirmPayment }) => {
+  const getStatusClasses = (
+    status: OrderStatus | PaymentStatus | undefined
+  ): string => {
+    const baseClasses = "font-semibold border-transparent";
+    switch (status) {
+      // Order Statuses
+      case "Pending":
+        return `bg-yellow-100 text-yellow-800 ${baseClasses}`;
+      case "Processing":
+        return `bg-blue-100 text-blue-800 ${baseClasses}`;
+      case "In Production":
+        return `bg-purple-100 text-purple-800 ${baseClasses}`;
+      case "Shipped":
+        return `bg-indigo-100 text-indigo-800 ${baseClasses}`;
+      case "Delivered":
+      case "Completed":
+        return `bg-green-100 text-green-800 ${baseClasses}`;
+      case "Cancelled":
+        return `bg-red-100 text-red-800 ${baseClasses}`;
+
+      // Payment Statuses
+      case "50% Complete Paid":
+        return `bg-blue-100 text-blue-800 ${baseClasses}`;
+      case "90% Complete Paid":
+        return `bg-indigo-100 text-indigo-800 ${baseClasses}`;
+      case "100% Complete Paid":
+        return `bg-green-100 text-green-800 ${baseClasses}`;
+
+      default:
+        return `bg-gray-100 text-gray-800 ${baseClasses}`;
+    }
+  };
+
+  const formatAddress = (address: Order["customerInfo"]["deliveryAddress"]) => {
+    if (!address) return "N/A";
+    const parts = [
+      address.street,
+      address.subdivision,
+      address.cityMunicipality,
+      address.province,
+    ];
+    return parts.filter(Boolean).join(", ");
+  };
+
+  return (
+    <Card className="shadow-lg rounded-xl">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Order ID</TableHead>
+            <TableHead>Customer</TableHead>
+            <TableHead>Delivery Location</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead className="text-right">Total</TableHead>
+            <TableHead className="text-center">Payment</TableHead>
+            <TableHead className="text-center">Status</TableHead>
+            <TableHead className="text-center">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {orders.map((order) => (
+            <TableRow key={order._id}>
+              <TableCell className="font-medium">
+                #{order._id.slice(-6)}
+              </TableCell>
+              <TableCell>
+                {order.customerInfo.firstName} {order.customerInfo.lastName}
+              </TableCell>
+              <TableCell>
+                {formatAddress(order.customerInfo.deliveryAddress)}
+              </TableCell>
+              <TableCell>
+                {new Date(order.createdAt).toLocaleDateString()}
+              </TableCell>
+              <TableCell className="text-right">
+                ${order.totalAmount.toFixed(2)}
+              </TableCell>
+              <TableCell className="text-center">
+                <Badge className={getStatusClasses(order.paymentStatus)}>
+                  {order.paymentStatus}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-center">
+                <Badge className={getStatusClasses(order.orderStatus)}>
+                  {order.orderStatus}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-center">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                      <span className="sr-only">Open menu</span>
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onViewDetails(order)}>
+                      View Details
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => onConfirmPayment(order)}
+                      disabled={order.paymentStatus === "100% Complete Paid"}
+                    >
+                      Confirm Payment
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Card>
+  );
+};
+
+// --- Main Orders Component ---
 const Orders: React.FC = () => {
   const { logActivity } = useAdminAuth();
   const { toast } = useToast();
@@ -31,8 +180,8 @@ const Orders: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"card" | "table">("card");
 
-  // --- Data Fetching with React Query ---
   const {
     data: orders = [],
     isLoading,
@@ -43,7 +192,6 @@ const Orders: React.FC = () => {
     queryFn: fetchAllOrders,
   });
 
-  // --- Mutation for updating any part of an order ---
   const updateOrderMutation = useMutation({
     mutationFn: ({
       orderId,
@@ -77,9 +225,9 @@ const Orders: React.FC = () => {
     const searchLower = searchQuery.toLowerCase();
     const matchesSearch =
       order._id.toLowerCase().includes(searchLower) ||
-      order.userId.firstName.toLowerCase().includes(searchLower) ||
-      order.userId.lastName.toLowerCase().includes(searchLower) ||
-      order.userId.email.toLowerCase().includes(searchLower);
+      order.customerInfo.firstName.toLowerCase().includes(searchLower) ||
+      order.customerInfo.lastName.toLowerCase().includes(searchLower) ||
+      order.customerInfo.email.toLowerCase().includes(searchLower);
 
     const matchesStatus =
       statusFilter === "all" || order.orderStatus === statusFilter;
@@ -94,7 +242,6 @@ const Orders: React.FC = () => {
     });
   };
 
-  // UPDATED: This handler now accepts the new, specific payment status from the modal
   const handlePaymentConfirmation = (
     orderId: string,
     newStatus: PaymentStatus
@@ -134,13 +281,13 @@ const Orders: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8 p-6 bg-gray-50 min-h-screen">
+    <div className="space-y-6 p-0 bg-gray-50 min-h-screen">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900">
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
             Order Management
           </h1>
-          <p className="text-lg text-gray-600 mt-1">
+          <p className="text-gray-600 mt-1">
             Track and manage customer orders from start to finish.
           </p>
         </div>
@@ -176,22 +323,54 @@ const Orders: React.FC = () => {
                   <SelectItem value="Cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() =>
+                  setViewMode(viewMode === "card" ? "table" : "card")
+                }
+              >
+                {viewMode === "card" ? (
+                  <List className="h-5 w-5" />
+                ) : (
+                  <LayoutGrid className="h-5 w-5" />
+                )}
+              </Button>
             </div>
           </div>
         </CardHeader>
       </Card>
 
-      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+      {/* --- [NEW] Label for total and filtered order counts --- */}
+      <div className="text-sm text-muted-foreground">
+        Showing <strong>{filteredOrders.length}</strong> of{" "}
+        <strong>{orders.length}</strong> total orders.
+      </div>
+
+      <div>
         {filteredOrders.length > 0 ? (
-          filteredOrders.map((order) => (
-            <OrderCard
-              key={order._id}
-              order={order}
-              onStatusUpdate={handleStatusUpdate}
-              onViewDetails={handleViewDetails}
-              onConfirmPayment={handleConfirmPayment}
-            />
-          ))
+          viewMode === "card" ? (
+            <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+              {filteredOrders.map((order) => (
+                <OrderCard
+                  key={order._id}
+                  order={order}
+                  onStatusUpdate={handleStatusUpdate}
+                  onViewDetails={handleViewDetails}
+                  onConfirmPayment={handleConfirmPayment}
+                />
+              ))}
+            </div>
+          ) : (
+            <div>
+              <OrderTable
+                orders={filteredOrders}
+                onViewDetails={handleViewDetails}
+                onConfirmPayment={handleConfirmPayment}
+                onStatusUpdate={handleStatusUpdate}
+              />
+            </div>
+          )
         ) : (
           <Card className="col-span-full text-center p-12">
             <Package className="h-16 w-16 text-gray-400 mb-6 mx-auto" />
