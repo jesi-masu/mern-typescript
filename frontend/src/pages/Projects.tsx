@@ -126,8 +126,6 @@ const Projects = () => {
         </div>
       </section>
 
-      ---
-
       {/* Projects Section */}
       <section className="py-16 md:py-20 bg-gray-50 dark:bg-gray-900">
         <div className="container">

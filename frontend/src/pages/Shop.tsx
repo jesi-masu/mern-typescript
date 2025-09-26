@@ -126,7 +126,7 @@ const Shop = () => {
     <Layout>
       <section className="bg-gray-50 py-12">
         <div className="container">
-          <div className="text-center mb-12">
+          <div className="text-center mb-5">
             <h1 className="text-4xl font-bold mb-4">Shop Prefab Modules</h1>
             <p className="text-gray-600 max-w-2xl mx-auto">
               Browse our collection of high-quality prefabricated building
@@ -136,7 +136,7 @@ const Shop = () => {
         </div>
       </section>
 
-      <section className="py-12">
+      <section className="py-5">
         <div className="container">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Sidebar filters */}

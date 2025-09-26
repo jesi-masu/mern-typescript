@@ -39,11 +39,11 @@ const ShopFilters = ({
 
   return (
     <div className="lg:col-span-1">
-      <div className="bg-white p-6 rounded-lg shadow-sm sticky top-24">
-        <h3 className="font-semibold text-lg mb-6">Filters</h3>
+      <div className="bg-white p-1 rounded-lg shadow-sm sticky top-24">
+        <h3 className="font-semibold text-lg mb-3">Filters</h3>
 
         {/* Search */}
-        <div className="mb-6">
+        <div className="mb-4">
           <label className="block text-sm font-medium mb-2">Search</label>
           <div className="relative">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -57,7 +57,7 @@ const ShopFilters = ({
         </div>
 
         {/* Price Range */}
-        <div className="mb-6">
+        <div className="mb-5">
           <label className="block text-sm font-medium mb-2">
             Price Range: {formatPrice(priceRange[0])} -{" "}
             {formatPrice(priceRange[1])}
