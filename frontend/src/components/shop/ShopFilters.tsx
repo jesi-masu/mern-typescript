@@ -1,10 +1,10 @@
 // frontend/src/components/shop/ShopFilters.tsx
-import { Search } from "lucide-react";
+import { Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
-import { formatPrice } from "@/lib/formatters"; // Keep formatPrice, remove usdToPhp
+import { formatPrice } from "@/lib/formatters";
 
 interface ShopFiltersProps {
   priceRange: number[];
@@ -39,10 +39,11 @@ const ShopFilters = ({
 
   return (
     <div className="lg:col-span-1">
-      <div className="bg-white p-1 rounded-lg shadow-sm sticky top-24">
-        <h3 className="font-semibold text-lg mb-3">Filters</h3>
+      <div className="bg-white p-4 rounded-lg shadow-sm sticky top-24">
+        <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+          <Filter className="h-5 w-5 text-blue-700" /> Filters
+        </h3>
 
-        {/* Search */}
         <div className="mb-4">
           <label className="block text-sm font-medium mb-2">Search</label>
           <div className="relative">
@@ -55,7 +56,6 @@ const ShopFilters = ({
             />
           </div>
         </div>
-
         {/* Price Range */}
         <div className="mb-5">
           <label className="block text-sm font-medium mb-2">
@@ -63,16 +63,15 @@ const ShopFilters = ({
             {formatPrice(priceRange[1])}
           </label>
           <Slider
-            defaultValue={[minPrice, maxPrice]} // Set default to the new min/max
+            defaultValue={[minPrice, maxPrice]}
             min={minPrice}
             max={maxPrice}
-            step={50000} // Keep step as it is or adjust as needed
+            step={50000}
             value={priceRange}
             onValueChange={setPriceRange}
             className="mt-2"
           />
         </div>
-
         {/* Categories */}
         <div className="mb-6">
           <label className="block text-sm font-medium mb-2">Categories</label>
@@ -94,13 +93,12 @@ const ShopFilters = ({
             ))}
           </div>
         </div>
-
         {/* Clear Filters */}
         <Button
           variant="outline"
           className="w-full mt-4"
           onClick={() => {
-            setPriceRange([minPrice, maxPrice]); // Reset to new min/max
+            setPriceRange([minPrice, maxPrice]);
             setSearchQuery("");
             setSelectedCategories([]);
           }}
