@@ -5,7 +5,7 @@ import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription } from "@/components/ui/card";
-import { Box, Truck, Package } from "lucide-react";
+import { Truck, Package, Box, Rotate3D } from "lucide-react"; // Added Cube icon
 import {
   Dialog,
   DialogContent,
@@ -14,8 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { formatPrice } from "@/lib/formatters"; // Removed usdToPhp as it's not needed here
-
+import { formatPrice } from "@/lib/formatters";
 import { Product } from "@/types/product";
 import { fetchProductById } from "@/services/productService";
 
@@ -143,7 +142,7 @@ const ProductDetail = () => {
           {/* Product Info */}
           <div>
             <h1 className="text-3xl font-bold mb-2">{product.productName}</h1>
-            <div className="flex items-center text-lg font-semibold text-prefab-600 mb-4">
+            <div className="flex items-center text-xl font-semibold text-prefab-600 mb-4">
               {formatPrice(product.productPrice)}
             </div>
             <div className="mb-4">
@@ -193,9 +192,12 @@ const ProductDetail = () => {
               </Button>
               <Dialog>
                 <DialogTrigger asChild>
+                  {/* START: UPDATED BUTTON */}
                   <Button variant="outline" className="w-full">
+                    <Rotate3D className="mr-2 h-4 w-4" />
                     View 3D Model
                   </Button>
+                  {/* END: UPDATED BUTTON */}
                 </DialogTrigger>
                 <DialogContent className="max-w-4xl w-full h-[80vh]">
                   <DialogHeader>
@@ -297,7 +299,6 @@ const ProductDetail = () => {
               <h3 className="text-xl font-medium mb-4">Quotation Breakdown</h3>
               <div className="bg-gray-50 rounded-lg p-6 border mb-6">
                 <div className="space-y-3 mb-6">
-                  {/* START: UPDATED LINES */}
                   <div className="flex justify-between">
                     <span>Base Structure</span>
                     <span className="font-medium">
@@ -321,7 +322,6 @@ const ProductDetail = () => {
                   <span>Total Price</span>
                   <span>{formatPrice(product.productPrice)}</span>
                 </div>
-                {/* END: UPDATED LINES */}
                 <p className="text-sm text-gray-500 mt-4">
                   * This quotation is valid for 30 days and does not include
                   site preparation, foundation work, or shipping costs beyond
