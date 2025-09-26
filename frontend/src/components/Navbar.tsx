@@ -1,8 +1,8 @@
-// frontend/src/components/Navbar.tsx
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // MOD: Imported useNavigate
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge"; // MOD: Imported Badge
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,14 +10,33 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Menu, X, User, Package, LogOut, ShieldCheck } from "lucide-react";
-import { useAuth } from "@/context/AuthContext"; // FIX: Use the single, unified AuthContext
-import CustomerNotifications from "@/components/customer/CustomerNotifications"; // This component might need similar updates if it uses the old context
+import {
+  Menu,
+  X,
+  User,
+  Package,
+  LogOut,
+  ShieldCheck,
+  ShoppingCart, // MOD: Imported ShoppingCart icon
+} from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/context/CartContext"; // MOD: Imported useCart hook
+import CustomerNotifications from "@/components/customer/CustomerNotifications";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  // FIX: Switched to the unified useAuth hook
   const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate(); // MOD: Initialized useNavigate
+
+  // MOD: Get cart items count using the useCart hook
+  // We'll wrap this in a check to avoid calling the hook when not needed.
+  const CartItemsCounter = () => {
+    const { getTotalItems } = useCart();
+    return getTotalItems();
+  };
+  const cartItemsCount =
+    isAuthenticated && user?.role === "client" ? CartItemsCounter() : 0;
+  // END MOD
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -82,11 +101,32 @@ const Navbar = () => {
           </div>
 
           <div className="hidden md:flex items-center space-x-4">
-            {/* FIX: Check for 'user' object instead of 'customer' */}
             {isAuthenticated && user ? (
               <div className="flex items-center space-x-3">
-                {/* Bell Icon - Assuming this is for client notifications */}
+                {/* Bell Icon */}
                 {user.role === "client" && <CustomerNotifications />}
+
+                {/* MOD: START - Added Cart Icon */}
+                {user.role === "client" && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative"
+                    onClick={() => navigate("/customer-dashboard?tab=shopping")}
+                  >
+                    <ShoppingCart className="h-5 w-5" />
+                    {cartItemsCount > 0 && (
+                      <Badge
+                        variant="default"
+                        className="absolute -top-1 -right-1 h-5 w-5 text-xs p-0 flex items-center justify-center bg-blue-600"
+                      >
+                        {cartItemsCount}
+                      </Badge>
+                    )}
+                    <span className="sr-only">Open Cart</span>
+                  </Button>
+                )}
+                {/* MOD: END - Added Cart Icon */}
 
                 {/* Profile Dropdown */}
                 <DropdownMenu>
@@ -114,7 +154,6 @@ const Navbar = () => {
                       </div>
                     </div>
                     <DropdownMenuSeparator />
-                    {/* FIX: Show different links based on user role */}
                     {user.role === "admin" || user.role === "personnel" ? (
                       <DropdownMenuItem asChild>
                         <Link to="/admin/dashboard" className="cursor-pointer">
@@ -165,7 +204,28 @@ const Navbar = () => {
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center gap-2">
+            {/* MOD: START - Added Cart Icon for Mobile View */}
+            {isAuthenticated && user && user.role === "client" && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative"
+                onClick={() => navigate("/customer-dashboard?tab=shopping")}
+              >
+                <ShoppingCart className="h-6 w-6" />
+                {cartItemsCount > 0 && (
+                  <Badge
+                    variant="default"
+                    className="absolute -top-1 -right-1 h-5 w-5 text-xs p-0 flex items-center justify-center bg-blue-600"
+                  >
+                    {cartItemsCount}
+                  </Badge>
+                )}
+                <span className="sr-only">Open Cart</span>
+              </Button>
+            )}
+            {/* MOD: END - Added Cart Icon for Mobile View */}
             <Button variant="ghost" onClick={toggleMenu} size="icon">
               {isMenuOpen ? (
                 <X className="h-6 w-6" />
