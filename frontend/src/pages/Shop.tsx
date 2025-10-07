@@ -6,6 +6,7 @@ import ProductGrid from "@/components/shop/ProductGrid";
 import ShopPagination from "@/components/shop/ShopPagination";
 import { Product } from "@/types/product";
 import { fetchProducts } from "@/services/productService";
+import { Package } from "lucide-react";
 
 const Shop = () => {
   // State for fetched products
@@ -124,19 +125,30 @@ const Shop = () => {
 
   return (
     <Layout>
-      <section className="bg-gray-50 py-12">
-        <div className="container">
-          <div className="text-center mb-5">
-            <h1 className="text-4xl font-bold mb-4">Shop Prefab Modules</h1>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Browse our collection of high-quality prefabricated building
-              modules for residential, commercial, and industrial applications.
+      <section className="relative bg-gradient-to-r from-blue-800 via-blue-500 to-blue-600 text-white py-20 overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-40"></div>
+
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="max-w-3xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full mb-6 border border-white/30">
+              <Package className="w-4 h-4" />
+              <span className="text-sm font-medium tracking-wide">
+                PREMIUM COLLECTION
+              </span>
+            </div>
+            <h1 className="text-5xl md:text-6xl font-bold mb-6 tracking-tight">
+              Prefabricated Modules
+            </h1>
+            <p className="text-xl text-blue-100 leading-relaxed">
+              Discover our curated selection of high-quality prefabricated
+              building modules, meticulously engineered for residential,
+              commercial, and industrial excellence.
             </p>
           </div>
         </div>
       </section>
 
-      <section className="py-5">
+      <section className="py-10">
         <div className="container">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Sidebar filters */}

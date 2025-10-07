@@ -174,6 +174,17 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
               ))}
             </RadioGroup>
           </div>
+          <div className="flex items-start gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-medium text-green-800">After confirmation:</p>
+              <ul className="text-green-700 mt-1 space-y-1">
+                <li>• Payment status will be updated</li>
+                <li>• Customer will be notified automatically</li>
+                <li>• Order will proceed to next stage</li>
+              </ul>
+            </div>
+          </div>
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t">

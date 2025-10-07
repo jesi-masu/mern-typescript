@@ -329,10 +329,24 @@ const Orders: React.FC = () => {
             Order Management
           </h1>
           <p className="text-gray-600 mt-1">
-            Track and manage customer orders from start to finish
+            Efficiently track and manage customer orders from start to finish
           </p>
         </div>
+        <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
+          {" "}
+          {/* Styled badge */}
+          <Package className="h-6 w-6 text-indigo-600" />{" "}
+          {/* Changed icon and color */}
+          <span className="text-xl font-semibold text-gray-800">
+            {orders.length}
+          </span>{" "}
+          {/* Larger count */}
+          <span className="text-gray-500">Total Orders</span>
+        </div>
       </div>
+
+      <hr className="border-t border-gray-200" />
+
       <Card className="shadow-lg rounded-xl">
         <CardHeader>
           <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
@@ -380,12 +394,12 @@ const Orders: React.FC = () => {
             </div>
           </div>
         </CardHeader>
-      </Card>
 
-      <div className="text-sm text-muted-foreground">
-        Showing <strong>{filteredOrders.length}</strong> of{" "}
-        <strong>{orders.length}</strong> total orders.
-      </div>
+        <div className="pb-4 px-5 text-sm text-muted-foreground">
+          Showing <strong>{filteredOrders.length}</strong> of{" "}
+          <strong>{orders.length}</strong> total orders.
+        </div>
+      </Card>
 
       <div>
         {filteredOrders.length > 0 ? (

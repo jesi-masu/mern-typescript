@@ -19,10 +19,7 @@ export const getUserOrders: RequestHandler = async (req, res) => {
     }
 
     const orders = await Order.find({ userId })
-      // --- START: MODIFICATION ---
-      // Add 'productPrice' to the list of fields to fetch
       .populate("products.productId", "productName image productPrice")
-      // --- END: MODIFICATION ---
       .sort({ createdAt: -1 });
 
     res.status(200).json(orders);
@@ -104,7 +101,13 @@ export const getOrders: RequestHandler = async (req, res) => {
   try {
     const orders = await Order.find({})
       .populate("userId", "firstName lastName email")
-      .populate("products.productId", "productName productPrice")
+      // --- START: MODIFICATION ---
+      // Added all necessary fields to the populate string for the admin modal
+      .populate(
+        "products.productId",
+        "productName productPrice image squareFeet productShortDescription category"
+      )
+      // --- END: MODIFICATION ---
       .sort({ createdAt: -1 });
     res.status(200).json(orders);
   } catch (error: any) {

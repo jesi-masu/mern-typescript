@@ -81,25 +81,25 @@ const OrderCard: React.FC<OrderCardProps> = ({
             <h3 className="font-bold text-gray-800">
               Order #{order._id.slice(-6)}
             </h3>
-            <p className="text-sm text-muted-foreground">Order ID:</p>
+            <p className="text-sm text-muted-foreground">Order ID</p>
           </div>
           <div className="text-right">
             <p className="font-extrabold text-xl text-green-600">
               {formatPrice(order.totalAmount)}
             </p>
-            <p className="text-sm text-muted-foreground">Total Amount:</p>
+            <p className="text-sm text-muted-foreground">Total Amount</p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <div className="flex items-center gap-2">
-            <p className="text-sm text-muted-foreground">Order:</p>
+            <p className="text-sm text-muted-foreground">Order</p>
             <Badge className={getStatusClasses(order.orderStatus)}>
               {order.orderStatus}
             </Badge>
           </div>
           <div className="flex items-center gap-2">
-            <p className="text-sm text-muted-foreground">Payment:</p>
+            <p className="text-sm text-muted-foreground">Payment</p>
             <Badge className={getStatusClasses(currentPaymentStatus)}>
               {currentPaymentStatus}
             </Badge>
@@ -110,7 +110,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
           <div className="flex items-start">
             <Package className="h-4 w-4 mr-3 mt-1 flex-shrink-0 text-muted-foreground" />
             <div>
-              <p className="text-xs text-muted-foreground">Product names</p>
+              <p className="text-xs text-muted-foreground">Product name(s)</p>
               <p className="font-medium text-gray-800">{productNames}</p>
             </div>
           </div>

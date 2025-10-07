@@ -17,8 +17,16 @@ import {
 } from "@/components/ui/select";
 import { Order, OrderStatus, PaymentStatus } from "@/types/order";
 import { formatPrice } from "@/lib/formatters";
-import { CreditCard, FileText, Phone, Receipt } from "lucide-react"; // --- MODIFICATION: Added Phone and Receipt icons ---
-import { Separator } from "@/components/ui/separator";
+import {
+  CreditCard,
+  FileText,
+  CreditCardIcon,
+  Receipt,
+  Package,
+  User,
+  Calendar,
+  MapPin,
+} from "lucide-react";
 
 interface OrderDetailsModalProps {
   order: Order | null;
@@ -64,13 +72,26 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   onConfirmPayment,
 }) => {
   if (!order) return null;
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
+  };
+
+  const formatFullAddress = (
+    address: Order["customerInfo"]["deliveryAddress"]
+  ) => {
+    if (!address) return "No address provided";
+    return [
+      address.street,
+      address.subdivision,
+      address.cityMunicipality,
+      address.province,
+    ]
+      .filter(Boolean)
+      .join(", ");
   };
 
   const currentPaymentStatus = order.paymentInfo?.paymentStatus || "Pending";
@@ -81,10 +102,9 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <FileText className="h-6 w-6 text-blue-600" />
-            Order Details - #{order._id}
+            Order Details - #{order._id.slice(-6)}
           </DialogTitle>
         </DialogHeader>
-
         <div className="space-y-6 p-1">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
             <div>
@@ -112,7 +132,6 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 </Select>
               </div>
             </div>
-
             <div>
               <label className="text-sm font-medium text-gray-500">
                 Payment Status
@@ -134,104 +153,150 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
               </div>
             </div>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">
-                Customer Information
-              </h3>
-              <div className="space-y-1">
-                <p className="text-lg font-medium">
-                  {order.customerInfo.firstName} {order.customerInfo.lastName}
-                </p>
-                <p className="text-gray-600">{order.customerInfo.email}</p>
-                {/* --- START: MODIFICATION --- */}
-                {/* Added the client's phone number */}
-                <div className="flex items-center gap-2 text-gray-600 pt-1">
-                  <Phone className="h-4 w-4" />
-                  <p>{order.customerInfo.phoneNumber}</p>
+          {/* --- START: MODIFICATION --- */}
+          {/* Restructured layout with new placement for Timeline and Total Amount */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {/* Left Column */}
+            <div className="space-y-6 pt-4">
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <User className="h-5 w-5 text-gray-500" />
+                  Customer Information
+                </h3>
+                <div className="text-sm">
+                  <p className="text-base font-medium">
+                    {order.customerInfo.firstName} {order.customerInfo.lastName}
+                  </p>
+                  <p className="text-gray-600">{order.customerInfo.email}</p>
+                  <div className="flex items-center gap-2 text-gray-600 pt-1">
+                    <p>{order.customerInfo.phoneNumber}</p>
+                  </div>
                 </div>
-                {/* --- END: MODIFICATION --- */}
+              </div>
+
+              {/* Order Timeline is now here */}
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-gray-500" />
+                  Order Timeline
+                </h3>
+                <p className="text-sm text-gray-500">
+                  Ordered: {formatDate(order.createdAt)}
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-gray-500" />
+                  Delivery Address
+                </h3>
+                <p className="text-sm text-gray-700">
+                  {formatFullAddress(order.customerInfo.deliveryAddress)}
+                </p>
+                {order.customerInfo.deliveryAddress.additionalAddressLine && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    <strong>Notes:</strong>{" "}
+                    {order.customerInfo.deliveryAddress.additionalAddressLine}
+                  </p>
+                )}
               </div>
             </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">
-                Order Timeline
-              </h3>
-              <p className="text-sm">Ordered: {formatDate(order.createdAt)}</p>
-            </div>
-          </div>
 
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-2">
-              Products ({order.products.length})
-            </h3>
-            <div className="space-y-4 border rounded-lg p-4">
-              {order.products.map((item, index) => (
-                <React.Fragment key={item.productId._id}>
-                  <div className="flex items-start gap-4">
-                    {/* --- START: MODIFICATION --- */}
-                    {/* Added smaller product image */}
-                    <img
-                      src={
-                        item.productId.image ||
-                        "https://placehold.co/100x100/E2E8F0/4A5568?text=No+Image"
-                      }
-                      alt={item.productId.productName}
-                      className="w-16 h-16 object-cover rounded border"
-                    />
-                    {/* --- END: MODIFICATION --- */}
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900">
-                        {item.productId.productName}
-                      </h4>
-                      <p className="text-sm text-gray-500">
-                        Quantity: {item.quantity}
-                      </p>
-                      <p className="font-semibold text-gray-700">
-                        {formatPrice(item.productId.productPrice)} each
-                      </p>
-                    </div>
-                  </div>
-                  {index < order.products.length - 1 && <Separator />}
-                </React.Fragment>
-              ))}
-              <div className="border-t pt-2 mt-2 text-right">
-                <p className="text-sm text-gray-500">Total Amount</p>
+            {/* Right Column */}
+            <div className="space-y-6">
+              {/* Total Order Amount is now here */}
+              <div className="p-4 bg-green-50 rounded-lg">
+                <h3 className="font-semibold text-gray-500 mb-1 flex items-center gap-2">
+                  <CreditCardIcon className="h-5 w-5 text-gray-500" />
+                  Total Order Amount
+                </h3>
                 <p className="text-2xl font-bold text-green-600">
                   {formatPrice(order.totalAmount)}
                 </p>
               </div>
+
+              {order.paymentInfo.paymentReceipts &&
+                order.paymentInfo.paymentReceipts.length > 0 && (
+                  <div className="px-4 py-2">
+                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <Receipt className="h-5 w-5 text-gray-500" />
+                      Uploaded Payment Receipts
+                    </h3>
+                    <div className="rounded-lg p-3 space-y-2 bg-white">
+                      {order.paymentInfo.paymentReceipts.map(
+                        (receiptUrl, index) => (
+                          <a
+                            key={index}
+                            href={receiptUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-green-600 hover:underline flex items-center gap-2"
+                          >
+                            View Receipt #{index + 1}
+                          </a>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
             </div>
           </div>
-
-          {/* --- START: MODIFICATION --- */}
-          {/* Added section for uploaded payment receipts */}
-          {order.paymentInfo.paymentReceipts &&
-            order.paymentInfo.paymentReceipts.length > 0 && (
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <Receipt className="h-5 w-5" />
-                  Uploaded Payment Receipts
-                </h3>
-                <div className="border rounded-lg p-4 space-y-2">
-                  {order.paymentInfo.paymentReceipts.map(
-                    (receiptUrl, index) => (
-                      <a
-                        key={index}
-                        href={receiptUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-blue-600 hover:underline flex items-center gap-2"
-                      >
-                        View Receipt #{index + 1}
-                      </a>
-                    )
-                  )}
-                </div>
-              </div>
-            )}
           {/* --- END: MODIFICATION --- */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Package className="h-5 w-5 text-gray-500" />
+              <h3 className="font-semibold text-gray-900">Ordered Products</h3>
+            </div>
+            <div className="space-y-3">
+              {order.products.map((item, index) => (
+                <div
+                  key={index}
+                  className="flex items-start gap-3 p-3 border rounded-lg bg-white"
+                >
+                  <img
+                    src={
+                      item.productId.image ||
+                      "https://placehold.co/150x150/E2E8F0/4A5568?text=No+Image"
+                    }
+                    alt={item.productId.productName || "Product"}
+                    className="w-16 h-16 object-cover rounded border"
+                  />
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-900 text-base">
+                      {item.productId.productName}
+                    </h4>
+                    <p className="text-xs text-gray-600 mb-2">
+                      {item.productId.productShortDescription ||
+                        "No description available."}
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 text-xs">
+                      <div>
+                        <span className="text-gray-500">Category:</span>
+                        <p className="font-medium">{item.productId.category}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Area:</span>
+                        <p className="font-medium">
+                          {item.productId.squareFeet} sq ft
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Quantity:</span>
+                        <p className="font-medium">{item.quantity}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Price:</span>
+                        <p className="font-medium text-green-600">
+                          {formatPrice(item.productId.productPrice || 0)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Total Order Amount was removed from here */}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
