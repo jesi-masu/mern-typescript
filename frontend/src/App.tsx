@@ -1,17 +1,17 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "./components/ui/toaster";
+import { Toaster as Sonner } from "./components/ui/sonner";
+import { TooltipProvider } from "./components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 // Main (customer) auth + app-level providers
-import { AuthProvider } from "@/context/AuthContext";
-import { CartProvider } from "@/context/CartContext";
-import { OrderProvider } from "@/context/OrderContext";
-import { OrderUpdatesProvider } from "@/context/OrderUpdatesContext";
+import { AuthProvider } from "./context/AuthContext";
+import { CartProvider } from "./context/CartContext";
+import { OrderProvider } from "./context/OrderContext";
+import { OrderUpdatesProvider } from "./context/OrderUpdatesContext";
 
 // Admin auth provider and protected route wrapper
-import { AdminAuthProvider } from "@/context/AdminAuthContext";
+import { AdminAuthProvider } from "./context/AdminAuthContext";
 import ProtectedAdminRoute from "./components/admin/ProtectedAdminRoute";
 
 // Public / Customer pages
@@ -39,7 +39,7 @@ import NotFound from "./pages/NotFound";
 import AdminLayout from "./components/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import Products from "./pages/admin/Products";
-import ProductFormPage from "./pages/admin/ProductFormPage"; // <--- ADD THIS LINE
+import ProductFormPage from "./pages/admin/ProductFormPage";
 import ProductViewPage from "./pages/admin/ProductViewPage";
 import Orders from "./pages/admin/Orders";
 import Customers from "./pages/admin/Customers";
@@ -55,7 +55,6 @@ import ActivityLog from "./pages/admin/ActivityLog";
 
 // Customer-protected route component
 import ProtectedCustomerRoute from "./components/ProtectedCustomerRoute";
-import ProductForm from "./pages/admin/ProductFormPage";
 
 const queryClient = new QueryClient();
 
@@ -92,7 +91,7 @@ function App() {
 
                     {/* Customer Protected Routes */}
                     <Route
-                      path="/checkout/:id"
+                      path="/checkout"
                       element={
                         <ProtectedCustomerRoute>
                           <Checkout />
@@ -159,7 +158,6 @@ function App() {
                         path="products/view/:id"
                         element={<ProductViewPage />}
                       />
-                      {/* END: ADD THESE TWO LINES */}
                       <Route path="orders" element={<Orders />} />
                       <Route path="customers" element={<Customers />} />
                       <Route path="reports" element={<Reports />} />

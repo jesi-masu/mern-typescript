@@ -1,8 +1,7 @@
-// frontend/src/components/checkout/PaymentSelector.tsx
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import { Label } from "../ui/label";
 import {
   CheckCircle,
   CreditCard,
@@ -16,29 +15,27 @@ import {
   Send,
   Hourglass,
 } from "lucide-react";
-import { Product } from "@/types/product";
-import { formatPrice } from "@/lib/formatters";
+import { formatPrice } from "../../lib/formatters";
 
-// Define the types for the different payment selections
 type PaymentMode = "cash" | "bank" | "cheque" | "gcash" | "";
 type PaymentPlan = "installment" | "full" | "";
 type InstallmentStage = "initial" | "pre_delivery" | "final" | "";
-type PaymentTiming = "now" | "later" | ""; // New type for payment timing
+type PaymentTiming = "now" | "later" | "";
 
 interface PaymentSelectorProps {
-  product: Product;
+  totalAmount: number;
   paymentMethod: PaymentPlan;
   onPaymentMethodChange: (method: PaymentPlan) => void;
   installmentStage: InstallmentStage;
   onInstallmentStageChange: (stage: InstallmentStage) => void;
   paymentMode: PaymentMode;
   onPaymentModeChange: (mode: PaymentMode) => void;
-  paymentTiming: PaymentTiming; // Add new prop for timing
-  onPaymentTimingChange: (timing: PaymentTiming) => void; // Add new handler
+  paymentTiming: PaymentTiming;
+  onPaymentTimingChange: (timing: PaymentTiming) => void;
 }
 
 const PaymentSelector: React.FC<PaymentSelectorProps> = ({
-  product,
+  totalAmount,
   paymentMethod,
   onPaymentMethodChange,
   installmentStage,
@@ -48,13 +45,10 @@ const PaymentSelector: React.FC<PaymentSelectorProps> = ({
   paymentTiming,
   onPaymentTimingChange,
 }) => {
-  // --- Payment Calculations ---
-  const initialPayment = Math.round(product.productPrice * 0.5);
-  const preDeliveryPayment = Math.round(product.productPrice * 0.4);
-  const finalPayment =
-    product.productPrice - initialPayment - preDeliveryPayment;
+  const initialPayment = Math.round(totalAmount * 0.5);
+  const preDeliveryPayment = Math.round(totalAmount * 0.4);
+  const finalPayment = totalAmount - initialPayment - preDeliveryPayment;
 
-  // --- Data for UI Mapping ---
   const paymentOptions = [
     { value: "cash" as PaymentMode, label: "Cash", icon: Wallet },
     { value: "bank" as PaymentMode, label: "Bank Transfer", icon: Landmark },
@@ -98,7 +92,6 @@ const PaymentSelector: React.FC<PaymentSelectorProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {/* --- Step 1: Choose Payment Plan (Installment vs. Full) --- */}
         <div className="space-y-4">
           <Label
             htmlFor="installment"
@@ -150,7 +143,6 @@ const PaymentSelector: React.FC<PaymentSelectorProps> = ({
                 </p>
               </div>
 
-              {/* --- Step 2: Select Installment Stage (Conditionally Rendered) --- */}
               {paymentMethod === "installment" && (
                 <div className="mt-4 pt-4 border-t border-blue-200">
                   <h4 className="font-medium mb-3">Payment Stages</h4>
@@ -233,7 +225,7 @@ const PaymentSelector: React.FC<PaymentSelectorProps> = ({
                     </span>
                   </div>
                   <span className="font-bold text-green-700">
-                    {formatPrice(product.productPrice)}
+                    {formatPrice(totalAmount)}
                   </span>
                 </div>
               </div>
@@ -241,7 +233,6 @@ const PaymentSelector: React.FC<PaymentSelectorProps> = ({
           </Label>
         </div>
 
-        {/* --- Step 3: Choose Payment Type (Conditionally Rendered) --- */}
         {paymentMethod && (
           <div className="mt-6 pt-6 border-t">
             <h3 className="text-base font-medium mb-4">Choose Payment Type</h3>
@@ -276,7 +267,6 @@ const PaymentSelector: React.FC<PaymentSelectorProps> = ({
           </div>
         )}
 
-        {/* --- Step 4: Choose Payment Timing (Conditionally Rendered) --- */}
         {paymentMethod && paymentMode && (
           <div className="mt-6 pt-6 border-t">
             <h3 className="text-base font-medium mb-4">

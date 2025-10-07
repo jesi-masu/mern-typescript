@@ -1,15 +1,22 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Play, ExternalLink, CheckCircle, Calendar, MapPin, Layers, Award } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  Play,
+  ExternalLink,
+  CheckCircle,
+  Calendar,
+  MapPin,
+  Layers,
+  Award,
+} from "lucide-react";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Accordion,
   AccordionContent,
@@ -30,9 +37,9 @@ const ProjectDetail = () => {
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState("overview");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  
-  const project = projectsData.find(p => p.id.toString() === id);
-  
+
+  const project = projectsData.find((p) => p.id.toString() === id);
+
   // Generate sample gallery images
   const galleryImages = [
     project?.imageUrl || "",
@@ -40,9 +47,9 @@ const ProjectDetail = () => {
     `https://images.unsplash.com/photo-1600607687939-ce8a6c25118c`,
     `https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea`,
     `https://images.unsplash.com/photo-1600607687644-aac4c3eac7f4`,
-    `https://images.unsplash.com/photo-1600607688969-a5bfcd646154`
+    `https://images.unsplash.com/photo-1600607688969-a5bfcd646154`,
   ].filter(Boolean);
-  
+
   if (!project) {
     return (
       <Layout>
@@ -53,7 +60,9 @@ const ProjectDetail = () => {
               The project you're looking for doesn't exist or has been removed.
               <div className="mt-4">
                 <Link to="/projects">
-                  <Button className="bg-red-600 hover:bg-red-700">Return to Projects</Button>
+                  <Button className="bg-red-600 hover:bg-red-700">
+                    Return to Projects
+                  </Button>
                 </Link>
               </div>
             </AlertDescription>
@@ -62,11 +71,20 @@ const ProjectDetail = () => {
       </Layout>
     );
   }
-  
+
   const statusConfig = {
-    Planning: { color: "bg-amber-500/10 text-amber-700 border-amber-200", icon: Calendar },
-    "In Progress": { color: "bg-blue-500/10 text-blue-700 border-blue-200", icon: Layers },
-    Completed: { color: "bg-emerald-500/10 text-emerald-700 border-emerald-200", icon: CheckCircle }
+    Planning: {
+      color: "bg-amber-500/10 text-amber-700 border-amber-200",
+      icon: Calendar,
+    },
+    "In Progress": {
+      color: "bg-blue-500/10 text-blue-700 border-blue-200",
+      icon: Layers,
+    },
+    Completed: {
+      color: "bg-emerald-500/10 text-emerald-700 border-emerald-200",
+      icon: CheckCircle,
+    },
   };
 
   const nextImage = () => {
@@ -74,46 +92,53 @@ const ProjectDetail = () => {
   };
 
   const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
+    setCurrentImageIndex(
+      (prev) => (prev - 1 + galleryImages.length) % galleryImages.length
+    );
   };
 
   return (
     <Layout>
       {/* Premium Hero Section */}
       <section className="relative h-[70vh] overflow-hidden">
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${project.imageUrl})` }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-slate-900/40 via-slate-900/60 to-slate-900/90" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(0,0,0,0.1),transparent_70%)]" />
-        
+
         <div className="container relative z-10 h-full flex flex-col justify-end pb-16">
-          <Link 
-            to="/projects" 
+          <Link
+            to="/projects"
             className="flex items-center text-white/90 hover:text-white mb-8 transition-colors duration-300 group w-fit"
           >
             <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" />
             Back to Projects
           </Link>
-          
+
           <div className="max-w-4xl">
             <div className="flex items-center gap-4 mb-6">
-              <Badge className={`${statusConfig[project.status as keyof typeof statusConfig]?.color} border backdrop-blur-sm font-medium px-4 py-2`}>
+              <Badge
+                className={`${
+                  statusConfig[project.status as keyof typeof statusConfig]
+                    ?.color
+                } border backdrop-blur-sm font-medium px-4 py-2`}
+              >
                 {project.status}
               </Badge>
               <Badge className="bg-white/10 text-white border-white/20 backdrop-blur-sm font-medium px-4 py-2">
                 {project.category}
               </Badge>
             </div>
-            
+
             <h1 className="text-4xl md:text-6xl font-light text-white mb-6 leading-tight">
               {project.title}
             </h1>
             <p className="text-xl text-white/90 max-w-3xl leading-relaxed font-light">
               {project.description}
             </p>
-            
+
             <div className="flex items-center gap-8 mt-8 text-white/80">
               <div className="flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
@@ -125,7 +150,12 @@ const ProjectDetail = () => {
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                <span>{new Date(project.completionDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}</span>
+                <span>
+                  {new Date(project.completionDate).toLocaleDateString(
+                    "en-US",
+                    { year: "numeric", month: "short" }
+                  )}
+                </span>
               </div>
             </div>
           </div>
@@ -138,33 +168,62 @@ const ProjectDetail = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             {/* Left Column - Main Content */}
             <div className="lg:col-span-2">
-              <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+              <Tabs
+                defaultValue={activeTab}
+                onValueChange={setActiveTab}
+                className="w-full"
+              >
                 <TabsList className="grid w-full grid-cols-4 mb-12 bg-slate-100 p-1 rounded-xl">
-                  <TabsTrigger value="overview" className="rounded-lg font-medium">Overview</TabsTrigger>
-                  <TabsTrigger value="gallery" className="rounded-lg font-medium">Gallery</TabsTrigger>
-                  <TabsTrigger value="timeline" className="rounded-lg font-medium">Timeline</TabsTrigger>
-                  <TabsTrigger value="video" className="rounded-lg font-medium">Video</TabsTrigger>
+                  <TabsTrigger
+                    value="overview"
+                    className="rounded-lg font-medium"
+                  >
+                    Overview
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="gallery"
+                    className="rounded-lg font-medium"
+                  >
+                    Gallery
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="timeline"
+                    className="rounded-lg font-medium"
+                  >
+                    Timeline
+                  </TabsTrigger>
+                  <TabsTrigger value="video" className="rounded-lg font-medium">
+                    Video
+                  </TabsTrigger>
                 </TabsList>
 
                 {/* Overview Tab */}
                 <TabsContent value="overview" className="space-y-10">
                   <div className="bg-white rounded-2xl p-8 shadow-lg border border-slate-200/50">
-                    <h2 className="text-3xl font-semibold mb-6 text-slate-900">Project Overview</h2>
+                    <h2 className="text-3xl font-semibold mb-6 text-slate-900">
+                      Project Overview
+                    </h2>
                     <div className="prose prose-slate max-w-none">
                       <p className="text-lg text-slate-600 leading-relaxed mb-6">
-                        {project.description} This innovative building showcases our prefab module technology, 
-                        demonstrating the efficiency and versatility of our construction methods. The project 
-                        consists of {project.modules} modules that were fabricated off-site and assembled 
-                        with precision on location.
-                      </p>
-                      
-                      <p className="text-lg text-slate-600 leading-relaxed mb-8">
-                        The design emphasizes sustainability, incorporating energy-efficient features 
-                        and eco-friendly materials throughout. Our team collaborated closely with the 
-                        client to ensure all requirements were met while maintaining the highest quality standards.
+                        {project.description} This innovative building showcases
+                        our prefab module technology, demonstrating the
+                        efficiency and versatility of our construction methods.
+                        The project consists of {project.modules} modules that
+                        were fabricated off-site and assembled with precision on
+                        location.
                       </p>
 
-                      <h3 className="text-2xl font-semibold mt-10 mb-6 text-slate-900">Key Features</h3>
+                      <p className="text-lg text-slate-600 leading-relaxed mb-8">
+                        The design emphasizes sustainability, incorporating
+                        energy-efficient features and eco-friendly materials
+                        throughout. Our team collaborated closely with the
+                        client to ensure all requirements were met while
+                        maintaining the highest quality standards.
+                      </p>
+
+                      <h3 className="text-2xl font-semibold mt-10 mb-6 text-slate-900">
+                        Key Features
+                      </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {[
                           `Modular construction with ${project.modules} prefabricated units`,
@@ -172,9 +231,12 @@ const ProjectDetail = () => {
                           "Customizable interior layouts to meet specific needs",
                           "Rapid on-site assembly reducing construction time by 60%",
                           "Eco-friendly materials with minimal environmental impact",
-                          "Smart home technology integration"
+                          "Smart home technology integration",
                         ].map((feature, index) => (
-                          <div key={index} className="flex items-start gap-3 p-4 bg-slate-50 rounded-xl">
+                          <div
+                            key={index}
+                            className="flex items-start gap-3 p-4 bg-slate-50 rounded-xl"
+                          >
                             <CheckCircle className="h-5 w-5 text-emerald-600 mt-0.5 flex-shrink-0" />
                             <span className="text-slate-700">{feature}</span>
                           </div>
@@ -182,26 +244,61 @@ const ProjectDetail = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="bg-white rounded-2xl p-8 shadow-lg border border-slate-200/50">
-                    <h3 className="text-2xl font-semibold mb-6 text-slate-900">Project Specifications</h3>
+                    <h3 className="text-2xl font-semibold mb-6 text-slate-900">
+                      Project Specifications
+                    </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {[
-                        { label: "Total Modules", value: `${project.modules} Units`, icon: Layers },
-                        { label: "Project Status", value: project.status, icon: statusConfig[project.status as keyof typeof statusConfig]?.icon || CheckCircle },
-                        { label: "Completion Date", value: new Date(project.completionDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), icon: Calendar },
-                        { label: "Location", value: project.location || "Metro Manila, Philippines", icon: MapPin }
+                        {
+                          label: "Total Modules",
+                          value: `${project.modules} Units`,
+                          icon: Layers,
+                        },
+                        {
+                          label: "Project Status",
+                          value: project.status,
+                          icon:
+                            statusConfig[
+                              project.status as keyof typeof statusConfig
+                            ]?.icon || CheckCircle,
+                        },
+                        {
+                          label: "Completion Date",
+                          value: new Date(
+                            project.completionDate
+                          ).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          }),
+                          icon: Calendar,
+                        },
+                        {
+                          label: "Location",
+                          value:
+                            project.location || "Metro Manila, Philippines",
+                          icon: MapPin,
+                        },
                       ].map((spec, index) => {
                         const Icon = spec.icon;
                         return (
-                          <div key={index} className="bg-gradient-to-br from-slate-50 to-slate-100/50 p-6 rounded-xl border border-slate-200/50">
+                          <div
+                            key={index}
+                            className="bg-gradient-to-br from-slate-50 to-slate-100/50 p-6 rounded-xl border border-slate-200/50"
+                          >
                             <div className="flex items-center gap-3 mb-2">
                               <div className="p-2 bg-slate-200 rounded-lg">
                                 <Icon className="h-5 w-5 text-slate-600" />
                               </div>
-                              <div className="text-sm font-medium text-slate-500">{spec.label}</div>
+                              <div className="text-sm font-medium text-slate-500">
+                                {spec.label}
+                              </div>
                             </div>
-                            <div className="text-lg font-semibold text-slate-900 ml-11">{spec.value}</div>
+                            <div className="text-lg font-semibold text-slate-900 ml-11">
+                              {spec.value}
+                            </div>
                           </div>
                         );
                       })}
@@ -212,17 +309,21 @@ const ProjectDetail = () => {
                 {/* Premium Gallery Tab with Carousel */}
                 <TabsContent value="gallery">
                   <div className="bg-white rounded-2xl p-8 shadow-lg border border-slate-200/50">
-                    <h2 className="text-3xl font-semibold mb-8 text-slate-900">Project Gallery</h2>
-                    
+                    <h2 className="text-3xl font-semibold mb-8 text-slate-900">
+                      Project Gallery
+                    </h2>
+
                     {/* Main Carousel */}
                     <div className="relative mb-8">
                       <div className="aspect-video bg-slate-100 rounded-2xl overflow-hidden relative group">
-                        <img 
+                        <img
                           src={galleryImages[currentImageIndex]}
-                          alt={`${project.title} - Image ${currentImageIndex + 1}`}
+                          alt={`${project.title} - Image ${
+                            currentImageIndex + 1
+                          }`}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
-                        
+
                         {/* Navigation Buttons */}
                         <button
                           onClick={prevImage}
@@ -236,7 +337,7 @@ const ProjectDetail = () => {
                         >
                           <ChevronRight className="h-5 w-5" />
                         </button>
-                        
+
                         {/* Image Counter */}
                         <div className="absolute bottom-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm backdrop-blur-sm">
                           {currentImageIndex + 1} / {galleryImages.length}
@@ -251,12 +352,12 @@ const ProjectDetail = () => {
                           key={index}
                           onClick={() => setCurrentImageIndex(index)}
                           className={`aspect-square rounded-xl overflow-hidden border-2 transition-all duration-300 ${
-                            currentImageIndex === index 
-                              ? 'border-slate-900 ring-2 ring-slate-900/20' 
-                              : 'border-slate-200 hover:border-slate-400'
+                            currentImageIndex === index
+                              ? "border-slate-900 ring-2 ring-slate-900/20"
+                              : "border-slate-200 hover:border-slate-400"
                           }`}
                         >
-                          <img 
+                          <img
                             src={image}
                             alt={`Thumbnail ${index + 1}`}
                             className="w-full h-full object-cover"
@@ -270,28 +371,86 @@ const ProjectDetail = () => {
                 {/* Timeline Tab */}
                 <TabsContent value="timeline">
                   <div className="bg-white rounded-2xl p-8 shadow-lg border border-slate-200/50">
-                    <h2 className="text-3xl font-semibold mb-8 text-slate-900">Project Timeline</h2>
+                    <h2 className="text-3xl font-semibold mb-8 text-slate-900">
+                      Project Timeline
+                    </h2>
                     <div className="space-y-8">
                       {[
-                        { phase: "Planning Phase", date: "January 2023 - February 2023", description: "Initial client consultation, site assessment, and project planning. Design concepts reviewed and approved.", status: "completed" },
-                        { phase: "Module Fabrication", date: "March 2023 - June 2023", description: `Off-site fabrication of ${project.modules} modular units according to approved specifications and quality control standards.`, status: "completed" },
-                        { phase: "Site Preparation", date: "April 2023 - May 2023", description: "Foundation work, utility connections, and site preparation completed while modules were being fabricated.", status: "completed" },
-                        { phase: "Module Assembly", date: "July 2023 - August 2023", description: "On-site assembly of prefabricated modules, including all connections and structural elements.", status: "completed" },
-                        { phase: "Interior Finishing", date: "September 2023 - October 2023", description: "Interior finishes, systems integration, and final detailing completed according to design specifications.", status: "completed" },
-                        { phase: "Project Completion", date: new Date(project.completionDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), description: "Final inspections, client walkthrough, and project handover successfully completed.", status: "final" }
+                        {
+                          phase: "Planning Phase",
+                          date: "January 2023 - February 2023",
+                          description:
+                            "Initial client consultation, site assessment, and project planning. Design concepts reviewed and approved.",
+                          status: "completed",
+                        },
+                        {
+                          phase: "Module Fabrication",
+                          date: "March 2023 - June 2023",
+                          description: `Off-site fabrication of ${project.modules} modular units according to approved specifications and quality control standards.`,
+                          status: "completed",
+                        },
+                        {
+                          phase: "Site Preparation",
+                          date: "April 2023 - May 2023",
+                          description:
+                            "Foundation work, utility connections, and site preparation completed while modules were being fabricated.",
+                          status: "completed",
+                        },
+                        {
+                          phase: "Module Assembly",
+                          date: "July 2023 - August 2023",
+                          description:
+                            "On-site assembly of prefabricated modules, including all connections and structural elements.",
+                          status: "completed",
+                        },
+                        {
+                          phase: "Interior Finishing",
+                          date: "September 2023 - October 2023",
+                          description:
+                            "Interior finishes, systems integration, and final detailing completed according to design specifications.",
+                          status: "completed",
+                        },
+                        {
+                          phase: "Project Completion",
+                          date: new Date(
+                            project.completionDate
+                          ).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          }),
+                          description:
+                            "Final inspections, client walkthrough, and project handover successfully completed.",
+                          status: "final",
+                        },
                       ].map((item, index) => (
-                        <div key={index} className="relative pl-12 pb-8 last:pb-0">
-                          <div className={`absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                            item.status === 'final' ? 'bg-emerald-600' : 'bg-slate-900'
-                          }`}>
+                        <div
+                          key={index}
+                          className="relative pl-12 pb-8 last:pb-0"
+                        >
+                          <div
+                            className={`absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                              item.status === "final"
+                                ? "bg-emerald-600"
+                                : "bg-slate-900"
+                            }`}
+                          >
                             <CheckCircle className="h-4 w-4 text-white" />
                           </div>
-                          {index < 5 && <div className="absolute left-4 top-8 w-px h-full bg-slate-200" />}
-                          
+                          {index < 5 && (
+                            <div className="absolute left-4 top-8 w-px h-full bg-slate-200" />
+                          )}
+
                           <div className="bg-slate-50 rounded-xl p-6">
-                            <div className="font-semibold text-xl text-slate-900 mb-2">{item.phase}</div>
-                            <div className="text-sm text-slate-500 mb-3 font-medium">{item.date}</div>
-                            <div className="text-slate-700 leading-relaxed">{item.description}</div>
+                            <div className="font-semibold text-xl text-slate-900 mb-2">
+                              {item.phase}
+                            </div>
+                            <div className="text-sm text-slate-500 mb-3 font-medium">
+                              {item.date}
+                            </div>
+                            <div className="text-slate-700 leading-relaxed">
+                              {item.description}
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -302,7 +461,9 @@ const ProjectDetail = () => {
                 {/* Video Tab */}
                 <TabsContent value="video">
                   <div className="bg-white rounded-2xl p-8 shadow-lg border border-slate-200/50">
-                    <h2 className="text-3xl font-semibold mb-8 text-slate-900">Project Showcase</h2>
+                    <h2 className="text-3xl font-semibold mb-8 text-slate-900">
+                      Project Showcase
+                    </h2>
                     <div className="aspect-video bg-slate-100 rounded-2xl overflow-hidden mb-6 relative group">
                       <iframe
                         width="100%"
@@ -316,8 +477,13 @@ const ProjectDetail = () => {
                     </div>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-slate-600 mb-2">Experience the complete transformation from design to finished project.</p>
-                        <p className="text-sm text-slate-500">Duration: 3:45 • Quality: 1080p HD</p>
+                        <p className="text-slate-600 mb-2">
+                          Experience the complete transformation from design to
+                          finished project.
+                        </p>
+                        <p className="text-sm text-slate-500">
+                          Duration: 3:45 • Quality: 1080p HD
+                        </p>
                       </div>
                       <a
                         href="https://www.youtube.com/watch?v=C_3Xe33PB7E"
@@ -338,11 +504,15 @@ const ProjectDetail = () => {
             <div className="space-y-8">
               {/* Progress Card */}
               <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200/50">
-                <h3 className="text-xl font-semibold mb-6 text-slate-900">Project Progress</h3>
+                <h3 className="text-xl font-semibold mb-6 text-slate-900">
+                  Project Progress
+                </h3>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-slate-600">Completion</span>
-                    <span className="text-2xl font-bold text-slate-900">{project.progress || 100}%</span>
+                    <span className="text-2xl font-bold text-slate-900">
+                      {project.progress || 100}%
+                    </span>
                   </div>
                   <div className="w-full bg-slate-200 rounded-full h-3">
                     <div
@@ -353,7 +523,13 @@ const ProjectDetail = () => {
                   <div className="pt-2 text-sm text-slate-500">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
-                      <span>Completed: {new Date(project.completionDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                      <span>
+                        Completed:{" "}
+                        {new Date(project.completionDate).toLocaleDateString(
+                          "en-US",
+                          { year: "numeric", month: "long", day: "numeric" }
+                        )}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -361,13 +537,15 @@ const ProjectDetail = () => {
 
               {/* Highlights Card */}
               <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200/50">
-                <h3 className="text-xl font-semibold mb-6 text-slate-900">Project Highlights</h3>
+                <h3 className="text-xl font-semibold mb-6 text-slate-900">
+                  Project Highlights
+                </h3>
                 <div className="space-y-4">
                   {[
                     "Energy-efficient design",
                     "Prefabricated modular construction",
                     "60% faster construction time",
-                    "Smart home technology ready"
+                    "Smart home technology ready",
                   ].map((highlight, index) => (
                     <div key={index} className="flex items-center gap-3">
                       <div className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
@@ -381,24 +559,39 @@ const ProjectDetail = () => {
 
               {/* FAQ Card */}
               <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200/50">
-                <h3 className="text-xl font-semibold mb-6 text-slate-900">Frequently Asked Questions</h3>
+                <h3 className="text-xl font-semibold mb-6 text-slate-900">
+                  Frequently Asked Questions
+                </h3>
                 <Accordion type="single" collapsible className="w-full">
                   <AccordionItem value="item-1" className="border-slate-200">
-                    <AccordionTrigger className="text-left hover:no-underline">What are the benefits of modular construction?</AccordionTrigger>
+                    <AccordionTrigger className="text-left hover:no-underline">
+                      What are the benefits of modular construction?
+                    </AccordionTrigger>
                     <AccordionContent className="text-slate-600">
-                      Modular construction offers faster build times, reduced waste, consistent quality control, and lower overall costs compared to traditional construction methods.
+                      Modular construction offers faster build times, reduced
+                      waste, consistent quality control, and lower overall costs
+                      compared to traditional construction methods.
                     </AccordionContent>
                   </AccordionItem>
                   <AccordionItem value="item-2" className="border-slate-200">
-                    <AccordionTrigger className="text-left hover:no-underline">How long does assembly take?</AccordionTrigger>
+                    <AccordionTrigger className="text-left hover:no-underline">
+                      How long does assembly take?
+                    </AccordionTrigger>
                     <AccordionContent className="text-slate-600">
-                      On-site assembly typically takes 2-4 weeks depending on the project size, which is significantly faster than conventional construction.
+                      On-site assembly typically takes 2-4 weeks depending on
+                      the project size, which is significantly faster than
+                      conventional construction.
                     </AccordionContent>
                   </AccordionItem>
                   <AccordionItem value="item-3" className="border-slate-200">
-                    <AccordionTrigger className="text-left hover:no-underline">Are modules customizable?</AccordionTrigger>
+                    <AccordionTrigger className="text-left hover:no-underline">
+                      Are modules customizable?
+                    </AccordionTrigger>
                     <AccordionContent className="text-slate-600">
-                      Yes, all our prefabricated modules can be customized to meet specific requirements for layout, finishes, and features while maintaining the efficiency of modular construction.
+                      Yes, all our prefabricated modules can be customized to
+                      meet specific requirements for layout, finishes, and
+                      features while maintaining the efficiency of modular
+                      construction.
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>
@@ -406,9 +599,12 @@ const ProjectDetail = () => {
 
               {/* CTA Card */}
               <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 text-white">
-                <h3 className="text-xl font-semibold mb-4">Interested in Similar Project?</h3>
+                <h3 className="text-xl font-semibold mb-4">
+                  Interested in Similar Project?
+                </h3>
                 <p className="text-slate-300 mb-6 text-sm leading-relaxed">
-                  Contact our team to discuss your project requirements and learn how our prefab solutions can work for you.
+                  Contact our team to discuss your project requirements and
+                  learn how our prefab solutions can work for you.
                 </p>
                 <div className="space-y-3">
                   <Dialog>
@@ -423,7 +619,8 @@ const ProjectDetail = () => {
                         <DialogTitle>Project Consultation</DialogTitle>
                       </DialogHeader>
                       <p className="py-4 text-slate-600">
-                        Our experts will help you explore how our prefab solutions can bring your vision to life.
+                        Our experts will help you explore how our prefab
+                        solutions can bring your vision to life.
                       </p>
                       <div className="space-y-3">
                         <Button className="w-full bg-slate-900 hover:bg-slate-800">
@@ -436,7 +633,10 @@ const ProjectDetail = () => {
                     </DialogContent>
                   </Dialog>
                   <Link to="/contact">
-                    <Button variant="outline" className="w-full border-slate-400 text-slate-300 hover:bg-white/10">
+                    <Button
+                      variant="outline"
+                      className="w-full border-slate-400 text-slate-300 hover:bg-white/10"
+                    >
                       Get In Touch
                     </Button>
                   </Link>

@@ -1,6 +1,8 @@
+// src/pages/admin/Orders.tsx
+
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -49,16 +51,24 @@ import {
 // --- OrderTable Component ---
 const OrderTable: React.FC<{
   orders: Order[];
-  onStatusUpdate: (orderId: string, newStatus: OrderStatus) => void;
   onViewDetails: (order: Order) => void;
   onConfirmPayment: (order: Order) => void;
 }> = ({ orders, onViewDetails, onConfirmPayment }) => {
+  // --- START: MODIFICATION (1/2) ---
+  // Added the price formatting function
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("en-PH", {
+      style: "currency",
+      currency: "PHP",
+    }).format(price);
+  };
+  // --- END: MODIFICATION (1/2) ---
+
   const getStatusClasses = (
     status: OrderStatus | PaymentStatus | undefined
   ): string => {
     const baseClasses = "font-semibold border-transparent";
     switch (status) {
-      // Order Statuses
       case "Pending":
         return `bg-yellow-100 text-yellow-800 ${baseClasses}`;
       case "Processing":
@@ -72,15 +82,12 @@ const OrderTable: React.FC<{
         return `bg-green-100 text-green-800 ${baseClasses}`;
       case "Cancelled":
         return `bg-red-100 text-red-800 ${baseClasses}`;
-
-      // Payment Statuses
       case "50% Complete Paid":
         return `bg-blue-100 text-blue-800 ${baseClasses}`;
       case "90% Complete Paid":
         return `bg-indigo-100 text-indigo-800 ${baseClasses}`;
       case "100% Complete Paid":
         return `bg-green-100 text-green-800 ${baseClasses}`;
-
       default:
         return `bg-gray-100 text-gray-800 ${baseClasses}`;
     }
@@ -88,13 +95,14 @@ const OrderTable: React.FC<{
 
   const formatAddress = (address: Order["customerInfo"]["deliveryAddress"]) => {
     if (!address) return "N/A";
-    const parts = [
+    return [
       address.street,
       address.subdivision,
       address.cityMunicipality,
       address.province,
-    ];
-    return parts.filter(Boolean).join(", ");
+    ]
+      .filter(Boolean)
+      .join(", ");
   };
 
   return (
@@ -105,78 +113,83 @@ const OrderTable: React.FC<{
             <TableHead>Order ID</TableHead>
             <TableHead>Customer</TableHead>
             <TableHead>Delivery Location</TableHead>
-            {/* --- [NEW] Added Table Header for Additional Address Line --- */}
             <TableHead>Landmarks/Notes</TableHead>
             <TableHead>Date</TableHead>
             <TableHead className="text-right">Total</TableHead>
             <TableHead className="text-center">Payment</TableHead>
-            <TableHead className="text-center">Status</TableHead>
+            <TableHead className="text-center">Order Status</TableHead>
             <TableHead className="text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {orders.map((order) => (
-            <TableRow key={order._id}>
-              <TableCell className="font-medium">
-                #{order._id.slice(-6)}
-              </TableCell>
-              <TableCell>
-                {order.customerInfo.firstName} {order.customerInfo.lastName}
-              </TableCell>
-              <TableCell>
-                {formatAddress(order.customerInfo.deliveryAddress)}
-              </TableCell>
-              {/* --- [NEW] Added Table Cell for Additional Address Line --- */}
-              <TableCell>
-                {order.customerInfo.deliveryAddress?.additionalAddressLine ||
-                  "N/A"}
-              </TableCell>
-              <TableCell>
-                {new Date(order.createdAt).toLocaleDateString()}
-              </TableCell>
-              <TableCell className="text-right">
-                ${order.totalAmount.toFixed(2)}
-              </TableCell>
-              <TableCell className="text-center">
-                <Badge className={getStatusClasses(order.paymentStatus)}>
-                  {order.paymentStatus}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-center">
-                <Badge className={getStatusClasses(order.orderStatus)}>
-                  {order.orderStatus}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-center">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <span className="sr-only">Open menu</span>
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onViewDetails(order)}>
-                      View Details
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => onConfirmPayment(order)}
-                      disabled={order.paymentStatus === "100% Complete Paid"}
-                    >
-                      Confirm Payment
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
-          ))}
+          {orders.map((order) => {
+            const currentPaymentStatus =
+              order.paymentInfo?.paymentStatus || "Pending";
+            return (
+              <TableRow key={order._id}>
+                <TableCell className="font-medium">
+                  #{order._id.slice(-6)}
+                </TableCell>
+                <TableCell>
+                  {order.customerInfo.firstName} {order.customerInfo.lastName}
+                </TableCell>
+                <TableCell>
+                  {formatAddress(order.customerInfo.deliveryAddress)}
+                </TableCell>
+                <TableCell>
+                  {order.customerInfo.deliveryAddress?.additionalAddressLine ||
+                    "N/A"}
+                </TableCell>
+                <TableCell>
+                  {new Date(order.createdAt).toLocaleDateString()}
+                </TableCell>
+                {/* --- START: MODIFICATION (2/2) --- */}
+                {/* Use the formatPrice function here */}
+                <TableCell className="text-right font-medium">
+                  {formatPrice(order.totalAmount)}
+                </TableCell>
+                {/* --- END: MODIFICATION (2/2) --- */}
+                <TableCell className="text-center">
+                  <Badge className={getStatusClasses(currentPaymentStatus)}>
+                    {currentPaymentStatus}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-center">
+                  <Badge className={getStatusClasses(order.orderStatus)}>
+                    {order.orderStatus}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-center">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Open menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onViewDetails(order)}>
+                        View Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => onConfirmPayment(order)}
+                        disabled={currentPaymentStatus === "100% Complete Paid"}
+                      >
+                        Confirm Payment
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </Card>
   );
 };
 
-// --- Main Orders Component ---
+// --- Main Orders Component (No changes below this line) ---
 const Orders: React.FC = () => {
   const { logActivity } = useAdminAuth();
   const { toast } = useToast();
@@ -228,18 +241,18 @@ const Orders: React.FC = () => {
     },
   });
 
-  // --- [MODIFIED] Added additionalAddressLine to the search filter ---
   const filteredOrders = orders.filter((order) => {
     const searchLower = searchQuery.toLowerCase();
-
-    // Safely access nested properties for searching
     const address = order.customerInfo?.deliveryAddress;
     const province = address?.province?.toLowerCase() ?? "";
     const city = address?.cityMunicipality?.toLowerCase() ?? "";
     const subdivision = address?.subdivision?.toLowerCase() ?? "";
     const street = address?.street?.toLowerCase() ?? "";
     const additionalInfo = address?.additionalAddressLine?.toLowerCase() ?? "";
-    const productName = order.productId?.productName?.toLowerCase() ?? "";
+    const productNames =
+      order.products
+        ?.map((p) => p.productId.productName.toLowerCase())
+        .join(" ") || "";
     const orderDate = new Date(order.createdAt)
       .toLocaleDateString()
       .toLowerCase();
@@ -249,7 +262,7 @@ const Orders: React.FC = () => {
       order.customerInfo.firstName.toLowerCase().includes(searchLower) ||
       order.customerInfo.lastName.toLowerCase().includes(searchLower) ||
       order.customerInfo.email.toLowerCase().includes(searchLower) ||
-      productName.includes(searchLower) ||
+      productNames.includes(searchLower) ||
       orderDate.includes(searchLower) ||
       province.includes(searchLower) ||
       city.includes(searchLower) ||
@@ -309,7 +322,7 @@ const Orders: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 p-0 bg-gray-50 min-h-screen">
+    <div className="space-y-6 p-4 bg-gray-50 min-h-screen">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
@@ -382,7 +395,6 @@ const Orders: React.FC = () => {
                 <OrderCard
                   key={order._id}
                   order={order}
-                  onStatusUpdate={handleStatusUpdate}
                   onViewDetails={handleViewDetails}
                   onConfirmPayment={handleConfirmPayment}
                 />
@@ -394,7 +406,6 @@ const Orders: React.FC = () => {
                 orders={filteredOrders}
                 onViewDetails={handleViewDetails}
                 onConfirmPayment={handleConfirmPayment}
-                onStatusUpdate={handleStatusUpdate}
               />
             </div>
           )

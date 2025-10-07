@@ -5,7 +5,7 @@ import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription } from "@/components/ui/card";
-import { Truck, Package, Box, Rotate3D } from "lucide-react"; // Added Cube icon
+import { Truck, Package, Box, Rotate3D } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -89,9 +89,23 @@ const ProductDetail = () => {
     );
   }
 
+  // --- START: MODIFICATION ---
   const handleBuyNow = () => {
-    navigate(`/checkout/${product._id}`);
+    // 1. Create a single-item cart in the format the checkout page expects.
+    const itemToCheckout = {
+      id: product._id,
+      name: product.productName,
+      price: product.productPrice,
+      image:
+        product.image ||
+        "https://placehold.co/150x150/E2E8F0/4A5568?text=No+Image",
+      quantity: 1, // Quantity is 1 for a "Buy Now" action
+    };
+
+    // 2. Navigate to the correct route and pass the item in the state.
+    navigate("/checkout", { state: { items: [itemToCheckout] } });
   };
+  // --- END: MODIFICATION ---
 
   return (
     <Layout>
@@ -192,12 +206,10 @@ const ProductDetail = () => {
               </Button>
               <Dialog>
                 <DialogTrigger asChild>
-                  {/* START: UPDATED BUTTON */}
                   <Button variant="outline" className="w-full">
                     <Rotate3D className="mr-2 h-4 w-4" />
                     View 3D Model
                   </Button>
-                  {/* END: UPDATED BUTTON */}
                 </DialogTrigger>
                 <DialogContent className="max-w-4xl w-full h-[80vh]">
                   <DialogHeader>

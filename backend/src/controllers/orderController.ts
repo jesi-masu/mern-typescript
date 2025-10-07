@@ -1,3 +1,4 @@
+// backend/src/controllers/orderController.ts
 import { Request, Response, RequestHandler } from "express";
 import mongoose from "mongoose";
 import Order, { IOrder } from "../models/orderModel";
@@ -18,7 +19,10 @@ export const getUserOrders: RequestHandler = async (req, res) => {
     }
 
     const orders = await Order.find({ userId })
-      .populate("productId", "productName image") // Populate with specific product fields
+      // --- START: MODIFICATION ---
+      // Add 'productPrice' to the list of fields to fetch
+      .populate("products.productId", "productName image productPrice")
+      // --- END: MODIFICATION ---
       .sort({ createdAt: -1 });
 
     res.status(200).json(orders);
@@ -37,11 +41,19 @@ export const getUserOrders: RequestHandler = async (req, res) => {
  */
 export const createOrder: RequestHandler = async (req, res) => {
   try {
-    const { productId, customerInfo, paymentInfo, contractInfo, totalAmount } =
-      req.body;
+    const {
+      products,
+      customerInfo,
+      paymentInfo,
+      contractInfo,
+      totalAmount,
+      locationImages,
+    } = req.body;
 
     if (
-      !productId ||
+      !products ||
+      !Array.isArray(products) ||
+      products.length === 0 ||
       !customerInfo ||
       !paymentInfo ||
       !contractInfo ||
@@ -59,21 +71,21 @@ export const createOrder: RequestHandler = async (req, res) => {
       return;
     }
 
-    const userExists = await User.findById(userId);
-    const productExists = await Product.findById(productId);
-
-    if (!userExists || !productExists) {
-      res.status(404).json({ message: "User or Product not found." });
+    const productIds = products.map((p) => p.productId);
+    const foundProducts = await Product.find({ _id: { $in: productIds } });
+    if (foundProducts.length !== productIds.length) {
+      res.status(404).json({ message: "One or more products not found." });
       return;
     }
 
     const newOrder: IOrder = await Order.create({
       userId,
-      productId,
+      products,
       customerInfo,
       paymentInfo,
       contractInfo,
       totalAmount,
+      locationImages,
     });
 
     res.status(201).json(newOrder);
@@ -92,7 +104,7 @@ export const getOrders: RequestHandler = async (req, res) => {
   try {
     const orders = await Order.find({})
       .populate("userId", "firstName lastName email")
-      .populate("productId", "productName productPrice")
+      .populate("products.productId", "productName productPrice")
       .sort({ createdAt: -1 });
     res.status(200).json(orders);
   } catch (error: any) {
@@ -117,7 +129,7 @@ export const getOrderById: RequestHandler = async (req, res) => {
   try {
     const order = await Order.findById(id)
       .populate("userId", "firstName lastName email")
-      .populate("productId");
+      .populate("products.productId");
 
     if (!order) {
       res.status(404).json({ message: "Order not found." });
@@ -164,7 +176,6 @@ export const updateOrder = async (
       return;
     }
 
-    // Security check: Ensure clients can only update their own orders
     if (
       req.user?.role === "client" &&
       order.userId.toString() !== req.user?._id
@@ -176,13 +187,19 @@ export const updateOrder = async (
     }
 
     const updateData: {
-      $set?: { orderStatus?: string; paymentStatus?: string };
-      $push?: { paymentReceipts: string };
+      $set?: { [key: string]: string };
+      $push?: { "paymentInfo.paymentReceipts": string };
     } = {};
 
-    const fieldsToSet: { orderStatus?: string; paymentStatus?: string } = {};
-    if (orderStatus) fieldsToSet.orderStatus = orderStatus;
-    if (paymentStatus) fieldsToSet.paymentStatus = paymentStatus;
+    const fieldsToSet: { [key: string]: string } = {};
+
+    if (orderStatus) {
+      fieldsToSet.orderStatus = orderStatus;
+    }
+
+    if (paymentStatus) {
+      fieldsToSet["paymentInfo.paymentStatus"] = paymentStatus;
+    }
 
     if (Object.keys(fieldsToSet).length > 0) {
       if (req.user?.role === "client") {
@@ -195,7 +212,7 @@ export const updateOrder = async (
     }
 
     if (paymentReceiptUrl) {
-      updateData.$push = { paymentReceipts: paymentReceiptUrl };
+      updateData.$push = { "paymentInfo.paymentReceipts": paymentReceiptUrl };
     }
 
     if (Object.keys(updateData).length === 0) {

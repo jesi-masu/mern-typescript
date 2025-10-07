@@ -1,3 +1,4 @@
+// src/components/admin/PaymentConfirmationModal.tsx
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
@@ -6,7 +7,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -34,13 +34,11 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
   const [selectedStatus, setSelectedStatus] = useState<PaymentStatus | null>(
     null
   );
-  const [notes, setNotes] = useState("");
   const [isConfirming, setIsConfirming] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setSelectedStatus(null);
-      setNotes("");
       setIsConfirming(false);
     }
   }, [isOpen]);
@@ -66,8 +64,9 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
   const handleConfirm = () => {
     if (!selectedStatus) return;
     setIsConfirming(true);
+    // Using a short timeout to give feedback to the user
     setTimeout(() => {
-      onConfirm(order._id, selectedStatus, notes);
+      onConfirm(order._id, selectedStatus);
       setIsConfirming(false);
       onClose();
     }, 500);
@@ -80,6 +79,13 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
     "100% Complete Paid",
   ];
 
+  // --- START: MODIFICATIONS ---
+  const currentPaymentStatus = order.paymentInfo?.paymentStatus;
+  const productNames =
+    order.products?.map((item) => item.productId.productName).join(", ") ||
+    "N/A";
+  // --- END: MODIFICATIONS ---
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg">
@@ -90,100 +96,83 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="max-h-[70vh] overflow-y-auto pr-6">
-          <div className="space-y-4">
-            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <h3 className="font-medium text-yellow-800">
-                    Payment Verification
-                  </h3>
-                  <p className="text-sm text-yellow-700 mt-1">
-                    Please verify the payment before confirming the new stage.
-                    This action cannot be undone.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3 border-y py-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Order ID:</span>
-                {/* --- [MODIFIED] Made Order ID bigger and bolder --- */}
-                <span className="font-mono text-sm font-bold bg-gray-100 py-1 px-2 rounded">
-                  #{order._id.slice(-6)}
-                </span>
-              </div>
-              {/* --- [ADDED] Customer Name --- */}
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Customer:</span>
-                <span className="font-medium text-gray-800 text-sm">
-                  {order.customerInfo.firstName} {order.customerInfo.lastName}
-                </span>
-              </div>
-              {/* --- [ADDED] Product Name --- */}
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Product:</span>
-                <span className="font-medium text-gray-800 text-sm truncate max-w-[200px]">
-                  {order.productId.productName}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">
-                  Total Amount:
-                </span>
-                <span className="font-bold text-lg text-green-600">
-                  {formatPrice(order.totalAmount)}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">
-                  Current Payment Status:
-                </span>
-                <Badge className={getPaymentStatusClasses(order.paymentStatus)}>
-                  {order.paymentStatus}
-                </Badge>
-              </div>
-            </div>
-
-            <div>
-              <Label className="text-base font-medium">
-                Select Payment Stage
-              </Label>
-              <RadioGroup
-                onValueChange={(value) =>
-                  setSelectedStatus(value as PaymentStatus)
-                }
-                className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3"
-              >
-                {paymentStages.map((stage) => (
-                  <Label
-                    key={stage}
-                    className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400 has-[:checked]:shadow-sm transition-all"
-                  >
-                    <RadioGroupItem value={stage} id={stage} />
-                    <Badge className={getPaymentStatusClasses(stage)}>
-                      {stage}
-                    </Badge>
-                  </Label>
-                ))}
-              </RadioGroup>
-            </div>
-
-            <div className="flex items-start gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-              <div className="text-sm">
-                <p className="font-medium text-green-800">
-                  After confirmation:
+        <div className="max-h-[70vh] overflow-y-auto pr-6 space-y-4">
+          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <h3 className="font-medium text-yellow-800">
+                  Payment Verification
+                </h3>
+                <p className="text-sm text-yellow-700 mt-1">
+                  Please verify the payment before confirming the new stage.
+                  This action cannot be undone.
                 </p>
-                <ul className="text-green-700 mt-1 space-y-1 list-disc list-inside">
-                  <li>Payment status will be updated.</li>
-                  <li>The customer will be notified automatically.</li>
-                  <li>The order will proceed to the next stage.</li>
-                </ul>
               </div>
             </div>
+          </div>
+
+          <div className="space-y-3 border-y py-4">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Order ID:</span>
+              <span className="font-mono text-sm font-bold bg-gray-100 py-1 px-2 rounded">
+                #{order._id.slice(-6)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Customer:</span>
+              <span className="font-medium text-gray-800 text-sm">
+                {order.customerInfo.firstName} {order.customerInfo.lastName}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Product(s):</span>
+              <span className="font-medium text-gray-800 text-sm text-right truncate max-w-[200px]">
+                {/* --- MODIFICATION: Use productNames --- */}
+                {productNames}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">
+                Total Amount:
+              </span>
+              <span className="font-bold text-lg text-green-600">
+                {formatPrice(order.totalAmount)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">
+                Current Payment Status:
+              </span>
+              {/* --- MODIFICATION: Use currentPaymentStatus --- */}
+              <Badge className={getPaymentStatusClasses(currentPaymentStatus)}>
+                {currentPaymentStatus}
+              </Badge>
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-base font-medium">
+              Select New Payment Stage
+            </Label>
+            <RadioGroup
+              onValueChange={(value) =>
+                setSelectedStatus(value as PaymentStatus)
+              }
+              className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3"
+            >
+              {paymentStages.map((stage) => (
+                <Label
+                  key={stage}
+                  className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400 has-[:checked]:shadow-sm transition-all"
+                >
+                  <RadioGroupItem value={stage} id={stage} />
+                  <Badge className={getPaymentStatusClasses(stage)}>
+                    {stage}
+                  </Badge>
+                </Label>
+              ))}
+            </RadioGroup>
           </div>
         </div>
 

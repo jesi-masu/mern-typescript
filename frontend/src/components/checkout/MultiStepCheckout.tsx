@@ -1,16 +1,12 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/context/AuthContext";
-// --- UPDATED: Import the new custom hook ---
-import { useCheckoutState } from "@/hooks/useCheckoutState";
-import { isStepValid } from "@/utils/checkoutValidation";
-
-import { Product } from "@/types/product";
-import { fetchProductById } from "@/services/productService";
-import ProductNotFound from "@/components/common/ProductNotFound";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Progress } from "../ui/progress";
+import { useToast } from "../../hooks/use-toast";
+import { useAuth } from "../../context/AuthContext";
+import { useCheckoutState } from "../../hooks/useCheckoutState";
+import { isStepValid } from "../../utils/checkoutValidation";
+import { CartItem } from "../../context/CartContext";
 
 import CustomerInfoStep from "./steps/CustomerInfoStep";
 import PaymentStep from "./steps/PaymentStep";
@@ -57,17 +53,14 @@ const uploadFileToCloudinary = async (file: File): Promise<string> => {
 };
 
 const MultiStepCheckout = () => {
-  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { token } = useAuth();
 
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [items, setItems] = useState<CartItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // --- UPDATED: All local state management is now handled by the custom hook ---
   const {
     currentStep,
     customerInfo,
@@ -81,37 +74,34 @@ const MultiStepCheckout = () => {
   } = useCheckoutState();
 
   useEffect(() => {
-    const getProduct = async () => {
-      if (!id) {
-        setError("Product ID is missing.");
-        setLoading(false);
-        return;
-      }
-      try {
-        setLoading(true);
-        setError(null);
-        const fetchedProduct = await fetchProductById(id);
-        setProduct(fetchedProduct);
-      } catch (err: any) {
-        setError(err.message || "Failed to load product details.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    getProduct();
-  }, [id]);
+    if (
+      location.state &&
+      location.state.items &&
+      location.state.items.length > 0
+    ) {
+      setItems(location.state.items);
+    } else {
+      toast({
+        title: "Cart is empty",
+        description: "Redirecting you to the shop.",
+        variant: "destructive",
+      });
+      navigate("/shop");
+    }
+  }, [location, navigate, toast]);
 
-  if (loading) {
+  const totalAmount = items.reduce(
+    (acc, item) => acc + item.price * item.quantity,
+    0
+  );
+
+  if (items.length === 0) {
     return (
       <div className="container py-12 text-center">
-        <h1 className="text-2xl font-bold mb-4">Loading Product...</h1>
-        <p>Fetching product details. Please wait.</p>
+        <h1 className="text-2xl font-bold mb-4">Loading Checkout...</h1>
+        <p>Preparing your items. Please wait.</p>
       </div>
     );
-  }
-
-  if (error || !product) {
-    return <ProductNotFound />;
   }
 
   const steps = [
@@ -150,7 +140,10 @@ const MultiStepCheckout = () => {
       const locationImagesUrls = await Promise.all(locationImageUploads);
 
       const orderPayload = {
-        productId: product._id,
+        products: items.map((item) => ({
+          productId: item.id,
+          quantity: item.quantity,
+        })),
         customerInfo: {
           firstName: customerInfo.firstName,
           lastName: customerInfo.lastName,
@@ -180,7 +173,7 @@ const MultiStepCheckout = () => {
           agreedToTerms: contractInfo.agreedToTerms,
         },
         locationImages: locationImagesUrls,
-        totalAmount: product.productPrice,
+        totalAmount: totalAmount,
       };
 
       const response = await fetch(
@@ -203,7 +196,7 @@ const MultiStepCheckout = () => {
       const newOrder = await response.json();
       toast({
         title: "Order placed successfully!",
-        description: `Order #${newOrder._id} has been created.`,
+        description: `Your order #${newOrder._id} has been created.`,
       });
       navigate("/order-history");
     } catch (submitError: any) {
@@ -252,7 +245,7 @@ const MultiStepCheckout = () => {
                 <PaymentStep
                   paymentInfo={paymentInfo}
                   onChange={handlePaymentInfoChange}
-                  product={product}
+                  totalAmount={totalAmount}
                 />
               )}
               {currentStep === 3 && (
@@ -260,7 +253,8 @@ const MultiStepCheckout = () => {
                   contractInfo={contractInfo}
                   onChange={handleContractInfoChange}
                   customerInfo={customerInfo}
-                  product={product}
+                  items={items}
+                  totalAmount={totalAmount}
                 />
               )}
               <CheckoutNavigation
@@ -276,7 +270,7 @@ const MultiStepCheckout = () => {
           </Card>
         </div>
         <div className="lg:col-span-1">
-          <OrderSummary product={product} />
+          <OrderSummary items={items} totalAmount={totalAmount} />
         </div>
       </div>
     </div>

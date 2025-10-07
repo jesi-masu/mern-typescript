@@ -1,37 +1,33 @@
+// backend/src/models/orderModel.ts
 import mongoose, { Document, Schema, Types } from "mongoose";
 
-// Define the structure of the order document in MongoDB
+interface IOrderProduct {
+  productId: Types.ObjectId;
+  quantity: number;
+}
+
 export interface IOrder extends Document {
   userId: Types.ObjectId;
-  productId: Types.ObjectId;
+  products: IOrderProduct[];
   customerInfo: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phoneNumber: string;
-    deliveryAddress: {
-      street: string;
-      subdivision: string;
-      additionalAddressLine?: string;
-      cityMunicipality: string;
-      province: string;
-      postalCode: string;
-      country: string;
-    };
+    /* ... */
   };
   paymentInfo: {
     paymentMethod: "installment" | "full";
     installmentStage?: "initial" | "pre_delivery" | "final";
     paymentMode: "cash" | "bank" | "cheque" | "gcash";
     paymentTiming: "now" | "later";
-    // --- NEW: Store URLs of uploaded payment receipts ---
     paymentReceipts?: string[];
+    // --- MODIFICATION: paymentStatus is now defined here ---
+    paymentStatus:
+      | "Pending"
+      | "50% Complete Paid"
+      | "90% Complete Paid"
+      | "100% Complete Paid";
   };
   contractInfo: {
-    signature: string; // This will likely be a Base64 string from the signature pad
-    agreedToTerms: boolean;
+    /* ... */
   };
-  // --- NEW: Store URLs of uploaded location images ---
   locationImages?: string[];
   totalAmount: number;
   orderStatus:
@@ -42,17 +38,28 @@ export interface IOrder extends Document {
     | "Delivered"
     | "Completed"
     | "Cancelled";
-  paymentStatus:
-    | "Pending"
-    | "50% Complete Paid"
-    | "90% Complete Paid"
-    | "100% Complete Paid";
+  // The top-level paymentStatus is removed from here
 }
+
+const orderProductSchema: Schema = new Schema(
+  {
+    productId: { type: Schema.Types.ObjectId, ref: "Product", required: true },
+    quantity: { type: Number, required: true, min: 1 },
+  },
+  { _id: false }
+);
 
 const orderSchema: Schema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    productId: { type: Schema.Types.ObjectId, ref: "Product", required: true },
+    products: {
+      type: [orderProductSchema],
+      required: true,
+      validate: [
+        (val: IOrderProduct[]) => val.length > 0,
+        "Order must have at least one product.",
+      ],
+    },
     customerInfo: {
       type: {
         firstName: { type: String, required: true },
@@ -96,11 +103,23 @@ const orderSchema: Schema = new Schema(
           enum: ["now", "later"],
           required: true,
         },
-        // --- NEW: Added to schema ---
         paymentReceipts: {
           type: [String],
           required: false,
         },
+        // --- START: MODIFICATION ---
+        // Move the paymentStatus schema definition inside paymentInfo
+        paymentStatus: {
+          type: String,
+          enum: [
+            "Pending",
+            "50% Complete Paid",
+            "90% Complete Paid",
+            "100% Complete Paid",
+          ],
+          default: "Pending",
+        },
+        // --- END: MODIFICATION ---
       },
       required: true,
     },
@@ -111,7 +130,6 @@ const orderSchema: Schema = new Schema(
       },
       required: true,
     },
-    // --- NEW: Added to schema ---
     locationImages: {
       type: [String],
       required: false,
@@ -130,16 +148,7 @@ const orderSchema: Schema = new Schema(
       ],
       default: "Pending",
     },
-    paymentStatus: {
-      type: String,
-      enum: [
-        "Pending",
-        "50% Complete Paid",
-        "90% Complete Paid",
-        "100% Complete Paid",
-      ],
-      default: "Pending",
-    },
+    // --- MODIFICATION: The top-level paymentStatus is removed from here ---
   },
   { timestamps: true }
 );

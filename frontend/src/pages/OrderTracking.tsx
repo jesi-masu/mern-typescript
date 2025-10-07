@@ -1,3 +1,4 @@
+// src/pages/OrderTracking.tsx
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -12,7 +13,7 @@ import { PaymentStatusCard } from "@/components/tracking/PaymentStatusCard";
 import { OrderDetailsSidebar } from "@/components/tracking/OrderDetailsSidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-// --- API FETCHING FUNCTION ---
+// --- API FETCHING FUNCTION (No changes needed here) ---
 const fetchOrderById = async (
   orderId: string,
   token: string | null
@@ -49,9 +50,16 @@ const OrderTracking = () => {
     queryKey: ["order", id],
     queryFn: () => fetchOrderById(id!, token),
     enabled: !!id && !!token,
+    refetchOnWindowFocus: true, // This is good, it keeps the data fresh when you switch tabs
+
+    // --- START: MODIFICATION ---
+    // Add this line to automatically refetch every 15 seconds
+    refetchInterval: 15000,
+    // --- END: MODIFICATION ---
   });
 
-  // --- LOADING, ERROR, AND NOT-FOUND STATES ---
+  // ... rest of your component is unchanged
+
   if (isLoading) {
     return (
       <Layout>
@@ -97,7 +105,6 @@ const OrderTracking = () => {
   return (
     <Layout>
       <div className="container py-8 max-w-6xl">
-        {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold">Order Tracking</h1>
@@ -115,35 +122,37 @@ const OrderTracking = () => {
           </div>
         </div>
 
-        {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <OrderStatusCard order={order} />
             <PaymentStatusCard order={order} />
 
-            {order.paymentReceipts && order.paymentReceipts.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Uploaded Payment Proofs</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2 text-sm">
-                    {order.paymentReceipts.map((receipt, index) => (
-                      <li key={index}>
-                        <a
-                          href={receipt}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          Receipt #{index + 1}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            )}
+            {order.paymentInfo?.paymentReceipts &&
+              order.paymentInfo.paymentReceipts.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Uploaded Payment Proofs</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2 text-sm">
+                      {order.paymentInfo.paymentReceipts.map(
+                        (receipt, index) => (
+                          <li key={index}>
+                            <a
+                              href={receipt}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline"
+                            >
+                              Receipt #{index + 1}
+                            </a>
+                          </li>
+                        )
+                      )}
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
           </div>
           <div className="space-y-6">
             <OrderDetailsSidebar order={order} />

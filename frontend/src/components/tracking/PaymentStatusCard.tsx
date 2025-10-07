@@ -1,3 +1,4 @@
+// src/components/tracking/PaymentStatusCard.tsx
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -52,21 +53,27 @@ const formatPrice = (price: number) => {
 export const PaymentStatusCard: React.FC<PaymentStatusCardProps> = ({
   order,
 }) => {
+  // --- START: MODIFICATION ---
+  // Use optional chaining (?.) for safety.
+  const currentStatus = order.paymentInfo?.paymentStatus || "Pending";
+
   const currentPaymentStatusIndex = paymentStatusSteps.findIndex(
-    (step) => step.key === order.paymentStatus
+    (step) => step.key === currentStatus
   );
   const { remainingAmount, percentage } = getPaymentDetails(
-    order.paymentStatus,
+    currentStatus,
     order.totalAmount
   );
+  // --- END: MODIFICATION ---
 
   return (
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle>Payment Status</CardTitle>
-          <Badge className={getPaymentStatusColor(order.paymentStatus)}>
-            {order.paymentStatus}
+          {/* --- MODIFICATION: Use the 'currentStatus' variable --- */}
+          <Badge className={getPaymentStatusColor(currentStatus)}>
+            {currentStatus}
           </Badge>
         </div>
       </CardHeader>
@@ -120,7 +127,8 @@ export const PaymentStatusCard: React.FC<PaymentStatusCardProps> = ({
             </div>
           </div>
 
-          {order.paymentStatus !== "100% Complete Paid" && (
+          {/* --- MODIFICATION: Use the 'currentStatus' variable --- */}
+          {currentStatus !== "100% Complete Paid" && (
             <PaymentUpload orderId={order._id} />
           )}
         </div>

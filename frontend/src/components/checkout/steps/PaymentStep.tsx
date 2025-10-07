@@ -1,17 +1,14 @@
 import React from "react";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Label } from "../../ui/label";
+import { Input } from "../../ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
+import { Button } from "../../ui/button";
 import { MapPin, Receipt, X, Info } from "lucide-react";
-import { PaymentInfo } from "@/types/checkout";
-import { Product } from "@/types/product";
-import { formatPrice } from "@/lib/formatters";
+import { PaymentInfo } from "../../../types/checkout";
+import { formatPrice } from "../../../lib/formatters";
 import PaymentSelector from "../PaymentSelector";
-// --- ADDED: Import the new address component ---
 import DeliveryAddressStep from "./DeliveryAddressStep";
 
-// Define the full shape of the payment information object
 interface ExtendedPaymentInfo extends PaymentInfo {
   deliveryAddress?: {
     street: string;
@@ -31,28 +28,28 @@ interface ExtendedPaymentInfo extends PaymentInfo {
 interface PaymentStepProps {
   paymentInfo: ExtendedPaymentInfo;
   onChange: (info: Partial<ExtendedPaymentInfo>) => void;
-  product: Product;
+  totalAmount: number;
 }
 
 const PaymentStep: React.FC<PaymentStepProps> = ({
   paymentInfo,
   onChange,
-  product,
+  totalAmount,
 }) => {
   const getCurrentPaymentAmount = () => {
     if (paymentInfo.paymentMethod === "full") {
-      return product.productPrice;
+      return totalAmount;
     } else if (paymentInfo.paymentMethod === "installment") {
       switch (paymentInfo.installmentStage) {
         case "initial":
-          return Math.round(product.productPrice * 0.5);
+          return Math.round(totalAmount * 0.5);
         case "pre_delivery":
-          return Math.round(product.productPrice * 0.4);
+          return Math.round(totalAmount * 0.4);
         case "final":
           return (
-            product.productPrice -
-            Math.round(product.productPrice * 0.5) -
-            Math.round(product.productPrice * 0.4)
+            totalAmount -
+            Math.round(totalAmount * 0.5) -
+            Math.round(totalAmount * 0.4)
           );
         default:
           return 0;
@@ -87,7 +84,6 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
     onChange({ locationImages: [...existingFiles, ...files] });
   };
 
-  // --- REFACTORED: This now handles updates from the new component ---
   const handleAddressChange = (
     addressInfo: Partial<PaymentInfo["deliveryAddress"]>
   ) => {
@@ -121,7 +117,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       <h3 className="text-lg font-semibold">Payment & Location</h3>
 
       <PaymentSelector
-        product={product}
+        totalAmount={totalAmount}
         paymentMethod={paymentInfo.paymentMethod}
         onPaymentMethodChange={handlePaymentMethodChange}
         installmentStage={paymentInfo.installmentStage}
@@ -220,7 +216,6 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
         </Card>
       )}
 
-      {/* --- REPLACED: The old form is now a dedicated component --- */}
       <DeliveryAddressStep
         deliveryAddress={paymentInfo.deliveryAddress}
         onChange={handleAddressChange}

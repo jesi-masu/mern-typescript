@@ -1,7 +1,9 @@
+// src/components/tracking/OrderDetailsSidebar.tsx
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Phone, Mail, User, Landmark } from "lucide-react"; // Added User and Landmark icons
+import { MapPin, Phone, Mail, User, Landmark } from "lucide-react";
 import { OrderDetail } from "../../types/order";
+import { Separator } from "../ui/separator"; // Import Separator for styling
 
 interface OrderDetailsSidebarProps {
   order: OrderDetail;
@@ -22,13 +24,10 @@ const formatDate = (dateString: string) => {
   });
 };
 
-// --- [NEW] Helper function to format the full address ---
 const formatFullAddress = (
   address: OrderDetail["customerInfo"]["deliveryAddress"]
 ) => {
   if (!address) return "Address not available";
-  // This array filters out any empty parts (like a missing street or subdivision)
-  // to avoid awkward commas like ", , City"
   return [
     address.street,
     address.subdivision,
@@ -47,35 +46,45 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* --- Product Details Card --- */}
+      {/* --- MODIFICATION: Updated to handle multiple products --- */}
       <Card>
         <CardHeader>
-          <CardTitle>Product Details</CardTitle>
+          <CardTitle>Products in this Order</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <img
-              src={
-                order.productId.image ||
-                "https://placehold.co/400x300/E2E8F0/4A5568?text=No+Image"
-              }
-              alt={order.productId.productName}
-              className="w-full h-32 object-cover rounded"
-            />
-            <div>
-              <h3 className="font-medium">{order.productId.productName}</h3>
-              <p className="text-sm text-gray-600">
-                {order.productId.squareFeet} sq ft
-              </p>
-              <p className="text-blue-600 font-semibold">
-                {formatPrice(order.productId.productPrice)}
-              </p>
-            </div>
+            {order.products.map((item, index) => (
+              <React.Fragment key={item.productId._id}>
+                <div className="flex gap-4">
+                  <img
+                    src={
+                      item.productId.image ||
+                      "https://placehold.co/400x300/E2E8F0/4A5568?text=No+Image"
+                    }
+                    alt={item.productId.productName}
+                    className="w-20 h-20 object-cover rounded flex-shrink-0"
+                  />
+                  <div>
+                    <h3 className="font-medium">
+                      {item.productId.productName}
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      Quantity: {item.quantity}
+                    </p>
+                    <p className="text-blue-600 font-semibold text-sm">
+                      {formatPrice(item.productId.productPrice)} each
+                    </p>
+                  </div>
+                </div>
+                {/* Add a separator between items, but not after the last one */}
+                {index < order.products.length - 1 && <Separator />}
+              </React.Fragment>
+            ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* --- [NEW] Customer & Delivery Details Card --- */}
+      {/* --- Customer & Delivery Details Card (No changes needed here) --- */}
       <Card>
         <CardHeader>
           <CardTitle>Customer & Delivery</CardTitle>
@@ -118,7 +127,7 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
         </CardContent>
       </Card>
 
-      {/* --- Order Summary Card --- */}
+      {/* --- Order Summary Card (No changes needed here) --- */}
       <Card>
         <CardHeader>
           <CardTitle>Order Summary</CardTitle>
@@ -137,7 +146,7 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
         </CardContent>
       </Card>
 
-      {/* --- Contact/Help Card --- */}
+      {/* --- Contact/Help Card (No changes needed here) --- */}
       <Card>
         <CardHeader>
           <CardTitle>Need Help?</CardTitle>

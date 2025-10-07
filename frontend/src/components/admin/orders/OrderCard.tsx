@@ -1,3 +1,4 @@
+// src/components/admin/orders/OrderCard.tsx
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +23,6 @@ const OrderCard: React.FC<OrderCardProps> = ({
   ): string => {
     const baseClasses = "font-semibold border-transparent text-xs px-2 py-1";
     switch (status) {
-      // Order Statuses
       case "Pending":
         return `bg-yellow-100 text-yellow-800 ${baseClasses}`;
       case "Processing":
@@ -36,15 +36,12 @@ const OrderCard: React.FC<OrderCardProps> = ({
         return `bg-green-100 text-green-800 ${baseClasses}`;
       case "Cancelled":
         return `bg-red-100 text-red-800 ${baseClasses}`;
-
-      // Payment Statuses
       case "50% Complete Paid":
         return `bg-blue-100 text-blue-800 ${baseClasses}`;
       case "90% Complete Paid":
         return `bg-indigo-100 text-indigo-800 ${baseClasses}`;
       case "100% Complete Paid":
         return `bg-green-100 text-green-800 ${baseClasses}`;
-
       default:
         return `bg-gray-100 text-gray-800 ${baseClasses}`;
     }
@@ -58,7 +55,6 @@ const OrderCard: React.FC<OrderCardProps> = ({
     });
   };
 
-  // --- [MODIFIED] Added subdivision and improved formatting logic ---
   const deliveryAddress = order.customerInfo?.deliveryAddress;
   const formattedAddress = deliveryAddress
     ? [
@@ -67,45 +63,55 @@ const OrderCard: React.FC<OrderCardProps> = ({
         deliveryAddress.cityMunicipality,
         deliveryAddress.province,
       ]
-        .filter(Boolean) // Removes any empty parts of the address
+        .filter(Boolean)
         .join(", ")
     : "No address provided";
+
+  const currentPaymentStatus = order.paymentInfo?.paymentStatus || "Pending";
+
+  const productNames =
+    order.products?.map((item) => item.productId.productName).join(", ") ||
+    "No products found";
 
   return (
     <Card className="flex flex-col justify-between rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
       <CardContent className="p-5 space-y-4">
-        {/* --- Header Section --- */}
         <div className="flex justify-between items-start">
           <div>
             <h3 className="font-bold text-gray-800">
               Order #{order._id.slice(-6)}
             </h3>
-            <p className="text-sm text-muted-foreground">Total Amount</p>
+            <p className="text-sm text-muted-foreground">Order ID:</p>
           </div>
-          <p className="font-extrabold text-xl text-green-600">
-            {formatPrice(order.totalAmount)}
-          </p>
+          <div className="text-right">
+            <p className="font-extrabold text-xl text-green-600">
+              {formatPrice(order.totalAmount)}
+            </p>
+            <p className="text-sm text-muted-foreground">Total Amount:</p>
+          </div>
         </div>
 
-        {/* --- Status Badges Section --- */}
-        <div className="flex flex-wrap gap-2">
-          <Badge className={getStatusClasses(order.orderStatus)}>
-            {order.orderStatus}
-          </Badge>
-          <Badge className={getStatusClasses(order.paymentStatus)}>
-            {order.paymentStatus}
-          </Badge>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="flex items-center gap-2">
+            <p className="text-sm text-muted-foreground">Order:</p>
+            <Badge className={getStatusClasses(order.orderStatus)}>
+              {order.orderStatus}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <p className="text-sm text-muted-foreground">Payment:</p>
+            <Badge className={getStatusClasses(currentPaymentStatus)}>
+              {currentPaymentStatus}
+            </Badge>
+          </div>
         </div>
 
-        {/* --- Details Section with Labels --- */}
         <div className="border-t pt-4 space-y-3 text-sm">
           <div className="flex items-start">
             <Package className="h-4 w-4 mr-3 mt-1 flex-shrink-0 text-muted-foreground" />
             <div>
-              <p className="text-xs text-muted-foreground">Prefab name</p>
-              <p className="font-medium text-gray-800">
-                {order.productId.productName}
-              </p>
+              <p className="text-xs text-muted-foreground">Product names</p>
+              <p className="font-medium text-gray-800">{productNames}</p>
             </div>
           </div>
           <div className="flex items-start">
@@ -120,7 +126,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
           <div className="flex items-start">
             <Calendar className="h-4 w-4 mr-3 mt-1 flex-shrink-0 text-muted-foreground" />
             <div>
-              <p className="text-xs text-muted-foreground">Order Placed</p>
+              <p className="text-xs text-muted-foreground">Order placed</p>
               <p className="font-medium text-gray-800">
                 {formatDate(order.createdAt)}
               </p>
@@ -138,7 +144,6 @@ const OrderCard: React.FC<OrderCardProps> = ({
         </div>
       </CardContent>
 
-      {/* --- Actions Section --- */}
       <div className="bg-gray-50 p-4 flex gap-3 rounded-b-xl border-t">
         <Button
           variant="outline"
@@ -149,15 +154,17 @@ const OrderCard: React.FC<OrderCardProps> = ({
           <Eye className="h-4 w-4 mr-2" />
           Details
         </Button>
+        {/* --- START: MODIFICATION --- */}
+        {/* Removed the disabled prop from this button */}
         <Button
           size="sm"
           className="flex-1 bg-green-600 hover:bg-green-700"
           onClick={() => onConfirmPayment(order)}
-          disabled={order.paymentStatus === "100% Complete Paid"}
         >
           <CreditCard className="h-4 w-4 mr-2" />
           Update Payment
         </Button>
+        {/* --- END: MODIFICATION --- */}
       </div>
     </Card>
   );

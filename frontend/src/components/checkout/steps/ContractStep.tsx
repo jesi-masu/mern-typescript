@@ -1,10 +1,9 @@
-//frontend/src/components/checkout/steps/ContractStep.tsx
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "../../ui/button";
+import { Checkbox } from "../../ui/checkbox";
+import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
+import { Separator } from "../../ui/separator";
+import { Badge } from "../../ui/badge";
 import {
   FileText,
   User,
@@ -15,27 +14,27 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
-import { ContractInfo, CustomerInfo } from "@/types/checkout";
-import { Product } from "@/types/product"; // Corrected: Import from types
-import { formatPrice } from "@/lib/formatters"; // Corrected: Import the correct formatter
-import SignaturePad from "@/components/contract/SignaturePad";
+import { ContractInfo, CustomerInfo } from "../../../types/checkout";
+import { CartItem } from "../../../context/CartContext";
+import { formatPrice } from "../../../lib/formatters";
+import SignaturePad from "../../contract/SignaturePad";
 
 interface ContractStepProps {
   contractInfo: ContractInfo;
   onChange: (info: Partial<ContractInfo>) => void;
   customerInfo: CustomerInfo;
-  product: Product;
+  items: CartItem[];
+  totalAmount: number;
 }
 
 const ContractStep: React.FC<ContractStepProps> = ({
   contractInfo,
   onChange,
   customerInfo,
-  product,
+  items,
+  totalAmount,
 }) => {
   const [showContract, setShowContract] = useState(false);
-
-  // REMOVED: The local formatCurrency function that formatted to USD.
 
   const handleSignatureSave = (signature: string) => {
     onChange({ signature });
@@ -47,7 +46,6 @@ const ContractStep: React.FC<ContractStepProps> = ({
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="text-center space-y-2">
         <h3 className="text-2xl font-bold text-gray-900">
           Contract & Finalization
@@ -57,7 +55,6 @@ const ContractStep: React.FC<ContractStepProps> = ({
         </p>
       </div>
 
-      {/* Progress Indicator */}
       <div className="flex items-center justify-center space-x-4">
         <div
           className={`flex items-center space-x-2 ${
@@ -86,7 +83,6 @@ const ContractStep: React.FC<ContractStepProps> = ({
         </div>
       </div>
 
-      {/* Order Summary */}
       <Card className="border-2 border-gray-100">
         <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
           <CardTitle className="flex items-center gap-2 text-gray-900">
@@ -103,7 +99,6 @@ const ContractStep: React.FC<ContractStepProps> = ({
                   {customerInfo.firstName} {customerInfo.lastName}
                 </p>
                 <p className="text-sm text-gray-600">{customerInfo.email}</p>
-                {/* Corrected: Use phoneNumber */}
                 <p className="text-sm text-gray-600">
                   {customerInfo.phoneNumber}
                 </p>
@@ -112,17 +107,29 @@ const ContractStep: React.FC<ContractStepProps> = ({
 
             <Separator />
 
-            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-              <Package className="h-6 w-6 text-gray-500" />
-              <div className="flex-1">
-                {/* Corrected: Use productName */}
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-4 mb-4">
+                <Package className="h-6 w-6 text-gray-500" />
                 <p className="font-semibold text-gray-900">
-                  {product.productName}
+                  Products ({items.length})
                 </p>
-                {/* Corrected: Use productPrice and formatPrice */}
-                <p className="text-2xl font-bold text-blue-600">
-                  {formatPrice(product.productPrice)}
-                </p>
+              </div>
+              <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+                {items.map((item) => (
+                  <div
+                    key={item.id}
+                    className="text-sm text-gray-700 flex justify-between"
+                  >
+                    <span>
+                      {item.name} (x{item.quantity})
+                    </span>
+                    <span>{formatPrice(item.price * item.quantity)}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t mt-4 pt-2 text-lg font-bold text-blue-600 flex justify-between">
+                <span>Total Amount</span>
+                <span>{formatPrice(totalAmount)}</span>
               </div>
             </div>
 
@@ -147,7 +154,6 @@ const ContractStep: React.FC<ContractStepProps> = ({
         </CardContent>
       </Card>
 
-      {/* Terms & Conditions */}
       <Card className="border-2 border-gray-100">
         <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
           <CardTitle className="text-gray-900">Terms & Conditions</CardTitle>
@@ -204,7 +210,6 @@ const ContractStep: React.FC<ContractStepProps> = ({
         </CardContent>
       </Card>
 
-      {/* Digital Signature Section */}
       <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-blue-900">
@@ -235,170 +240,6 @@ const ContractStep: React.FC<ContractStepProps> = ({
           <SignaturePad onSave={handleSignatureSave} />
         </CardContent>
       </Card>
-
-      {/* Contract Document View */}
-      {contractInfo.signature && (
-        <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2 text-green-900">
-                <FileText className="h-5 w-5" />
-                Contract Document
-                <Badge className="bg-green-100 text-green-800">Ready</Badge>
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowContract(!showContract)}
-                className="flex items-center gap-2 border-green-300 hover:bg-green-100"
-              >
-                {showContract ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-                {showContract ? "Hide" : "View"} Contract
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          {showContract && (
-            <CardContent>
-              <div className="bg-white p-6 rounded-lg border space-y-6">
-                <div className="text-center border-b pb-4">
-                  <h2 className="text-xl font-bold">
-                    PREFAB CONSTRUCTION CONTRACT
-                  </h2>
-                  <p className="text-sm text-gray-600 mt-2">
-                    Contract No: PC-{Date.now()}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="font-semibold mb-2">Customer Information</h3>
-                    <div className="text-sm space-y-1">
-                      <p>
-                        <strong>Name:</strong> {customerInfo.firstName}{" "}
-                        {customerInfo.lastName}
-                      </p>
-                      <p>
-                        <strong>Email:</strong> {customerInfo.email}
-                      </p>
-                      {/* Corrected: Use phoneNumber */}
-                      <p>
-                        <strong>Phone:</strong> {customerInfo.phoneNumber}
-                      </p>
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-2">Product Details</h3>
-                    <div className="text-sm space-y-1">
-                      {/* Corrected: Use productName */}
-                      <p>
-                        <strong>Product:</strong> {product.productName}
-                      </p>
-                      {/* Corrected: Use productPrice and formatPrice */}
-                      <p>
-                        <strong>Price:</strong>{" "}
-                        {formatPrice(product.productPrice)}
-                      </p>
-                      <p>
-                        <strong>Contract Date:</strong>{" "}
-                        {new Date().toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold mb-2">Delivery Address</h3>
-                  <div className="text-sm bg-gray-50 p-3 rounded">
-                    {customerInfo.address1}
-                    <br />
-                    {customerInfo.address2 && (
-                      <>
-                        {customerInfo.address2}
-                        <br />
-                      </>
-                    )}
-                    {customerInfo.city}, {customerInfo.province}{" "}
-                    {customerInfo.postalCode}
-                    <br />
-                    {customerInfo.country}
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold mb-2">Terms and Conditions</h3>
-                  <div className="text-sm space-y-2">
-                    <p>
-                      1. <strong>Delivery Timeline:</strong> 8-12 weeks from
-                      order confirmation
-                    </p>
-                    <p>
-                      2. <strong>Payment Terms:</strong> Full payment required
-                      before delivery
-                    </p>
-                    <p>
-                      3. <strong>Installation:</strong> Professional
-                      installation included
-                    </p>
-                    <p>
-                      4. <strong>Warranty:</strong> Standard manufacturer
-                      warranty applies
-                    </p>
-                    <p>
-                      5. <strong>Modifications:</strong> Any changes must be
-                      agreed upon in writing
-                    </p>
-                  </div>
-                </div>
-
-                <div className="border-t pt-4">
-                  <h3 className="font-semibold mb-2">Customer Signature</h3>
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={contractInfo.signature}
-                      alt="Customer Signature"
-                      className="border border-gray-300 rounded max-w-48"
-                    />
-                    <div className="text-sm">
-                      <p>
-                        <strong>Signed by:</strong> {customerInfo.firstName}{" "}
-                        {customerInfo.lastName}
-                      </p>
-                      <p>
-                        <strong>Date:</strong> {new Date().toLocaleDateString()}
-                      </p>
-                      <p>
-                        <strong>Time:</strong> {new Date().toLocaleTimeString()}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          )}
-        </Card>
-      )}
-
-      {/* Completion Status */}
-      {isContractComplete && (
-        <Card className="border-2 border-green-300 bg-gradient-to-r from-green-50 to-emerald-50">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-center gap-3 text-green-800">
-              <CheckCircle className="h-6 w-6" />
-              <span className="text-lg font-semibold">
-                Contract Ready for Finalization
-              </span>
-            </div>
-            <p className="text-center text-sm text-green-700 mt-2">
-              All requirements have been met. You may now proceed to place your
-              order.
-            </p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

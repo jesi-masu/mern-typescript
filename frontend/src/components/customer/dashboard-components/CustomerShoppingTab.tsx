@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, AlertCircle } from "lucide-react";
-import { useCart } from "@/context/CartContext";
-import { useAuth } from "@/context/AuthContext";
+import { useCart } from "../../../context/CartContext";
+import { useAuth } from "../../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
-import { fetchProducts } from "@/services/productService";
-import { Product } from "@/types/product";
+import { useToast } from "../../ui/use-toast";
+import { fetchProducts } from "../../../services/productService";
+import { Product } from "../../../types/product";
 
 // Component Imports
 import { CartSummaryCard } from "./shopping-tab-components/CartSummaryCard";
@@ -57,7 +57,6 @@ const CustomerShoppingTab = () => {
     return matchesSearch && matchesCategory;
   });
 
-  // --- [REMOVED] formatPrice and formatPriceFromUSD are no longer needed here ---
   const getCartQuantity = (productId: string) =>
     cartItems.find((item) => item.id === productId)?.quantity || 0;
 
@@ -126,12 +125,19 @@ const CustomerShoppingTab = () => {
   };
 
   const handleProceedToCheckout = () => {
-    const firstSelectedItem = cartItems.find((item) =>
+    const selectedCartItems = cartItems.filter((item) =>
       selectedItems.has(item.id)
     );
-    if (firstSelectedItem) {
-      navigate(`/checkout/${firstSelectedItem.id}`);
+
+    if (selectedCartItems.length === 0) {
+      toast({
+        title: "No Items Selected",
+        description: "Please select items to checkout.",
+        variant: "destructive",
+      });
+      return;
     }
+    navigate("/checkout", { state: { items: selectedCartItems } });
   };
 
   if (isLoading) {
