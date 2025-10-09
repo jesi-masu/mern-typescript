@@ -2,7 +2,14 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Wallet, Percent, CheckCircle, AlertCircle, Clock } from "lucide-react";
+import {
+  Wallet,
+  Percent,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+  Info,
+} from "lucide-react";
 import { PaymentUpload } from "@/components/customer/PaymentUpload";
 import { OrderDetail, PaymentStatus } from "@/types/order";
 import { Separator } from "../ui/separator";
@@ -11,15 +18,18 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+
 interface PaymentStatusCardProps {
   order: OrderDetail;
 }
+
 const paymentStatusSteps = [
   { key: "Pending", label: "Pending", icon: Wallet },
   { key: "50% Complete Paid", label: "50% Paid", icon: Percent },
   { key: "90% Complete Paid", label: "90% Paid", icon: Percent },
   { key: "100% Complete Paid", label: "Fully Paid", icon: CheckCircle },
 ];
+
 const getPaymentStatusColor = (status: PaymentStatus) => {
   const colorMap: Record<PaymentStatus, string> = {
     Pending: "bg-yellow-100 text-yellow-800",
@@ -29,6 +39,7 @@ const getPaymentStatusColor = (status: PaymentStatus) => {
   };
   return colorMap[status] || "bg-gray-100 text-gray-800";
 };
+
 const getPaymentDetails = (
   status: PaymentStatus,
   totalAmount: number
@@ -41,15 +52,20 @@ const getPaymentDetails = (
   const remainingAmount = totalAmount - paidAmount;
   return { remainingAmount, percentage };
 };
+
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat("en-PH", {
     style: "currency",
     currency: "PHP",
   }).format(price);
 };
+
 export const PaymentStatusCard: React.FC<PaymentStatusCardProps> = ({
   order,
 }) => {
+  // --- MODIFICATION: Define the upload limit ---
+  const UPLOAD_LIMIT = 3;
+
   const currentStatus = order.paymentInfo?.paymentStatus || "Pending";
   const currentPaymentStatusIndex = paymentStatusSteps.findIndex(
     (step) => step.key === currentStatus
@@ -61,6 +77,7 @@ export const PaymentStatusCard: React.FC<PaymentStatusCardProps> = ({
   const initialPayment = Math.round(order.totalAmount * 0.5);
   const preDeliveryPayment = Math.round(order.totalAmount * 0.4);
   const finalPayment = order.totalAmount - initialPayment - preDeliveryPayment;
+
   const paymentStages = [
     {
       id: "50% Complete Paid",
@@ -117,6 +134,7 @@ export const PaymentStatusCard: React.FC<PaymentStatusCardProps> = ({
       },
     },
   ];
+
   const getCurrentStageIndex = () => {
     if (currentStatus === "100% Complete Paid") return 2;
     if (currentStatus === "90% Complete Paid") return 1;
@@ -124,6 +142,7 @@ export const PaymentStatusCard: React.FC<PaymentStatusCardProps> = ({
     return -1;
   };
   const currentStageIndex = getCurrentStageIndex();
+
   return (
     <Card>
       <CardHeader>
@@ -190,7 +209,18 @@ export const PaymentStatusCard: React.FC<PaymentStatusCardProps> = ({
                   const isCompleted = index <= currentStageIndex;
                   const isNextPayable = index === currentStageIndex + 1;
                   const isFutureStage = index > currentStageIndex + 1;
-                  const isClickable = isNextPayable;
+
+                  // --- MODIFICATION: Check existing receipt count for the current stage ---
+                  const receiptCount =
+                    order.paymentInfo.paymentReceipts?.[stage.stageKey]
+                      ?.length || 0;
+
+                  // --- MODIFICATION: A stage is only clickable if it's next AND under the limit ---
+                  const isClickable =
+                    isNextPayable && receiptCount < UPLOAD_LIMIT;
+                  const limitReached =
+                    isNextPayable && receiptCount >= UPLOAD_LIMIT;
+
                   const Icon = stage.icon;
                   return (
                     <Collapsible key={stage.id} disabled={!isClickable}>
@@ -201,8 +231,12 @@ export const PaymentStatusCard: React.FC<PaymentStatusCardProps> = ({
                           } ${
                             isFutureStage
                               ? "border-gray-200 opacity-60 cursor-not-allowed"
-                              : isNextPayable
-                              ? `${stage.styles.borderActive} cursor-pointer`
+                              : isClickable || limitReached // Apply active border if it's the next stage, even if limit is reached
+                              ? `${stage.styles.borderActive} ${
+                                  isClickable
+                                    ? "cursor-pointer"
+                                    : "cursor-not-allowed"
+                                }`
                               : `${stage.styles.borderCompleted}`
                           }`}
                         >
@@ -236,13 +270,22 @@ export const PaymentStatusCard: React.FC<PaymentStatusCardProps> = ({
                         </div>
                       </CollapsibleTrigger>
                       <CollapsibleContent>
-                        {/* --- MODIFICATION: Use p-3 for slightly more space --- */}
                         <div className="p-3 border-x-2 border-b-2 rounded-b-lg -mt-1 border-gray-200">
-                          <PaymentUpload
-                            orderId={order._id}
-                            paymentStage={stage.stageKey}
-                            isDisabled={!isClickable}
-                          />
+                          {/* --- MODIFICATION: Show limit message OR upload component --- */}
+                          {limitReached ? (
+                            <div className="flex items-center justify-center text-sm text-red-600 p-4 gap-2">
+                              <Info className="h-4 w-4" />
+                              <p>
+                                Maximum of {UPLOAD_LIMIT} receipts uploaded.
+                              </p>
+                            </div>
+                          ) : (
+                            <PaymentUpload
+                              orderId={order._id}
+                              paymentStage={stage.stageKey}
+                              isDisabled={!isClickable}
+                            />
+                          )}
                         </div>
                       </CollapsibleContent>
                     </Collapsible>

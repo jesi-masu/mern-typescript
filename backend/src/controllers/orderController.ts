@@ -101,13 +101,10 @@ export const getOrders: RequestHandler = async (req, res) => {
   try {
     const orders = await Order.find({})
       .populate("userId", "firstName lastName email")
-      // --- START: MODIFICATION ---
-      // Added all necessary fields to the populate string for the admin modal
       .populate(
         "products.productId",
         "productName productPrice image squareFeet productShortDescription category"
       )
-      // --- END: MODIFICATION ---
       .sort({ createdAt: -1 });
     res.status(200).json(orders);
   } catch (error: any) {
@@ -165,7 +162,8 @@ export const updateOrder = async (
   res: Response
 ): Promise<void> => {
   const { id } = req.params;
-  const { orderStatus, paymentStatus, paymentReceiptUrl } = req.body;
+  const { orderStatus, paymentStatus, paymentReceiptUrl, paymentStage } =
+    req.body;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     res.status(400).json({ message: "Invalid Order ID format." });
@@ -189,9 +187,10 @@ export const updateOrder = async (
       return;
     }
 
+    // --- MODIFICATION: Made the types more flexible ---
     const updateData: {
-      $set?: { [key: string]: string };
-      $push?: { "paymentInfo.paymentReceipts": string };
+      $set?: { [key: string]: any };
+      $push?: { [key: string]: any };
     } = {};
 
     const fieldsToSet: { [key: string]: string } = {};
@@ -214,8 +213,13 @@ export const updateOrder = async (
       updateData.$set = fieldsToSet;
     }
 
-    if (paymentReceiptUrl) {
-      updateData.$push = { "paymentInfo.paymentReceipts": paymentReceiptUrl };
+    if (paymentReceiptUrl && paymentStage) {
+      if (!["initial", "pre_delivery", "final"].includes(paymentStage)) {
+        res.status(400).json({ message: "Invalid payment stage provided." });
+        return;
+      }
+      const updatePath = `paymentInfo.paymentReceipts.${paymentStage}`;
+      updateData.$push = { [updatePath]: paymentReceiptUrl };
     }
 
     if (Object.keys(updateData).length === 0) {

@@ -1,5 +1,5 @@
 // src/components/admin/orders/OrderDetailsModal.tsx
-import React, { useState, useEffect } from "react"; // --- MODIFICATION: Added useState and useEffect
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +26,7 @@ import {
   User,
   Calendar,
   MapPin,
+  ListChecks,
 } from "lucide-react";
 
 interface OrderDetailsModalProps {
@@ -73,7 +74,6 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 }) => {
   if (!order) return null;
 
-  // --- MODIFICATION START: State to manage the selected dropdown stage ---
   const [selectedStage, setSelectedStage] = useState<string | null>(null);
 
   const availableStages = order?.paymentInfo?.paymentReceipts
@@ -81,14 +81,12 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     : [];
 
   useEffect(() => {
-    // When the order data changes, default the dropdown to the first available stage
     if (availableStages.length > 0) {
       setSelectedStage(availableStages[0]);
     } else {
       setSelectedStage(null);
     }
-  }, [order]); // Rerun this effect when the order prop changes
-  // --- MODIFICATION END ---
+  }, [order]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -213,6 +211,33 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                   </p>
                 )}
               </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <ListChecks className="h-5 w-5 text-gray-500" />
+                  Payment Details
+                </h3>
+                <div className="text-sm space-y-2 bg-gray-50 p-2 ">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Method:</span>
+                    <Badge variant="outline" className="capitalize text-xs">
+                      {order.paymentInfo.paymentMethod}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Mode:</span>
+                    <Badge variant="outline" className="uppercase text-xs">
+                      {order.paymentInfo.paymentMode}
+                    </Badge>
+                  </div>
+                  {/* --- MODIFICATION: Added Payment Timing --- */}
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Timing:</span>
+                    <Badge variant="outline" className="capitalize text-xs">
+                      {order.paymentInfo.paymentTiming}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
             </div>
             {/* Right Column */}
             <div className="space-y-6">
@@ -226,14 +251,12 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 </p>
               </div>
 
-              {/* --- MODIFICATION START: Replaced receipt display with a dropdown --- */}
               {availableStages.length > 0 && (
                 <div className="px-4 py-2">
                   <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                     <Receipt className="h-5 w-5 text-gray-500" />
                     Uploaded Payment Receipts
                   </h3>
-
                   <Select
                     value={selectedStage || ""}
                     onValueChange={setSelectedStage}
@@ -244,7 +267,6 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                     <SelectContent>
                       {availableStages.map((stage) => (
                         <SelectItem key={stage} value={stage}>
-                          {/* Capitalize and format stage name for display */}
                           {stage
                             .replace("_", " ")
                             .replace(/\b\w/g, (l) => l.toUpperCase())}
@@ -252,8 +274,6 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                       ))}
                     </SelectContent>
                   </Select>
-
-                  {/* Conditionally render images for the selected stage */}
                   {selectedStage &&
                     order.paymentInfo.paymentReceipts?.[selectedStage] && (
                       <div className="mt-4 p-2 bg-gray-50 rounded-lg">
@@ -282,7 +302,6 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                     )}
                 </div>
               )}
-              {/* --- MODIFICATION END --- */}
             </div>
           </div>
           <div>

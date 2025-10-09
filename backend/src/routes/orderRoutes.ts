@@ -1,10 +1,11 @@
+// backend/src/routes/orderRoutes.ts
 import express from "express";
 import {
   createOrder,
   getOrders,
   getOrderById,
   updateOrder,
-  getUserOrders, // <-- ADDED: Import the new controller
+  getUserOrders,
 } from "../controllers/orderController";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { checkRole } from "../middleware/checkRole";
@@ -23,11 +24,13 @@ router.get("/", authMiddleware, checkRole(["admin", "personnel"]), getOrders);
 // GET /api/orders/:id - Get a single order by ID (for admins, personnel, or the order owner)
 router.get("/:id", authMiddleware, getOrderById);
 
-// PATCH /api/orders/:id - Update an order (for admins and personnel)
+// --- FIX: REMOVED the restrictive checkRole middleware ---
+// PATCH /api/orders/:id - Update an order.
+// The controller itself now handles the specific permissions.
 router.patch(
   "/:id",
   authMiddleware,
-  checkRole(["admin", "personnel"]),
+  // checkRole(["admin", "personnel"]), // <-- This line was removed
   updateOrder
 );
 

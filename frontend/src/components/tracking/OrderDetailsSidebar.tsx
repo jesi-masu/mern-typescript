@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Phone, Mail, User, Landmark } from "lucide-react";
 import { OrderDetail } from "../../types/order";
-import { Separator } from "../ui/separator"; // Import Separator for styling
+import { Separator } from "../ui/separator";
 
 interface OrderDetailsSidebarProps {
   order: OrderDetail;
@@ -46,15 +46,15 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* --- MODIFICATION: Updated to handle multiple products --- */}
       <Card>
         <CardHeader>
           <CardTitle>Products in this Order</CardTitle>
         </CardHeader>
         <CardContent>
+          {/* --- MODIFICATION START: Replaced React.Fragment with a div --- */}
           <div className="space-y-4">
             {order.products.map((item, index) => (
-              <React.Fragment key={item.productId._id}>
+              <div key={item.productId._id}>
                 <div className="flex gap-4">
                   <img
                     src={
@@ -77,14 +77,16 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
                   </div>
                 </div>
                 {/* Add a separator between items, but not after the last one */}
-                {index < order.products.length - 1 && <Separator />}
-              </React.Fragment>
+                {index < order.products.length - 1 && (
+                  <Separator className="mt-4" />
+                )}
+              </div>
             ))}
           </div>
+          {/* --- MODIFICATION END --- */}
         </CardContent>
       </Card>
 
-      {/* --- Customer & Delivery Details Card (No changes needed here) --- */}
       <Card>
         <CardHeader>
           <CardTitle>Customer & Delivery</CardTitle>
@@ -127,7 +129,6 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
         </CardContent>
       </Card>
 
-      {/* --- Order Summary Card (No changes needed here) --- */}
       <Card>
         <CardHeader>
           <CardTitle>Order Summary</CardTitle>
@@ -146,7 +147,6 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
         </CardContent>
       </Card>
 
-      {/* --- Contact/Help Card (No changes needed here) --- */}
       <Card>
         <CardHeader>
           <CardTitle>Need Help?</CardTitle>

@@ -1,13 +1,13 @@
 // src/components/customer/PaymentUpload.tsx
-
 import React, { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Upload, AlertCircle } from "lucide-react";
+// --- MODIFICATION: Import CheckCircle icon ---
+import { Loader2, Upload, AlertCircle, CheckCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
-// --- API Service Functions (No changes needed in these functions) ---
+// API Service Functions (no changes here)
 const getUploadSignature = async (token: string | null) => {
   if (!token) throw new Error("Authentication token not found.");
   const res = await fetch(
@@ -23,16 +23,17 @@ const getUploadSignature = async (token: string | null) => {
   if (!res.ok) throw new Error("Failed to get upload signature.");
   return res.json();
 };
-
 const uploadToCloudinary = async (file: File, token: string | null) => {
   const { timestamp, signature } = await getUploadSignature(token);
   const formData = new FormData();
   formData.append("file", file);
   formData.append("timestamp", timestamp);
   formData.append("signature", signature);
-  formData.append("api_key", process.env.VITE_CLOUDINARY_API_KEY as string);
+  formData.append("api_key", import.meta.env.VITE_CLOUDINARY_API_KEY as string);
   const res = await fetch(
-    `https://api.cloudinary.com/v1_1/${process.env.VITE_CLOUDINARY_CLOUD_NAME}/auto/upload`,
+    `https://api.cloudinary.com/v1_1/${
+      import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+    }/auto/upload`,
     {
       method: "POST",
       body: formData,
@@ -42,7 +43,6 @@ const uploadToCloudinary = async (file: File, token: string | null) => {
   const data = await res.json();
   return data.secure_url;
 };
-
 const addPaymentReceipt = async ({
   orderId,
   receiptUrl,
@@ -73,24 +73,22 @@ const addPaymentReceipt = async ({
   return res.json();
 };
 
-// --- Component ---
-
+// Component
 interface PaymentUploadProps {
   orderId: string;
   paymentStage?: "initial" | "pre_delivery" | "final";
-  // --- START: MODIFICATION ---
-  isDisabled?: boolean; // Add the new disabled prop
-  // --- END: MODIFICATION ---
+  isDisabled?: boolean;
 }
 
 export const PaymentUpload: React.FC<PaymentUploadProps> = ({
   orderId,
   paymentStage,
-  // --- MODIFICATION: Destructure the new prop ---
   isDisabled = false,
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // --- MODIFICATION: Add state to track success ---
+  const [success, setSuccess] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const { token } = useAuth();
@@ -100,22 +98,31 @@ export const PaymentUpload: React.FC<PaymentUploadProps> = ({
       const receiptUrl = await uploadToCloudinary(file, token);
       await addPaymentReceipt({ orderId, receiptUrl, paymentStage, token });
     },
+    // --- MODIFICATION: Update onSuccess handler ---
     onSuccess: () => {
+      setSuccess(true); // Show the success message
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
-      setSelectedFile(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
       setError(null);
+
+      // Reset the form after a short delay so the user can see the success message
+      setTimeout(() => {
+        setSuccess(false);
+        setSelectedFile(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+      }, 3000); // Hide message and reset after 3 seconds
     },
     onError: (err: Error) => {
       setError(err.message || "An unknown error occurred during upload.");
+      setSuccess(false); // Ensure success message is hidden on error
     },
   });
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Basic file validation
       const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
       if (!allowedTypes.includes(file.type)) {
         setError("Invalid file type. Please upload a JPG, PNG, or PDF.");
@@ -128,6 +135,7 @@ export const PaymentUpload: React.FC<PaymentUploadProps> = ({
       }
       setSelectedFile(file);
       setError(null);
+      setSuccess(false); // --- MODIFICATION: Clear previous success message
     }
   };
 
@@ -138,7 +146,6 @@ export const PaymentUpload: React.FC<PaymentUploadProps> = ({
   };
 
   return (
-    // --- MODIFICATION: Apply disabled styles to the entire container ---
     <div
       className={`mt-4 p-4 border-t ${
         isDisabled ? "opacity-50 pointer-events-none" : ""
@@ -152,20 +159,22 @@ export const PaymentUpload: React.FC<PaymentUploadProps> = ({
           onChange={handleFileChange}
           accept=".jpg, .jpeg, .png, .pdf"
           className="hidden"
-          disabled={isDisabled || mutation.isPending} // Also disable the hidden input
+          disabled={isDisabled || mutation.isPending}
         />
         <Button
           variant="outline"
           size="sm"
           onClick={() => fileInputRef.current?.click()}
-          disabled={isDisabled || mutation.isPending} // Apply disabled state
+          disabled={isDisabled || mutation.isPending}
         >
           <Upload className="h-4 w-4 mr-2" />
           Choose File
         </Button>
         <Button
           onClick={handleUpload}
-          disabled={!selectedFile || isDisabled || mutation.isPending} // Apply disabled state
+          disabled={
+            !selectedFile || isDisabled || mutation.isPending || success
+          } // Also disable on success
           size="sm"
         >
           {mutation.isPending ? (
@@ -175,7 +184,7 @@ export const PaymentUpload: React.FC<PaymentUploadProps> = ({
           )}
         </Button>
       </div>
-      {selectedFile && !mutation.isPending && (
+      {selectedFile && !mutation.isPending && !success && (
         <p className="text-xs text-gray-500 mt-2">
           Selected: {selectedFile.name}
         </p>
@@ -184,6 +193,13 @@ export const PaymentUpload: React.FC<PaymentUploadProps> = ({
         <div className="flex items-center text-red-600 text-xs mt-2">
           <AlertCircle className="h-4 w-4 mr-1" />
           <p>{error}</p>
+        </div>
+      )}
+      {/* --- MODIFICATION: Add success indicator message --- */}
+      {success && (
+        <div className="flex items-center text-green-600 text-xs mt-2">
+          <CheckCircle className="h-4 w-4 mr-1" />
+          <p>Upload successful!</p>
         </div>
       )}
     </div>
