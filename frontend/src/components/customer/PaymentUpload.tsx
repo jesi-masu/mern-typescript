@@ -1,3 +1,5 @@
+// src/components/customer/PaymentUpload.tsx
+
 import React, { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -5,13 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Loader2, Upload, AlertCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
-// --- API Service Functions ---
-
-// 1. Get signature from our backend
+// --- API Service Functions (No changes needed in these functions) ---
 const getUploadSignature = async (token: string | null) => {
   if (!token) throw new Error("Authentication token not found.");
   const res = await fetch(
-    `${process.env.VITE_BACKEND_URL}/api/upload/signature`,
+    `${import.meta.env.VITE_BACKEND_URL}/api/upload/signature`,
     {
       method: "POST",
       headers: {
@@ -24,7 +24,6 @@ const getUploadSignature = async (token: string | null) => {
   return res.json();
 };
 
-// 2. Upload file directly to Cloudinary
 const uploadToCloudinary = async (file: File, token: string | null) => {
   const { timestamp, signature } = await getUploadSignature(token);
   const formData = new FormData();
@@ -32,9 +31,8 @@ const uploadToCloudinary = async (file: File, token: string | null) => {
   formData.append("timestamp", timestamp);
   formData.append("signature", signature);
   formData.append("api_key", process.env.VITE_CLOUDINARY_API_KEY as string);
-
   const res = await fetch(
-    `https://api.cloudinary.com/v1_1/${process.env.VITE_CLOUDINARY_CLOUD_NAME}/auto/upload`, // Use 'auto' for resource_type
+    `https://api.cloudinary.com/v1_1/${process.env.VITE_CLOUDINARY_CLOUD_NAME}/auto/upload`,
     {
       method: "POST",
       body: formData,
@@ -42,29 +40,33 @@ const uploadToCloudinary = async (file: File, token: string | null) => {
   );
   if (!res.ok) throw new Error("Cloudinary upload failed.");
   const data = await res.json();
-  return data.secure_url; // The URL of the uploaded file
+  return data.secure_url;
 };
 
-// 3. Update our order with the new receipt URL
 const addPaymentReceipt = async ({
   orderId,
   receiptUrl,
+  paymentStage,
   token,
 }: {
   orderId: string;
   receiptUrl: string;
+  paymentStage?: "initial" | "pre_delivery" | "final";
   token: string | null;
 }) => {
   if (!token) throw new Error("Authentication token not found.");
   const res = await fetch(
-    `${process.env.VITE_BACKEND_URL}/api/orders/${orderId}`,
+    `${import.meta.env.VITE_BACKEND_URL}/api/orders/${orderId}`,
     {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ paymentReceiptUrl: receiptUrl }),
+      body: JSON.stringify({
+        paymentReceiptUrl: receiptUrl,
+        paymentStage: paymentStage,
+      }),
     }
   );
   if (!res.ok) throw new Error("Failed to update order with payment receipt.");
@@ -75,9 +77,18 @@ const addPaymentReceipt = async ({
 
 interface PaymentUploadProps {
   orderId: string;
+  paymentStage?: "initial" | "pre_delivery" | "final";
+  // --- START: MODIFICATION ---
+  isDisabled?: boolean; // Add the new disabled prop
+  // --- END: MODIFICATION ---
 }
 
-export const PaymentUpload: React.FC<PaymentUploadProps> = ({ orderId }) => {
+export const PaymentUpload: React.FC<PaymentUploadProps> = ({
+  orderId,
+  paymentStage,
+  // --- MODIFICATION: Destructure the new prop ---
+  isDisabled = false,
+}) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -87,12 +98,11 @@ export const PaymentUpload: React.FC<PaymentUploadProps> = ({ orderId }) => {
   const mutation = useMutation({
     mutationFn: async (file: File) => {
       const receiptUrl = await uploadToCloudinary(file, token);
-      await addPaymentReceipt({ orderId, receiptUrl, token });
+      await addPaymentReceipt({ orderId, receiptUrl, paymentStage, token });
     },
     onSuccess: () => {
-      // Invalidate and refetch the order query to show updated data
       queryClient.invalidateQueries({ queryKey: ["order", orderId] });
-      setSelectedFile(null); // Clear the file input
+      setSelectedFile(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -106,7 +116,6 @@ export const PaymentUpload: React.FC<PaymentUploadProps> = ({ orderId }) => {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Basic validation
       const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
       if (!allowedTypes.includes(file.type)) {
         setError("Invalid file type. Please upload a JPG, PNG, or PDF.");
@@ -129,7 +138,12 @@ export const PaymentUpload: React.FC<PaymentUploadProps> = ({ orderId }) => {
   };
 
   return (
-    <div className="mt-4 p-4 border-t">
+    // --- MODIFICATION: Apply disabled styles to the entire container ---
+    <div
+      className={`mt-4 p-4 border-t ${
+        isDisabled ? "opacity-50 pointer-events-none" : ""
+      }`}
+    >
       <h4 className="text-sm font-medium mb-2">Upload Payment Proof</h4>
       <div className="flex items-center gap-2">
         <Input
@@ -138,19 +152,20 @@ export const PaymentUpload: React.FC<PaymentUploadProps> = ({ orderId }) => {
           onChange={handleFileChange}
           accept=".jpg, .jpeg, .png, .pdf"
           className="hidden"
+          disabled={isDisabled || mutation.isPending} // Also disable the hidden input
         />
         <Button
           variant="outline"
           size="sm"
           onClick={() => fileInputRef.current?.click()}
-          disabled={mutation.isPending}
+          disabled={isDisabled || mutation.isPending} // Apply disabled state
         >
           <Upload className="h-4 w-4 mr-2" />
           Choose File
         </Button>
         <Button
           onClick={handleUpload}
-          disabled={!selectedFile || mutation.isPending}
+          disabled={!selectedFile || isDisabled || mutation.isPending} // Apply disabled state
           size="sm"
         >
           {mutation.isPending ? (

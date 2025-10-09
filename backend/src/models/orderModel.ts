@@ -10,23 +10,40 @@ export interface IOrder extends Document {
   userId: Types.ObjectId;
   products: IOrderProduct[];
   customerInfo: {
-    /* ... */
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+    deliveryAddress: {
+      street: string;
+      subdivision: string;
+      additionalAddressLine?: string;
+      cityMunicipality: string;
+      province: string;
+      postalCode: string;
+      country: string;
+    };
   };
   paymentInfo: {
     paymentMethod: "installment" | "full";
     installmentStage?: "initial" | "pre_delivery" | "final";
     paymentMode: "cash" | "bank" | "cheque" | "gcash";
     paymentTiming: "now" | "later";
-    paymentReceipts?: string[];
-    // --- MODIFICATION: paymentStatus is now defined here ---
     paymentStatus:
       | "Pending"
       | "50% Complete Paid"
       | "90% Complete Paid"
       | "100% Complete Paid";
+    // Changed paymentReceipts from a simple array to an object
+    paymentReceipts?: {
+      initial?: string[];
+      pre_delivery?: string[];
+      final?: string[];
+    };
   };
   contractInfo: {
-    /* ... */
+    signature: string;
+    agreedToTerms: boolean;
   };
   locationImages?: string[];
   totalAmount: number;
@@ -38,7 +55,6 @@ export interface IOrder extends Document {
     | "Delivered"
     | "Completed"
     | "Cancelled";
-  // The top-level paymentStatus is removed from here
 }
 
 const orderProductSchema: Schema = new Schema(
@@ -55,10 +71,6 @@ const orderSchema: Schema = new Schema(
     products: {
       type: [orderProductSchema],
       required: true,
-      validate: [
-        (val: IOrderProduct[]) => val.length > 0,
-        "Order must have at least one product.",
-      ],
     },
     customerInfo: {
       type: {
@@ -98,17 +110,7 @@ const orderSchema: Schema = new Schema(
           enum: ["cash", "bank", "cheque", "gcash"],
           required: true,
         },
-        paymentTiming: {
-          type: String,
-          enum: ["now", "later"],
-          required: true,
-        },
-        paymentReceipts: {
-          type: [String],
-          required: false,
-        },
-        // --- START: MODIFICATION ---
-        // Move the paymentStatus schema definition inside paymentInfo
+        paymentTiming: { type: String, enum: ["now", "later"], required: true },
         paymentStatus: {
           type: String,
           enum: [
@@ -119,7 +121,16 @@ const orderSchema: Schema = new Schema(
           ],
           default: "Pending",
         },
-        // --- END: MODIFICATION ---
+        // Updated the schema to match the new object structure
+        paymentReceipts: {
+          type: {
+            initial: { type: [String], required: false },
+            pre_delivery: { type: [String], required: false },
+            final: { type: [String], required: false },
+          },
+          required: false,
+          _id: false,
+        },
       },
       required: true,
     },
@@ -148,11 +159,9 @@ const orderSchema: Schema = new Schema(
       ],
       default: "Pending",
     },
-    // --- MODIFICATION: The top-level paymentStatus is removed from here ---
   },
   { timestamps: true }
 );
 
 const Order = mongoose.model<IOrder>("Order", orderSchema);
-
 export default Order;

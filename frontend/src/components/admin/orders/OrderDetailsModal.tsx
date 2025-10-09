@@ -1,5 +1,5 @@
 // src/components/admin/orders/OrderDetailsModal.tsx
-import React from "react";
+import React, { useState, useEffect } from "react"; // --- MODIFICATION: Added useState and useEffect
 import {
   Dialog,
   DialogContent,
@@ -72,6 +72,24 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   onConfirmPayment,
 }) => {
   if (!order) return null;
+
+  // --- MODIFICATION START: State to manage the selected dropdown stage ---
+  const [selectedStage, setSelectedStage] = useState<string | null>(null);
+
+  const availableStages = order?.paymentInfo?.paymentReceipts
+    ? Object.keys(order.paymentInfo.paymentReceipts)
+    : [];
+
+  useEffect(() => {
+    // When the order data changes, default the dropdown to the first available stage
+    if (availableStages.length > 0) {
+      setSelectedStage(availableStages[0]);
+    } else {
+      setSelectedStage(null);
+    }
+  }, [order]); // Rerun this effect when the order prop changes
+  // --- MODIFICATION END ---
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -153,8 +171,6 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
               </div>
             </div>
           </div>
-          {/* --- START: MODIFICATION --- */}
-          {/* Restructured layout with new placement for Timeline and Total Amount */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {/* Left Column */}
             <div className="space-y-6 pt-4">
@@ -173,8 +189,6 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                   </div>
                 </div>
               </div>
-
-              {/* Order Timeline is now here */}
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                   <Calendar className="h-5 w-5 text-gray-500" />
@@ -184,7 +198,6 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                   Ordered: {formatDate(order.createdAt)}
                 </p>
               </div>
-
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                   <MapPin className="h-5 w-5 text-gray-500" />
@@ -201,10 +214,8 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 )}
               </div>
             </div>
-
             {/* Right Column */}
             <div className="space-y-6">
-              {/* Total Order Amount is now here */}
               <div className="p-4 bg-green-50 rounded-lg">
                 <h3 className="font-semibold text-gray-500 mb-1 flex items-center gap-2">
                   <CreditCardIcon className="h-5 w-5 text-gray-500" />
@@ -215,42 +226,74 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 </p>
               </div>
 
-              {order.paymentInfo.paymentReceipts &&
-                order.paymentInfo.paymentReceipts.length > 0 && (
-                  <div className="px-4 py-2">
-                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                      <Receipt className="h-5 w-5 text-gray-500" />
-                      Uploaded Payment Receipts
-                    </h3>
-                    <div className="rounded-lg p-3 space-y-2 bg-white">
-                      {order.paymentInfo.paymentReceipts.map(
-                        (receiptUrl, index) => (
-                          <a
-                            key={index}
-                            href={receiptUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-green-600 hover:underline flex items-center gap-2"
-                          >
-                            View Receipt #{index + 1}
-                          </a>
-                        )
-                      )}
-                    </div>
-                  </div>
-                )}
+              {/* --- MODIFICATION START: Replaced receipt display with a dropdown --- */}
+              {availableStages.length > 0 && (
+                <div className="px-4 py-2">
+                  <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                    <Receipt className="h-5 w-5 text-gray-500" />
+                    Uploaded Payment Receipts
+                  </h3>
+
+                  <Select
+                    value={selectedStage || ""}
+                    onValueChange={setSelectedStage}
+                  >
+                    <SelectTrigger className="w-full md:w-2/3">
+                      <SelectValue placeholder="Select a payment stage to view" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableStages.map((stage) => (
+                        <SelectItem key={stage} value={stage}>
+                          {/* Capitalize and format stage name for display */}
+                          {stage
+                            .replace("_", " ")
+                            .replace(/\b\w/g, (l) => l.toUpperCase())}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Conditionally render images for the selected stage */}
+                  {selectedStage &&
+                    order.paymentInfo.paymentReceipts?.[selectedStage] && (
+                      <div className="mt-4 p-2 bg-gray-50 rounded-lg">
+                        <div className="flex flex-wrap gap-2">
+                          {order.paymentInfo.paymentReceipts[
+                            selectedStage
+                          ]!.map((receiptUrl, index) => (
+                            <a
+                              key={index}
+                              href={receiptUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block"
+                            >
+                              <img
+                                src={receiptUrl}
+                                alt={`Receipt ${
+                                  index + 1
+                                } for ${selectedStage} stage`}
+                                className="w-20 h-20 object-cover rounded-md border-2 border-gray-200 hover:border-blue-500 transition-colors"
+                              />
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                </div>
+              )}
+              {/* --- MODIFICATION END --- */}
             </div>
           </div>
-          {/* --- END: MODIFICATION --- */}
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Package className="h-5 w-5 text-gray-500" />
               <h3 className="font-semibold text-gray-900">Ordered Products</h3>
             </div>
             <div className="space-y-3">
-              {order.products.map((item, index) => (
+              {order.products.map((item) => (
                 <div
-                  key={index}
+                  key={item.productId._id}
                   className="flex items-start gap-3 p-3 border rounded-lg bg-white"
                 >
                   <img
@@ -295,7 +338,6 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 </div>
               ))}
             </div>
-            {/* Total Order Amount was removed from here */}
           </div>
         </div>
       </DialogContent>

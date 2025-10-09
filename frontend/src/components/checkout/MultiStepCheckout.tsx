@@ -1,13 +1,14 @@
+// src/components/checkout/MultiStepCheckout.tsx
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Progress } from "../ui/progress";
 import { useToast } from "../../hooks/use-toast";
 import { useAuth } from "../../context/AuthContext";
+import { useCart } from "../../context/CartContext";
 import { useCheckoutState } from "../../hooks/useCheckoutState";
 import { isStepValid } from "../../utils/checkoutValidation";
 import { CartItem } from "../../context/CartContext";
-
 import CustomerInfoStep from "./steps/CustomerInfoStep";
 import PaymentStep from "./steps/PaymentStep";
 import ContractStep from "./steps/ContractStep";
@@ -26,13 +27,11 @@ const uploadFileToCloudinary = async (file: File): Promise<string> => {
     throw new Error("Failed to get a signature from the server.");
   }
   const { timestamp, signature } = await signatureResponse.json();
-
   const formData = new FormData();
   formData.append("file", file);
   formData.append("timestamp", timestamp);
   formData.append("signature", signature);
   formData.append("api_key", import.meta.env.VITE_CLOUDINARY_API_KEY as string);
-
   const uploadResponse = await fetch(
     `https://api.cloudinary.com/v1_1/${
       import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
@@ -42,12 +41,10 @@ const uploadFileToCloudinary = async (file: File): Promise<string> => {
       body: formData,
     }
   );
-
   if (!uploadResponse.ok) {
     const errorData = await uploadResponse.json();
     throw new Error(`Cloudinary upload failed: ${errorData.error.message}`);
   }
-
   const uploadResult = await uploadResponse.json();
   return uploadResult.secure_url;
 };
@@ -57,10 +54,9 @@ const MultiStepCheckout = () => {
   const location = useLocation();
   const { toast } = useToast();
   const { token } = useAuth();
-
+  const { removeItems } = useCart();
   const [items, setItems] = useState<CartItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const {
     currentStep,
     customerInfo,
@@ -129,15 +125,28 @@ const MultiStepCheckout = () => {
     setIsSubmitting(true);
 
     try {
-      const paymentReceiptUploads = (paymentInfo.paymentReceipts || []).map(
-        (file) => uploadFileToCloudinary(file as File)
-      );
+      // --- START: FIX ---
+      // Correctly process the paymentReceipts object
+      const uploadedReceipts: { [key: string]: string[] } = {};
+      if (paymentInfo.paymentReceipts) {
+        for (const [stage, files] of Object.entries(
+          paymentInfo.paymentReceipts
+        )) {
+          if (files && files.length > 0) {
+            const uploadPromises = files.map((file) =>
+              uploadFileToCloudinary(file)
+            );
+            uploadedReceipts[stage] = await Promise.all(uploadPromises);
+          }
+        }
+      }
+
+      // Process location images (this logic was already correct)
       const locationImageUploads = (paymentInfo.locationImages || []).map(
         (file) => uploadFileToCloudinary(file as File)
       );
-
-      const paymentReceiptsUrls = await Promise.all(paymentReceiptUploads);
       const locationImagesUrls = await Promise.all(locationImageUploads);
+      // --- END: FIX ---
 
       const orderPayload = {
         products: items.map((item) => ({
@@ -166,7 +175,8 @@ const MultiStepCheckout = () => {
           installmentStage: paymentInfo.installmentStage,
           paymentMode: paymentInfo.paymentMode,
           paymentTiming: paymentInfo.paymentTiming,
-          paymentReceipts: paymentReceiptsUrls,
+          // --- FIX: Use the correctly structured uploadedReceipts object ---
+          paymentReceipts: uploadedReceipts,
         },
         contractInfo: {
           signature: contractInfo.signature,
@@ -190,10 +200,15 @@ const MultiStepCheckout = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create the order.");
+        throw new Error(
+          errorData.message || "Server error while creating order."
+        );
       }
 
       const newOrder = await response.json();
+      const orderedItemIds = items.map((item) => item.id);
+      removeItems(orderedItemIds);
+
       toast({
         title: "Order placed successfully!",
         description: `Your order #${newOrder._id} has been created.`,

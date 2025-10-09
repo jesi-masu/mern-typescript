@@ -1,3 +1,4 @@
+// src/components/checkout/PaymentStep.tsx
 import React from "react";
 import { Label } from "../../ui/label";
 import { Input } from "../../ui/input";
@@ -8,6 +9,9 @@ import { PaymentInfo } from "../../../types/checkout";
 import { formatPrice } from "../../../lib/formatters";
 import PaymentSelector from "../PaymentSelector";
 import DeliveryAddressStep from "./DeliveryAddressStep";
+
+// Define the keys for type safety
+type PaymentStageKey = "initial" | "pre_delivery" | "final";
 
 interface ExtendedPaymentInfo extends PaymentInfo {
   deliveryAddress?: {
@@ -20,9 +24,15 @@ interface ExtendedPaymentInfo extends PaymentInfo {
     additionalAddressLine: string;
   };
   paymentMethod: "installment" | "full" | "";
-  installmentStage: "initial" | "pre_delivery" | "final" | "";
+  installmentStage: PaymentStageKey | "";
   paymentMode: "cash" | "bank" | "cheque" | "gcash" | "";
   paymentTiming: "now" | "later" | "";
+  // --- MODIFICATION: Updated paymentReceipts to be an object ---
+  paymentReceipts?: {
+    initial?: File[];
+    pre_delivery?: File[];
+    final?: File[];
+  };
 }
 
 interface PaymentStepProps {
@@ -68,12 +78,35 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
     onChange(updates);
   };
 
+  // --- MODIFICATION: Rewritten to handle object structure ---
   const handlePaymentReceiptChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const files = Array.from(e.target.files || []);
-    const existingFiles = paymentInfo.paymentReceipts || [];
-    onChange({ paymentReceipts: [...existingFiles, ...files] });
+    if (files.length === 0) return;
+
+    let stageKey: PaymentStageKey | undefined;
+
+    if (paymentInfo.paymentMethod === "full") {
+      stageKey = "initial";
+    } else if (
+      paymentInfo.paymentMethod === "installment" &&
+      paymentInfo.installmentStage
+    ) {
+      stageKey = paymentInfo.installmentStage;
+    }
+
+    if (!stageKey) return; // Do nothing if there's no valid stage
+
+    const existingReceipts = paymentInfo.paymentReceipts || {};
+    const existingFilesForStage = existingReceipts[stageKey] || [];
+
+    onChange({
+      paymentReceipts: {
+        ...existingReceipts,
+        [stageKey]: [...existingFilesForStage, ...files],
+      },
+    });
   };
 
   const handleLocationImageChange = (
@@ -90,11 +123,20 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
     onChange({ deliveryAddress: addressInfo });
   };
 
-  const removePaymentReceipt = (index: number) => {
-    const updatedFiles = (paymentInfo.paymentReceipts || []).filter(
-      (_, i) => i !== index
-    );
-    onChange({ paymentReceipts: updatedFiles });
+  // --- MODIFICATION: Rewritten to handle object structure ---
+  const removePaymentReceipt = (stage: PaymentStageKey, index: number) => {
+    const existingReceipts = { ...(paymentInfo.paymentReceipts || {}) };
+    const filesForStage = existingReceipts[stage] || [];
+
+    const updatedFiles = filesForStage.filter((_, i) => i !== index);
+
+    if (updatedFiles.length > 0) {
+      existingReceipts[stage] = updatedFiles;
+    } else {
+      delete existingReceipts[stage]; // Clean up the key if no files are left
+    }
+
+    onChange({ paymentReceipts: existingReceipts });
   };
 
   const removeLocationImage = (index: number) => {
@@ -106,11 +148,16 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
 
   const handlePaymentTimingChange = (timing: "now" | "later" | "") => {
     const updates: Partial<ExtendedPaymentInfo> = { paymentTiming: timing };
+    // --- MODIFICATION: Reset to an object instead of an array ---
     if (timing === "later") {
-      updates.paymentReceipts = [];
+      updates.paymentReceipts = {};
     }
     onChange(updates);
   };
+
+  const hasUploadedReceipts =
+    paymentInfo.paymentReceipts &&
+    Object.values(paymentInfo.paymentReceipts).flat().length > 0;
 
   return (
     <div className="space-y-6">
@@ -168,30 +215,45 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
                   Upload your payment receipts (PNG, JPG, or PDF).
                 </p>
 
-                {paymentInfo.paymentReceipts &&
-                  paymentInfo.paymentReceipts.length > 0 && (
-                    <div className="mt-3 space-y-2">
-                      <p className="text-sm font-medium">Uploaded Receipts:</p>
-                      {paymentInfo.paymentReceipts.map((file, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between bg-gray-50 p-2 rounded"
-                        >
-                          <span className="text-sm text-gray-700">
-                            {file.name}
-                          </span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removePaymentReceipt(index)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                {/* --- MODIFICATION: Updated display logic for object --- */}
+                {hasUploadedReceipts && (
+                  <div className="mt-3 space-y-3">
+                    <p className="text-sm font-medium">Uploaded Receipts:</p>
+                    {Object.entries(paymentInfo.paymentReceipts!).map(
+                      ([stage, files]) =>
+                        files && files.length > 0 ? (
+                          <div key={stage}>
+                            <p className="text-xs font-semibold capitalize text-gray-600">
+                              {stage.replace("_", " ")}:
+                            </p>
+                            {files.map((file, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center justify-between bg-gray-50 p-2 rounded ml-2"
+                              >
+                                <span className="text-sm text-gray-700 truncate pr-2">
+                                  {file.name}
+                                </span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    removePaymentReceipt(
+                                      stage as PaymentStageKey,
+                                      index
+                                    )
+                                  }
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
@@ -264,7 +326,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
                         key={index}
                         className="flex items-center justify-between bg-gray-50 p-2 rounded"
                       >
-                        <span className="text-sm text-gray-700">
+                        <span className="text-sm text-gray-700 truncate pr-2">
                           {file.name}
                         </span>
                         <Button
