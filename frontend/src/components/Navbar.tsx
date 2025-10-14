@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom"; // MOD: Imported useNavigate
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge"; // MOD: Imported Badge
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,26 +17,26 @@ import {
   Package,
   LogOut,
   ShieldCheck,
-  ShoppingCart, // MOD: Imported ShoppingCart icon
+  ShoppingCart,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { useCart } from "@/context/CartContext"; // MOD: Imported useCart hook
+import { useCart } from "@/context/CartContext";
 import CustomerNotifications from "@/components/customer/CustomerNotifications";
+import logo from "@/assets/logo.png"; // Added logo import
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
-  const navigate = useNavigate(); // MOD: Initialized useNavigate
+  const navigate = useNavigate();
 
-  // MOD: Get cart items count using the useCart hook
-  // We'll wrap this in a check to avoid calling the hook when not needed.
+  // Get cart items count using the useCart hook
   const CartItemsCounter = () => {
     const { getTotalItems } = useCart();
     return getTotalItems();
   };
+
   const cartItemsCount =
     isAuthenticated && user?.role === "client" ? CartItemsCounter() : 0;
-  // END MOD
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -51,14 +51,20 @@ const Navbar = () => {
     <nav className="bg-white/80 shadow-sm sticky top-0 z-50 transition-all duration-300 backdrop-blur-sm">
       <div className="container mx-auto py-4">
         <div className="flex justify-between items-center">
+          {/* --- This section is updated with the logo image --- */}
           <div className="flex items-center">
-            <Link
-              to="/"
-              className="text-2xl font-bold text-blue-950 transition-colors duration-300 hover:text-blue-600"
-            >
-              Camco Prefab
+            <Link to="/" className="flex items-center gap-4">
+              <img
+                src={logo}
+                alt="Camco Prefab Logo"
+                className="h-12 w-auto object-contain"
+              />
+              <span className="text-2xl font-bold text-blue-950 transition-colors duration-300 hover:text-blue-600">
+                Camco Prefab
+              </span>
             </Link>
           </div>
+          {/* --- End of updated section --- */}
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
@@ -99,14 +105,10 @@ const Navbar = () => {
               FAQ
             </Link>
           </div>
-
           <div className="hidden md:flex items-center space-x-4">
             {isAuthenticated && user ? (
               <div className="flex items-center space-x-3">
-                {/* Bell Icon */}
                 {user.role === "client" && <CustomerNotifications />}
-
-                {/* MOD: START - Added Cart Icon */}
                 {user.role === "client" && (
                   <Button
                     variant="ghost"
@@ -126,9 +128,6 @@ const Navbar = () => {
                     <span className="sr-only">Open Cart</span>
                   </Button>
                 )}
-                {/* MOD: END - Added Cart Icon */}
-
-                {/* Profile Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -202,10 +201,8 @@ const Navbar = () => {
               </>
             )}
           </div>
-
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center gap-2">
-            {/* MOD: START - Added Cart Icon for Mobile View */}
             {isAuthenticated && user && user.role === "client" && (
               <Button
                 variant="ghost"
@@ -225,7 +222,6 @@ const Navbar = () => {
                 <span className="sr-only">Open Cart</span>
               </Button>
             )}
-            {/* MOD: END - Added Cart Icon for Mobile View */}
             <Button variant="ghost" onClick={toggleMenu} size="icon">
               {isMenuOpen ? (
                 <X className="h-6 w-6" />
@@ -235,7 +231,6 @@ const Navbar = () => {
             </Button>
           </div>
         </div>
-
         {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="md:hidden mt-4 pb-4">
@@ -282,7 +277,6 @@ const Navbar = () => {
               >
                 FAQ
               </Link>
-
               <div className="border-t pt-4 mt-2">
                 {isAuthenticated && user ? (
                   <>

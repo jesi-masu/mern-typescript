@@ -12,7 +12,8 @@ import {
   MapPin,
   Layers,
   Award,
-} from "lucide-react";
+  Ruler,
+} from "lucide-react"; // Added Ruler icon
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,24 +34,37 @@ import {
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { projectsData } from "@/data/projectsData";
 
+// NOTE: In a real TypeScript project, you would define and import the Project interface here.
+// For this example, we'll keep the types inferred or use `any` for simplicity within the provided snippet.
+
 const ProjectDetail = () => {
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState("overview");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentLayoutIndex, setCurrentLayoutIndex] = useState(0); // New state for Layout carousel
 
+  // NOTE: For a proper TS environment, cast projectsData array and define Project type.
   const project = projectsData.find((p) => p.id.toString() === id);
 
-  // Generate sample gallery images
+  // Existing sample gallery images (photos)
   const galleryImages = [
     project?.imageUrl || "",
     `https://images.unsplash.com/photo-1600585152220-90363fe7e115`,
     `https://images.unsplash.com/photo-1600607687939-ce8a6c25118c`,
     `https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea`,
-    `https://images.unsplash.com/photo-1600607687644-aac4c3eac7f4`,
     `https://images.unsplash.com/photo-1600607688969-a5bfcd646154`,
   ].filter(Boolean);
 
+  // NEW: Sample layout images (blueprints, floor plans)
+  const layoutImages = [
+    `https://camcoprefabricatedstructures.com/wp-content/uploads/2025/03/duplex4.png`,
+    `https://camcoprefabricatedstructures.com/wp-content/uploads/2025/02/Mask-group-21.png`,
+    `https://camcoprefabricatedstructures.com/wp-content/uploads/2025/02/Mask-group-22.png`,
+    `https://camcoprefabricatedstructures.com/wp-content/uploads/2025/02/Mask-group-23.png`,
+  ];
+
   if (!project) {
+    // Project Not Found Alert... (Keep existing logic)
     return (
       <Layout>
         <div className="container py-20">
@@ -87,19 +101,29 @@ const ProjectDetail = () => {
     },
   };
 
+  // Gallery Carousel Functions (Kept existing)
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length);
   };
-
   const prevImage = () => {
     setCurrentImageIndex(
       (prev) => (prev - 1 + galleryImages.length) % galleryImages.length
     );
   };
 
+  // NEW: Layout Carousel Functions
+  const nextLayout = () => {
+    setCurrentLayoutIndex((prev) => (prev + 1) % layoutImages.length);
+  };
+  const prevLayout = () => {
+    setCurrentLayoutIndex(
+      (prev) => (prev - 1 + layoutImages.length) % layoutImages.length
+    );
+  };
+
   return (
     <Layout>
-      {/* Premium Hero Section */}
+      {/* Premium Hero Section (No change) */}
       <section className="relative h-[70vh] overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center"
@@ -173,6 +197,7 @@ const ProjectDetail = () => {
                 onValueChange={setActiveTab}
                 className="w-full"
               >
+                {/* RENAMED 'timeline' to 'layout' in TabsList */}
                 <TabsList className="grid w-full grid-cols-4 mb-12 bg-slate-100 p-1 rounded-xl">
                   <TabsTrigger
                     value="overview"
@@ -187,17 +212,17 @@ const ProjectDetail = () => {
                     Gallery
                   </TabsTrigger>
                   <TabsTrigger
-                    value="timeline"
+                    value="layout"
                     className="rounded-lg font-medium"
                   >
-                    Timeline
+                    Layout
                   </TabsTrigger>
                   <TabsTrigger value="video" className="rounded-lg font-medium">
                     Video
                   </TabsTrigger>
                 </TabsList>
 
-                {/* Overview Tab */}
+                {/* Overview Tab (No Change) */}
                 <TabsContent value="overview" className="space-y-10">
                   <div className="bg-white rounded-2xl p-8 shadow-lg border border-slate-200/50">
                     <h2 className="text-3xl font-semibold mb-6 text-slate-900">
@@ -306,7 +331,7 @@ const ProjectDetail = () => {
                   </div>
                 </TabsContent>
 
-                {/* Premium Gallery Tab with Carousel */}
+                {/* Premium Gallery Tab with Carousel (Existing logic, no major changes) */}
                 <TabsContent value="gallery">
                   <div className="bg-white rounded-2xl p-8 shadow-lg border border-slate-200/50">
                     <h2 className="text-3xl font-semibold mb-8 text-slate-900">
@@ -368,97 +393,83 @@ const ProjectDetail = () => {
                   </div>
                 </TabsContent>
 
-                {/* Timeline Tab */}
-                <TabsContent value="timeline">
+                {/* NEW: Layout Tab (Replaced Timeline with Blueprint Carousel) */}
+                <TabsContent value="layout">
                   <div className="bg-white rounded-2xl p-8 shadow-lg border border-slate-200/50">
-                    <h2 className="text-3xl font-semibold mb-8 text-slate-900">
-                      Project Timeline
+                    <h2 className="text-3xl font-semibold mb-8 text-slate-900 flex items-center gap-3">
+                      <Ruler className="h-7 w-7 text-slate-600" />
+                      Modular Layout & Blueprints
                     </h2>
-                    <div className="space-y-8">
-                      {[
-                        {
-                          phase: "Planning Phase",
-                          date: "January 2023 - February 2023",
-                          description:
-                            "Initial client consultation, site assessment, and project planning. Design concepts reviewed and approved.",
-                          status: "completed",
-                        },
-                        {
-                          phase: "Module Fabrication",
-                          date: "March 2023 - June 2023",
-                          description: `Off-site fabrication of ${project.modules} modular units according to approved specifications and quality control standards.`,
-                          status: "completed",
-                        },
-                        {
-                          phase: "Site Preparation",
-                          date: "April 2023 - May 2023",
-                          description:
-                            "Foundation work, utility connections, and site preparation completed while modules were being fabricated.",
-                          status: "completed",
-                        },
-                        {
-                          phase: "Module Assembly",
-                          date: "July 2023 - August 2023",
-                          description:
-                            "On-site assembly of prefabricated modules, including all connections and structural elements.",
-                          status: "completed",
-                        },
-                        {
-                          phase: "Interior Finishing",
-                          date: "September 2023 - October 2023",
-                          description:
-                            "Interior finishes, systems integration, and final detailing completed according to design specifications.",
-                          status: "completed",
-                        },
-                        {
-                          phase: "Project Completion",
-                          date: new Date(
-                            project.completionDate
-                          ).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          }),
-                          description:
-                            "Final inspections, client walkthrough, and project handover successfully completed.",
-                          status: "final",
-                        },
-                      ].map((item, index) => (
-                        <div
-                          key={index}
-                          className="relative pl-12 pb-8 last:pb-0"
-                        >
-                          <div
-                            className={`absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                              item.status === "final"
-                                ? "bg-emerald-600"
-                                : "bg-slate-900"
-                            }`}
-                          >
-                            <CheckCircle className="h-4 w-4 text-white" />
-                          </div>
-                          {index < 5 && (
-                            <div className="absolute left-4 top-8 w-px h-full bg-slate-200" />
-                          )}
 
-                          <div className="bg-slate-50 rounded-xl p-6">
-                            <div className="font-semibold text-xl text-slate-900 mb-2">
-                              {item.phase}
-                            </div>
-                            <div className="text-sm text-slate-500 mb-3 font-medium">
-                              {item.date}
-                            </div>
-                            <div className="text-slate-700 leading-relaxed">
-                              {item.description}
-                            </div>
-                          </div>
+                    <p className="text-slate-600 mb-6 leading-relaxed">
+                      Explore the technical specifications and modular design of
+                      this project, including floor plans and container
+                      arrangements.
+                    </p>
+
+                    {/* Layout Carousel */}
+                    <div className="relative mb-8">
+                      <div className="aspect-[4/3] bg-slate-100 rounded-2xl overflow-hidden relative group">
+                        <img
+                          src={layoutImages[currentLayoutIndex]}
+                          alt={`${project.title} - Layout ${
+                            currentLayoutIndex + 1
+                          }`}
+                          className="w-full h-full object-contain p-4 transition-transform duration-500 group-hover:scale-[1.02]"
+                        />
+
+                        {/* Navigation Buttons */}
+                        <button
+                          onClick={prevLayout}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-slate-800 p-3 rounded-full shadow-lg transition-all duration-300 opacity-0 group-hover:opacity-100"
+                        >
+                          <ChevronLeft className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={nextLayout}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-slate-800 p-3 rounded-full shadow-lg transition-all duration-300 opacity-0 group-hover:opacity-100"
+                        >
+                          <ChevronRight className="h-5 w-5" />
+                        </button>
+
+                        {/* Image Counter */}
+                        <div className="absolute bottom-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm backdrop-blur-sm">
+                          Plan {currentLayoutIndex + 1} / {layoutImages.length}
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Thumbnail Navigation (Simplified for layout) */}
+                    <div className="grid grid-cols-4 gap-3">
+                      {layoutImages.map((image, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentLayoutIndex(index)}
+                          className={`aspect-[4/3] rounded-xl overflow-hidden border-2 bg-slate-50 transition-all duration-300 ${
+                            currentLayoutIndex === index
+                              ? "border-slate-900 ring-2 ring-slate-900/20"
+                              : "border-slate-200 hover:border-slate-400"
+                          }`}
+                        >
+                          <img
+                            src={image}
+                            alt={`Layout Thumbnail ${index + 1}`}
+                            className="w-full h-full object-cover opacity-60 hover:opacity-100 transition-opacity duration-300"
+                          />
+                        </button>
                       ))}
+                    </div>
+
+                    <div className="mt-8 pt-6 border-t border-slate-100">
+                      <Button variant="outline" className="w-full">
+                        <Ruler className="mr-2 h-4 w-4" />
+                        Download Floor Plans (PDF)
+                      </Button>
                     </div>
                   </div>
                 </TabsContent>
 
-                {/* Video Tab */}
+                {/* Video Tab (No Change) */}
                 <TabsContent value="video">
                   <div className="bg-white rounded-2xl p-8 shadow-lg border border-slate-200/50">
                     <h2 className="text-3xl font-semibold mb-8 text-slate-900">
@@ -500,7 +511,7 @@ const ProjectDetail = () => {
               </Tabs>
             </div>
 
-            {/* Right Column - Premium Sidebar */}
+            {/* Right Column - Premium Sidebar (No Change) */}
             <div className="space-y-8">
               {/* Progress Card */}
               <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200/50">

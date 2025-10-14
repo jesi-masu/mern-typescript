@@ -187,15 +187,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                   </div>
                 </div>
               </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-gray-500" />
-                  Order Timeline
-                </h3>
-                <p className="text-sm text-gray-500">
-                  Ordered: {formatDate(order.createdAt)}
-                </p>
-              </div>
+
               <div>
                 <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                   <MapPin className="h-5 w-5 text-gray-500" />
@@ -211,25 +203,42 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                   </p>
                 )}
               </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+              <div className="bg-gray-50/50 rounded-lg">
+                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                   <ListChecks className="h-5 w-5 text-gray-500" />
                   Payment Details
                 </h3>
-                <div className="text-sm space-y-2 bg-gray-50 p-2 ">
+                <div className="text-sm bg-gray-50 space-y-2 p-3 rounded-lg">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Method:</span>
                     <Badge variant="outline" className="capitalize text-xs">
                       {order.paymentInfo.paymentMethod}
                     </Badge>
                   </div>
+
+                  {/* --- MODIFICATION START: Added Installment Stage --- */}
+                  {order.paymentInfo.paymentMethod === "installment" &&
+                    order.paymentInfo.installmentStage && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600 pl-2">
+                          ↳ Installment Stage:
+                        </span>
+                        <Badge
+                          variant="secondary"
+                          className="capitalize text-xs"
+                        >
+                          {order.paymentInfo.installmentStage.replace("_", " ")}
+                        </Badge>
+                      </div>
+                    )}
+                  {/* --- MODIFICATION END --- */}
+
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Mode:</span>
                     <Badge variant="outline" className="uppercase text-xs">
                       {order.paymentInfo.paymentMode}
                     </Badge>
                   </div>
-                  {/* --- MODIFICATION: Added Payment Timing --- */}
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Timing:</span>
                     <Badge variant="outline" className="capitalize text-xs">
@@ -248,6 +257,16 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 </h3>
                 <p className="text-2xl font-bold text-green-600">
                   {formatPrice(order.totalAmount)}
+                </p>
+              </div>
+
+              <div className="px-4 py-2">
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-gray-500" />
+                  Order Timeline
+                </h3>
+                <p className="text-sm text-gray-500">
+                  Ordered: {formatDate(order.createdAt)}
                 </p>
               </div>
 

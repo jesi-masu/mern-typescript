@@ -161,7 +161,7 @@ const HeroSection = () => {
               Transforming Containers into Your Dream Spaces
             </h1>
             <p className="text-lg md:text-xl mb-8 text-gray-200 transition-opacity duration-500 leading-relaxed">
-              Our innovative platform helps you visualize, customize and manage your prefabricated building projects from concept to completion with 3D design integration.
+              Our innovative platform enables you to explore container space options, order effortlessly, and view products with immersive 3D models.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               {/* Using onClick handlers with window.location */}
@@ -205,7 +205,7 @@ const HeroSection = () => {
         {/* Loading indicator for video */}
         {!videoError && (
           <div className="absolute bottom-4 right-4 text-xs text-gray-400 bg-black bg-opacity-50 px-2 py-1 rounded">
-            {videoError ? 'Image Mode' : 'Video Loading...'}
+            {videoError ? 'Image Mode' : ''}
           </div>
         )}
       </section>

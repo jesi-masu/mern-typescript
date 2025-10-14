@@ -49,6 +49,10 @@ const Home = () => {
           <FeaturesSection />
         </div>
 
+        <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
+          <PhilippinesMapSection />
+        </div>
+
         <div className="animate-fade-in" style={{ animationDelay: "0.5s" }}>
           <TechnicalDataSection />
         </div>

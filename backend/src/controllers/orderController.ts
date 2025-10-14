@@ -187,7 +187,6 @@ export const updateOrder = async (
       return;
     }
 
-    // --- MODIFICATION: Made the types more flexible ---
     const updateData: {
       $set?: { [key: string]: any };
       $push?: { [key: string]: any };
@@ -201,6 +200,26 @@ export const updateOrder = async (
 
     if (paymentStatus) {
       fieldsToSet["paymentInfo.paymentStatus"] = paymentStatus;
+
+      // --- MODIFICATION START: Automatically update installment stage ---
+      // Only apply this logic if the order is an installment plan
+      if (order.paymentInfo.paymentMethod === "installment") {
+        switch (paymentStatus) {
+          case "50% Complete Paid":
+            fieldsToSet["paymentInfo.installmentStage"] = "initial";
+            break;
+          case "90% Complete Paid":
+            fieldsToSet["paymentInfo.installmentStage"] = "pre_delivery";
+            break;
+          case "100% Complete Paid":
+            fieldsToSet["paymentInfo.installmentStage"] = "final";
+            break;
+          default:
+            // For "Pending" or other statuses, do not change the stage
+            break;
+        }
+      }
+      // --- MODIFICATION END ---
     }
 
     if (Object.keys(fieldsToSet).length > 0) {
