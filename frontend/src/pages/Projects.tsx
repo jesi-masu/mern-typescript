@@ -22,8 +22,9 @@ import {
   TrendingUp,
   Award,
   Target,
+  Sparkles,
+  ArrowRight,
 } from "lucide-react";
-
 // Import the projects data
 import { projectsData } from "@/data/projectsData";
 
@@ -42,14 +43,12 @@ const Projects = () => {
 
   const getFilteredProjects = () => {
     let filtered = projectsData;
-
     // Filter by category
     if (selectedCategory) {
       filtered = filtered.filter(
         (project) => project.category === selectedCategory
       );
     }
-
     return filtered;
   };
 
@@ -87,7 +86,6 @@ const Projects = () => {
       (p) => p.status === "Completed"
     ).length;
     const totalModules = projectsData.reduce((sum, p) => sum + p.modules, 0);
-
     return { totalProjects, completedProjects, totalModules };
   };
 
@@ -95,90 +93,63 @@ const Projects = () => {
 
   return (
     <Layout>
-      {/* Animated Hero Section */}
-      <section className="relative bg-gradient-to-br from-blue-900 via-blue-700 to-indigo-800 text-white py-32 overflow-hidden">
+      <section className="relative bg-gradient-to-br from-blue-900 via-blue-700 to-indigo-800 text-white py-24 overflow-hidden">
         {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
-          {/* Floating Geometric Shapes */}
+          {/* Floating Circles */}
           <div
-            className="absolute w-96 h-96 bg-indigo-400/10 rounded-full blur-3xl -top-48 -left-48 animate-pulse"
-            style={{ transform: `translateY(${scrollY * 0.4}px)` }}
+            className="absolute w-96 h-96 bg-blue-400/20 rounded-full blur-3xl -top-48 -left-48 animate-pulse"
+            style={{ transform: `translateY(${scrollY * 0.3}px)` }}
           ></div>
           <div
-            className="absolute w-96 h-96 bg-purple-400/10 rounded-full blur-3xl top-1/2 right-0 animate-pulse"
+            className="absolute w-96 h-96 bg-indigo-400/20 rounded-full blur-3xl -bottom-48 -right-48 animate-pulse"
             style={{
-              transform: `translateY(${scrollY * -0.3}px)`,
+              transform: `translateY(${scrollY * -0.2}px)`,
               animationDelay: "1s",
             }}
           ></div>
-          <div
-            className="absolute w-96 h-96 bg-blue-400/10 rounded-full blur-3xl -bottom-48 left-1/4 animate-pulse"
-            style={{
-              transform: `translateY(${scrollY * 0.2}px)`,
-              animationDelay: "0.5s",
-            }}
-          ></div>
-
-          {/* Animated Grid */}
-          <div
-            className="absolute inset-0 opacity-10"
-            style={{ transform: `translateY(${scrollY * 0.1}px)` }}
-          >
-            <svg className="w-full h-full">
-              <defs>
-                <pattern
-                  id="grid-pattern"
-                  x="0"
-                  y="0"
-                  width="50"
-                  height="50"
-                  patternUnits="userSpaceOnUse"
-                >
-                  <path
-                    d="M 50 0 L 0 0 0 50"
-                    fill="none"
-                    stroke="white"
-                    strokeWidth="0.5"
-                  />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#grid-pattern)" />
-            </svg>
+          {/* Grid Pattern */}
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-40"></div>
+          {/* Floating Particles */}
+          <div className="absolute inset-0">
+            {[...Array(20)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute w-2 h-2 bg-white/30 rounded-full animate-float"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 5}s`,
+                  animationDuration: `${5 + Math.random() * 5}s`,
+                }}
+              ></div>
+            ))}
           </div>
-
-          {/* Floating Building Icons */}
-          {[...Array(15)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute text-white/5 animate-float-slow"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 5}s`,
-                animationDuration: `${10 + Math.random() * 10}s`,
-              }}
-            >
-              <Building2 className="w-12 h-12" />
-            </div>
-          ))}
         </div>
-
         <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-5xl mx-auto text-center">
-            {/* Main Heading */}
+          <div className="max-w-4xl mx-auto text-center">
+            {/* Main Heading with staggered animation */}
             <h1
-              className="text-6xl md:text-7xl lg:text-8xl font-black mb-8 tracking-tight animate-fade-in-up leading-tight"
+              className="text-6xl md:text-7xl lg:text-8xl font-black mb-6 tracking-tight animate-fade-in-up"
               style={{ animationDelay: "0.3s" }}
             >
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-200 to-purple-200 animate-gradient">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-white animate-gradient">
                 Our Distinguished
               </span>
               <br />
-              <span className="text-indigo-300">Projects</span>
+              <span className="text-blue-200">Projects</span>
             </h1>
-            <br />
+            {/* Subtitle */}
+            <p
+              className="text-xl md:text-2xl text-blue-100 leading-relaxed max-w-3xl mx-auto mb-8 animate-fade-in-up"
+              style={{ animationDelay: "0.4s" }}
+            >
+              Explore our portfolio of successfully completed projects,
+              showcasing our commitment to quality, innovation, and excellence
+              in prefabricated construction.
+            </p>
 
-            {/* Animated Stats Cards */}
+            {/* --- START: RESTORED STATS SECTION --- */}
             <div
               className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 animate-fade-in-up"
               style={{ animationDelay: "0.5s" }}
@@ -194,7 +165,6 @@ const Projects = () => {
                   Total Projects
                 </div>
               </div>
-
               <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-500 hover:scale-105 hover:shadow-2xl group cursor-pointer">
                 <div className="flex items-center justify-between mb-3">
                   <div className="text-5xl font-black text-white group-hover:scale-110 transition-transform">
@@ -206,7 +176,6 @@ const Projects = () => {
                   Completed
                 </div>
               </div>
-
               <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-500 hover:scale-105 hover:shadow-2xl group cursor-pointer">
                 <div className="flex items-center justify-between mb-3">
                   <div className="text-5xl font-black text-white group-hover:scale-110 transition-transform">
@@ -219,10 +188,10 @@ const Projects = () => {
                 </div>
               </div>
             </div>
+            {/* --- END: RESTORED STATS SECTION --- */}
           </div>
         </div>
-
-        {/* Wave Divider */}
+        {/* Wave Divider at bottom */}
         <div className="absolute bottom-0 left-0 right-0">
           <svg
             className="w-full h-16 md:h-24 text-gray-50 dark:text-gray-900"
@@ -302,7 +271,6 @@ const Projects = () => {
               Industrial
             </Button>
           </div>
-
           {/* Project Grid with Enhanced Animations */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredProjects.map((project, index) => (
@@ -320,10 +288,8 @@ const Projects = () => {
                     alt={project.title}
                     className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-700 ease-in-out"
                   />
-
                   {/* Gradient Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
                   {/* Category Badge */}
                   <div className="absolute top-4 left-4 z-10">
                     <Badge
@@ -335,18 +301,15 @@ const Projects = () => {
                       {project.category}
                     </Badge>
                   </div>
-
                   {/* Status Badge */}
                   <div className="absolute top-4 right-4 z-10">
                     <Badge className="bg-green-500/90 backdrop-blur-sm text-white flex items-center gap-1 px-3 py-1.5 text-sm font-semibold rounded-full shadow-lg transition-transform duration-300 hover:scale-110">
                       <CheckCircle2 className="h-3.5 w-3.5" /> Completed
                     </Badge>
                   </div>
-
                   {/* Shine Effect */}
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                 </div>
-
                 <CardHeader className="p-6 pb-4">
                   <CardTitle className="text-2xl font-bold text-gray-900 dark:text-gray-50 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors duration-300">
                     {project.title}
@@ -355,7 +318,6 @@ const Projects = () => {
                     {project.description}
                   </CardDescription>
                 </CardHeader>
-
                 <CardContent className="p-6 pt-0">
                   <div className="space-y-4">
                     <div className="flex items-center text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600 transition-colors duration-300">
@@ -393,7 +355,6 @@ const Projects = () => {
                     </div>
                   </div>
                 </CardContent>
-
                 <CardFooter className="p-6 pt-0">
                   <Link to={`/project/${project.id}`} className="w-full">
                     <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 text-base rounded-lg shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105 group/btn">
@@ -409,7 +370,6 @@ const Projects = () => {
               </Card>
             ))}
           </div>
-
           {filteredProjects.length === 0 && (
             <div className="text-center py-16 px-6 bg-white dark:bg-gray-850 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 animate-fade-in">
               <Building2 className="h-20 w-20 text-gray-300 dark:text-gray-600 mx-auto mb-6" />
@@ -422,7 +382,6 @@ const Projects = () => {
               </p>
             </div>
           )}
-
           {/* Call to Action Section */}
           <div className="text-center mt-20 bg-gradient-to-r from-blue-600 to-blue-700 dark:from-indigo-800 dark:to-purple-900 rounded-3xl p-10 md:p-16 shadow-2xl overflow-hidden relative animate-fade-in-up">
             <div className="absolute inset-0 opacity-20">
@@ -474,8 +433,21 @@ const Projects = () => {
         </div>
       </section>
 
-      {/* Custom CSS for animations */}
+      {/* --- START: MERGED & UPDATED CSS STYLES --- */}
       <style>{`
+        /* Animations from Shop File */
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px) translateX(0px);
+            opacity: 0.3;
+          }
+          50% {
+            transform: translateY(-20px) translateX(10px);
+            opacity: 0.6;
+          }
+        }
+        
+        /* Animations from Original Projects File */
         @keyframes float-slow {
           0%, 100% {
             transform: translateY(0px) translateX(0px) rotate(0deg);
@@ -487,6 +459,7 @@ const Projects = () => {
           }
         }
 
+        /* Common/Shared Animations */
         @keyframes gradient {
           0%, 100% {
             background-position: 0% 50%;
@@ -495,7 +468,6 @@ const Projects = () => {
             background-position: 100% 50%;
           }
         }
-
         @keyframes fade-in-down {
           from {
             opacity: 0;
@@ -506,7 +478,6 @@ const Projects = () => {
             transform: translateY(0);
           }
         }
-
         @keyframes fade-in-up {
           from {
             opacity: 0;
@@ -517,7 +488,6 @@ const Projects = () => {
             transform: translateY(0);
           }
         }
-
         @keyframes scale-in {
           from {
             opacity: 0;
@@ -528,7 +498,6 @@ const Projects = () => {
             transform: scale(1) translateY(0);
           }
         }
-
         @keyframes fade-in {
           from {
             opacity: 0;
@@ -538,34 +507,34 @@ const Projects = () => {
           }
         }
 
+        /* Animation class assignments */
+        .animate-float {
+          animation: float linear infinite;
+        }
         .animate-float-slow {
           animation: float-slow linear infinite;
         }
-
         .animate-gradient {
           background-size: 200% 200%;
           animation: gradient 3s ease infinite;
         }
-
         .animate-fade-in-down {
           animation: fade-in-down 0.8s ease-out forwards;
           opacity: 0;
         }
-
         .animate-fade-in-up {
           animation: fade-in-up 0.8s ease-out forwards;
           opacity: 0;
         }
-
         .animate-scale-in {
           animation: scale-in 0.6s ease-out forwards;
           opacity: 0;
         }
-
         .animate-fade-in {
           animation: fade-in 0.6s ease-out forwards;
         }
       `}</style>
+      {/* --- END: MERGED & UPDATED CSS STYLES --- */}
     </Layout>
   );
 };
