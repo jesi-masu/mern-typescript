@@ -16,6 +16,7 @@ export interface IProject extends Document {
   longDescription?: string;
   images?: string[];
   features?: string[];
+  highlights?: string[];
   layoutImages?: string[];
   threeDLink?: string;
   layoutDesc?: string;
@@ -48,6 +49,7 @@ const projectSchema = new Schema<IProject>(
     longDescription: { type: String, required: false },
     images: { type: [String], required: false },
     features: { type: [String], required: false },
+    highlights: { type: [String], required: false },
     layoutImages: { type: [String], required: false },
     threeDLink: { type: String, required: false },
     layoutDesc: { type: String, required: false },

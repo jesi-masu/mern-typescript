@@ -15,6 +15,7 @@ export interface Project {
   longDescription?: string;
   images?: string[];
   features?: string[];
+  highlights?: string[];
   layoutImages?: string[];
   threeDLink?: string;
   layoutDesc?: string;
