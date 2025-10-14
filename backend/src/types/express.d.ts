@@ -1,5 +1,33 @@
 import { Request } from "express";
 
+// ===================================
+//          PROJECT TYPES
+// ===================================
+export interface ProjectRequestBody {
+  projectTitle: string;
+  shortDescription: string;
+  image: string;
+  projectCategory: "Residential" | "Commercial" | "Industrial";
+  projectStatus: "In Progress" | "Completed";
+  modules: number;
+  completionDate: string | Date;
+  cityMunicipality: string;
+  province: string;
+  country: string;
+  longDescription?: string;
+  images?: string[];
+  features?: string[];
+  layoutImages?: string[];
+  threeDLink?: string;
+  layoutDesc?: string;
+  projectVideoLink?: string;
+  videoDesc?: string;
+  imagesDesc?: string[];
+}
+
+// ===================================
+//          PRODUCT TYPES
+// ===================================
 export interface ProductSpecifications {
   dimensions: string;
   height: string;
@@ -27,7 +55,9 @@ export interface ProductRequestBody {
   leadTime?: string;
 }
 
-// Auth DTOs (explicit separate types instead of using IUser)
+// ===================================
+//            AUTH TYPES
+// ===================================
 export interface AuthRegisterBody {
   firstName: string;
   lastName: string;
@@ -37,7 +67,7 @@ export interface AuthRegisterBody {
   address: {
     street: string;
     barangaySubdivision: string;
-    additionalAddressLine?: string; // <-- ADDED: New optional field
+    additionalAddressLine?: string;
     city: string;
     province: string;
     postalCode: string;
@@ -51,10 +81,11 @@ export interface AuthLoginBody {
   password: string;
 }
 
-// Use the register DTO as the request body type for register handlers
 export type AuthRequestBody = AuthRegisterBody;
 
-// Extend Express Request for custom properties (module augmentation)
+// ===================================
+//      EXPRESS REQUEST EXTENSION
+// ===================================
 declare global {
   namespace Express {
     interface Request {
