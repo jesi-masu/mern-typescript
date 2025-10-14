@@ -27,6 +27,7 @@ import {
   Calendar,
   MapPin,
   ListChecks,
+  Camera, // Added for location images
 } from "lucide-react";
 
 interface OrderDetailsModalProps {
@@ -75,18 +76,25 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   if (!order) return null;
 
   const [selectedStage, setSelectedStage] = useState<string | null>(null);
+  // --- ADDED: State for location image preview ---
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const availableStages = order?.paymentInfo?.paymentReceipts
     ? Object.keys(order.paymentInfo.paymentReceipts)
     : [];
 
   useEffect(() => {
-    if (availableStages.length > 0) {
-      setSelectedStage(availableStages[0]);
+    // Reset states when the modal is closed or the order changes
+    if (isOpen) {
+      if (availableStages.length > 0) {
+        setSelectedStage(availableStages[0]);
+      } else {
+        setSelectedStage(null);
+      }
     } else {
-      setSelectedStage(null);
+      setPreviewImage(null); // Clear preview image when main modal closes
     }
-  }, [order]);
+  }, [order, isOpen]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -113,273 +121,323 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   const currentPaymentStatus = order.paymentInfo?.paymentStatus || "Pending";
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            <FileText className="h-6 w-6 text-blue-600" />
-            Order Details - #{order._id.slice(-6)}
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-6 p-1">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
-            <div>
-              <label className="text-sm font-medium text-gray-500">
-                Order Status
-              </label>
-              <div className="mt-1">
-                <Select
-                  value={order.orderStatus}
-                  onValueChange={(value: OrderStatus) =>
-                    onStatusUpdate(order._id, value)
-                  }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="Processing">Processing</SelectItem>
-                    <SelectItem value="In Production">In Production</SelectItem>
-                    <SelectItem value="Shipped">Shipped</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
-                    <SelectItem value="Cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-500">
-                Payment Status
-              </label>
-              <div className="mt-1 flex items-center gap-2">
-                <Badge className={getStatusClasses(currentPaymentStatus)}>
-                  {currentPaymentStatus}
-                </Badge>
-                {currentPaymentStatus !== "100% Complete Paid" && (
-                  <Button
-                    size="sm"
-                    onClick={() => onConfirmPayment(order)}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    Update Payment
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {/* Left Column */}
-            <div className="space-y-6 pt-4">
+    <>
+      {/* --- ADDED: Image Preview Dialog --- */}
+      <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+        <DialogContent className="max-w-4xl p-2 bg-transparent border-none shadow-none">
+          <img
+            src={previewImage || ""}
+            alt="Location Preview"
+            className="w-full h-auto rounded-lg"
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <FileText className="h-6 w-6 text-blue-600" />
+              Order Details - #{order._id.slice(-6)}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 p-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <User className="h-5 w-5 text-gray-500" />
-                  Customer Information
-                </h3>
-                <div className="text-sm">
-                  <p className="text-base font-medium">
-                    {order.customerInfo.firstName} {order.customerInfo.lastName}
-                  </p>
-                  <p className="text-gray-600">{order.customerInfo.email}</p>
-                  <div className="flex items-center gap-2 text-gray-600 pt-1">
-                    <p>{order.customerInfo.phoneNumber}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-gray-500" />
-                  Delivery Address
-                </h3>
-                <p className="text-sm text-gray-700">
-                  {formatFullAddress(order.customerInfo.deliveryAddress)}
-                </p>
-                {order.customerInfo.deliveryAddress.additionalAddressLine && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    <strong>Notes:</strong>{" "}
-                    {order.customerInfo.deliveryAddress.additionalAddressLine}
-                  </p>
-                )}
-              </div>
-              <div className="bg-gray-50/50 rounded-lg">
-                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <ListChecks className="h-5 w-5 text-gray-500" />
-                  Payment Details
-                </h3>
-                <div className="text-sm bg-gray-50 space-y-2 p-3 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Method:</span>
-                    <Badge variant="outline" className="capitalize text-xs">
-                      {order.paymentInfo.paymentMethod}
-                    </Badge>
-                  </div>
-
-                  {/* --- MODIFICATION START: Added Installment Stage --- */}
-                  {order.paymentInfo.paymentMethod === "installment" &&
-                    order.paymentInfo.installmentStage && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600 pl-2">
-                          ↳ Installment Stage:
-                        </span>
-                        <Badge
-                          variant="secondary"
-                          className="capitalize text-xs"
-                        >
-                          {order.paymentInfo.installmentStage.replace("_", " ")}
-                        </Badge>
-                      </div>
-                    )}
-                  {/* --- MODIFICATION END --- */}
-
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Mode:</span>
-                    <Badge variant="outline" className="uppercase text-xs">
-                      {order.paymentInfo.paymentMode}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Timing:</span>
-                    <Badge variant="outline" className="capitalize text-xs">
-                      {order.paymentInfo.paymentTiming}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {/* Right Column */}
-            <div className="space-y-6">
-              <div className="p-4 bg-green-50 rounded-lg">
-                <h3 className="font-semibold text-gray-500 mb-1 flex items-center gap-2">
-                  <CreditCardIcon className="h-5 w-5 text-gray-500" />
-                  Total Order Amount
-                </h3>
-                <p className="text-2xl font-bold text-green-600">
-                  {formatPrice(order.totalAmount)}
-                </p>
-              </div>
-
-              <div className="px-4 py-2">
-                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-gray-500" />
-                  Order Timeline
-                </h3>
-                <p className="text-sm text-gray-500">
-                  Ordered: {formatDate(order.createdAt)}
-                </p>
-              </div>
-
-              {availableStages.length > 0 && (
-                <div className="px-4 py-2">
-                  <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                    <Receipt className="h-5 w-5 text-gray-500" />
-                    Uploaded Payment Receipts
-                  </h3>
+                <label className="text-sm font-medium text-gray-500">
+                  Order Status
+                </label>
+                <div className="mt-1">
                   <Select
-                    value={selectedStage || ""}
-                    onValueChange={setSelectedStage}
+                    value={order.orderStatus}
+                    onValueChange={(value: OrderStatus) =>
+                      onStatusUpdate(order._id, value)
+                    }
                   >
-                    <SelectTrigger className="w-full md:w-2/3">
-                      <SelectValue placeholder="Select a payment stage to view" />
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableStages.map((stage) => (
-                        <SelectItem key={stage} value={stage}>
-                          {stage
-                            .replace("_", " ")
-                            .replace(/\b\w/g, (l) => l.toUpperCase())}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="Pending">Pending</SelectItem>
+                      <SelectItem value="Processing">Processing</SelectItem>
+                      <SelectItem value="In Production">
+                        In Production
+                      </SelectItem>
+                      <SelectItem value="Shipped">Shipped</SelectItem>
+                      <SelectItem value="Completed">Completed</SelectItem>
+                      <SelectItem value="Cancelled">Cancelled</SelectItem>
                     </SelectContent>
                   </Select>
-                  {selectedStage &&
-                    order.paymentInfo.paymentReceipts?.[selectedStage] && (
-                      <div className="mt-4 p-2 bg-gray-50 rounded-lg">
-                        <div className="flex flex-wrap gap-2">
-                          {order.paymentInfo.paymentReceipts[
-                            selectedStage
-                          ]!.map((receiptUrl, index) => (
-                            <a
-                              key={index}
-                              href={receiptUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block"
-                            >
-                              <img
-                                src={receiptUrl}
-                                alt={`Receipt ${
-                                  index + 1
-                                } for ${selectedStage} stage`}
-                                className="w-20 h-20 object-cover rounded-md border-2 border-gray-200 hover:border-blue-500 transition-colors"
-                              />
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                 </div>
-              )}
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">
+                  Payment Status
+                </label>
+                <div className="mt-1 flex items-center gap-2">
+                  <Badge className={getStatusClasses(currentPaymentStatus)}>
+                    {currentPaymentStatus}
+                  </Badge>
+                  {currentPaymentStatus !== "100% Complete Paid" && (
+                    <Button
+                      size="sm"
+                      onClick={() => onConfirmPayment(order)}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      Update Payment
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Package className="h-5 w-5 text-gray-500" />
-              <h3 className="font-semibold text-gray-900">Ordered Products</h3>
-            </div>
-            <div className="space-y-3">
-              {order.products.map((item) => (
-                <div
-                  key={item.productId._id}
-                  className="flex items-start gap-3 p-3 border rounded-lg bg-white"
-                >
-                  <img
-                    src={
-                      item.productId.image ||
-                      "https://placehold.co/150x150/E2E8F0/4A5568?text=No+Image"
-                    }
-                    alt={item.productId.productName || "Product"}
-                    className="w-16 h-16 object-cover rounded border"
-                  />
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900 text-base">
-                      {item.productId.productName}
-                    </h4>
-                    <p className="text-xs text-gray-600 mb-2">
-                      {item.productId.productShortDescription ||
-                        "No description available."}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Left Column */}
+              <div className="space-y-6 pt-4">
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                    <User className="h-5 w-5 text-gray-500" />
+                    Customer Information
+                  </h3>
+                  <div className="text-sm">
+                    <p className="text-base font-medium">
+                      {order.customerInfo.firstName}{" "}
+                      {order.customerInfo.lastName}
                     </p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 text-xs">
-                      <div>
-                        <span className="text-gray-500">Category:</span>
-                        <p className="font-medium">{item.productId.category}</p>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Area:</span>
-                        <p className="font-medium">
-                          {item.productId.squareFeet} sq ft
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Quantity:</span>
-                        <p className="font-medium">{item.quantity}</p>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Price:</span>
-                        <p className="font-medium text-green-600">
-                          {formatPrice(item.productId.productPrice || 0)}
-                        </p>
-                      </div>
+                    <p className="text-gray-600">{order.customerInfo.email}</p>
+                    <div className="flex items-center gap-2 text-gray-600 pt-1">
+                      <p>{order.customerInfo.phoneNumber}</p>
                     </div>
                   </div>
                 </div>
-              ))}
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-gray-500" />
+                    Delivery Address
+                  </h3>
+                  <p className="text-sm text-gray-700">
+                    {formatFullAddress(order.customerInfo.deliveryAddress)}
+                  </p>
+                  {order.customerInfo.deliveryAddress.additionalAddressLine && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      <strong>Notes:</strong>{" "}
+                      {order.customerInfo.deliveryAddress.additionalAddressLine}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-gray-500" />
+                    Order Timeline
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    Ordered: {formatDate(order.createdAt)}
+                  </p>
+                </div>
+
+                {/* --- MOVED: Payment Details Section --- */}
+                <div className="bg-gray-50/50 rounded-lg">
+                  <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <ListChecks className="h-5 w-5 text-gray-500" />
+                    Payment Details
+                  </h3>
+                  <div className="text-sm bg-gray-50 space-y-2 p-3 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Payment Selection:</span>
+                      <Badge variant="outline" className="capitalize text-xs">
+                        {order.paymentInfo.paymentMethod}
+                      </Badge>
+                    </div>
+
+                    {/* --- MODIFICATION START: Added Installment Stage --- */}
+                    {order.paymentInfo.paymentMethod === "installment" &&
+                      order.paymentInfo.installmentStage && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600 pl-2">
+                            ↳ Installment Stage:
+                          </span>
+                          <Badge
+                            variant="secondary"
+                            className="capitalize text-xs"
+                          >
+                            {order.paymentInfo.installmentStage.replace(
+                              "_",
+                              " "
+                            )}
+                          </Badge>
+                        </div>
+                      )}
+                    {/* --- MODIFICATION END --- */}
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Payment Type:</span>
+                      <Badge variant="outline" className="uppercase text-xs">
+                        {order.paymentInfo.paymentMode}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Payment Timing:</span>
+                      <Badge variant="outline" className="capitalize text-xs">
+                        {order.paymentInfo.paymentTiming}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column */}
+              <div className="space-y-6">
+                <div className="p-4 bg-green-50 rounded-lg">
+                  <h3 className="font-semibold text-gray-500 mb-1 flex items-center gap-2">
+                    <CreditCardIcon className="h-5 w-5 text-gray-500" />
+                    Total Order Amount
+                  </h3>
+                  <p className="text-2xl font-bold text-green-600">
+                    {formatPrice(order.totalAmount)}
+                  </p>
+                </div>
+
+                {/* --- ADDED: Location Images Section --- */}
+                {order.locationImages && order.locationImages.length > 0 && (
+                  <div className="px-4 pb-2">
+                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <Camera className="h-5 w-5 text-gray-500" />
+                      Installation Location Images
+                    </h3>
+                    <div className="flex flex-wrap gap-2 rounded-lg bg-gray-50 p-3">
+                      {order.locationImages.map((imageUrl, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setPreviewImage(imageUrl)}
+                          className="focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 rounded-md"
+                        >
+                          <img
+                            src={imageUrl}
+                            alt={`Location image ${index + 1}`}
+                            className="w-20 h-20 object-cover rounded-md border-2 border-gray-200 hover:border-blue-500 transition-colors cursor-pointer"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {availableStages.length > 0 && (
+                  <div className="px-4 pb-2">
+                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <Receipt className="h-5 w-5 text-gray-500" />
+                      Uploaded Payment Receipts
+                    </h3>
+                    <Select
+                      value={selectedStage || ""}
+                      onValueChange={setSelectedStage}
+                    >
+                      <SelectTrigger className="w-full md:w-2/3">
+                        <SelectValue placeholder="Select a payment stage to view" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableStages.map((stage) => (
+                          <SelectItem key={stage} value={stage}>
+                            {stage
+                              .replace("_", " ")
+                              .replace(/\b\w/g, (l) => l.toUpperCase())}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedStage &&
+                      order.paymentInfo.paymentReceipts?.[selectedStage] && (
+                        <div className="mt-4 p-2 bg-gray-50 rounded-lg">
+                          <div className="flex flex-wrap gap-2">
+                            {order.paymentInfo.paymentReceipts[
+                              selectedStage
+                            ]!.map((receiptUrl, index) => (
+                              <a
+                                key={index}
+                                href={receiptUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block"
+                              >
+                                <img
+                                  src={receiptUrl}
+                                  alt={`Receipt ${
+                                    index + 1
+                                  } for ${selectedStage} stage`}
+                                  className="w-20 h-20 object-cover rounded-md border-2 border-gray-200 hover:border-blue-500 transition-colors"
+                                />
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Package className="h-5 w-5 text-gray-500" />
+                <h3 className="font-semibold text-gray-900">
+                  Ordered Products
+                </h3>
+              </div>
+              <div className="space-y-3">
+                {order.products.map((item) => (
+                  <div
+                    key={item.productId._id}
+                    className="flex items-start gap-3 p-3 border rounded-lg bg-white"
+                  >
+                    <img
+                      src={
+                        item.productId.image ||
+                        "https://placehold.co/150x150/E2E8F0/4A5568?text=No+Image"
+                      }
+                      alt={item.productId.productName || "Product"}
+                      className="w-16 h-16 object-cover rounded border"
+                    />
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-gray-900 text-base">
+                        {item.productId.productName}
+                      </h4>
+                      <p className="text-xs text-gray-600 mb-2">
+                        {item.productId.productShortDescription ||
+                          "No description available."}
+                      </p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 text-xs">
+                        <div>
+                          <span className="text-gray-500">Category:</span>
+                          <p className="font-medium">
+                            {item.productId.category}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Area:</span>
+                          <p className="font-medium">
+                            {item.productId.squareFeet} sq ft
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Quantity:</span>
+                          <p className="font-medium">{item.quantity}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Price:</span>
+                          <p className="font-medium text-green-600">
+                            {formatPrice(item.productId.productPrice || 0)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

@@ -125,8 +125,6 @@ const MultiStepCheckout = () => {
     setIsSubmitting(true);
 
     try {
-      // --- START: FIX ---
-      // Correctly process the paymentReceipts object
       const uploadedReceipts: { [key: string]: string[] } = {};
       if (paymentInfo.paymentReceipts) {
         for (const [stage, files] of Object.entries(
@@ -141,12 +139,24 @@ const MultiStepCheckout = () => {
         }
       }
 
-      // Process location images (this logic was already correct)
       const locationImageUploads = (paymentInfo.locationImages || []).map(
         (file) => uploadFileToCloudinary(file as File)
       );
       const locationImagesUrls = await Promise.all(locationImageUploads);
-      // --- END: FIX ---
+
+      // --- MODIFICATION START: Conditionally build the paymentInfo payload ---
+      const paymentInfoPayload: any = {
+        paymentMethod: paymentInfo.paymentMethod,
+        paymentMode: paymentInfo.paymentMode,
+        paymentTiming: paymentInfo.paymentTiming,
+        paymentReceipts: uploadedReceipts,
+      };
+
+      // Only add installmentStage if the method is 'installment'
+      if (paymentInfo.paymentMethod === "installment") {
+        paymentInfoPayload.installmentStage = paymentInfo.installmentStage;
+      }
+      // --- MODIFICATION END ---
 
       const orderPayload = {
         products: items.map((item) => ({
@@ -170,14 +180,8 @@ const MultiStepCheckout = () => {
             country: paymentInfo.deliveryAddress?.country ?? "",
           },
         },
-        paymentInfo: {
-          paymentMethod: paymentInfo.paymentMethod,
-          installmentStage: paymentInfo.installmentStage,
-          paymentMode: paymentInfo.paymentMode,
-          paymentTiming: paymentInfo.paymentTiming,
-          // --- FIX: Use the correctly structured uploadedReceipts object ---
-          paymentReceipts: uploadedReceipts,
-        },
+        // Use the new, clean payload
+        paymentInfo: paymentInfoPayload,
         contractInfo: {
           signature: contractInfo.signature,
           agreedToTerms: contractInfo.agreedToTerms,

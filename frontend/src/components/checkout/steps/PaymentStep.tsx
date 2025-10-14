@@ -293,7 +293,9 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
         <CardContent>
           <div className="space-y-4">
             <div className="bg-orange-50 p-4 rounded-lg">
-              <h4 className="font-medium mb-2">Location Images Required</h4>
+              <h4 className="font-medium mb-2">
+                Location Images (Optional but highly recommended)
+              </h4>
               <p className="text-sm text-gray-600">
                 Please provide images of where the prefab unit will be
                 installed.
@@ -301,7 +303,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
             </div>
 
             <div>
-              <Label htmlFor="locationImages">Location Images *</Label>
+              <Label htmlFor="locationImages">Location Images</Label>
               <div className="mt-1">
                 <Input
                   id="locationImages"
