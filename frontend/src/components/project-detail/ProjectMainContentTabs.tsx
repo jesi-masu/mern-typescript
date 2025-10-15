@@ -117,9 +117,13 @@ const ProjectMainContentTabs = ({ project }: ProjectMainContentTabsProps) => {
             Project Overview
           </h2>
           <div className="prose prose-slate max-w-none">
-            <p className="text-lg text-slate-600 leading-relaxed mb-6">
-              {project.longDescription || project.shortDescription}
-            </p>
+            {/* Second Paragraph: Only displays if longDescription exists */}
+            {project.longDescription && (
+              <p className="text-lg text-slate-600 leading-relaxed mb-8">
+                {project.longDescription}
+              </p>
+            )}
+
             {project.features && project.features.length > 0 && (
               <>
                 <h3 className="text-2xl font-semibold mt-10 mb-6 text-slate-900">

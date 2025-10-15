@@ -1,11 +1,9 @@
-// backend/src/controllers/projectController.ts
-
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import Project from "../models/projectModel";
 import { ProjectRequestBody } from "../types/express.d";
 
-// CREATE a new project (No change needed here, it's correct)
+// CREATE a new project
 export const createProject = async (
   req: Request<{}, {}, ProjectRequestBody>,
   res: Response
@@ -18,7 +16,7 @@ export const createProject = async (
   }
 };
 
-// READ all projects (No change needed here, it's correct)
+// READ all projects
 export const getAllProjects = async (req: Request, res: Response) => {
   try {
     const projects = await Project.find({}).sort({ createdAt: -1 });
@@ -33,18 +31,16 @@ export const getProjectById = async (req: Request, res: Response) => {
   const { id } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    // REMOVED 'return'
     res.status(404).json({ message: "Project not found (Invalid ID format)" });
-    return; // Use a standalone return to exit the function
+    return;
   }
 
   try {
     const project = await Project.findById(id);
 
     if (!project) {
-      // REMOVED 'return'
       res.status(404).json({ message: "Project not found" });
-      return; // Use a standalone return to exit the function
+      return;
     }
 
     res.status(200).json(project);
@@ -58,9 +54,8 @@ export const updateProject = async (req: Request, res: Response) => {
   const { id } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    // REMOVED 'return'
     res.status(404).json({ message: "Project not found (Invalid ID format)" });
-    return; // Use a standalone return to exit the function
+    return;
   }
 
   try {
@@ -71,9 +66,8 @@ export const updateProject = async (req: Request, res: Response) => {
     );
 
     if (!updatedProject) {
-      // REMOVED 'return'
       res.status(404).json({ message: "Project not found" });
-      return; // Use a standalone return to exit the function
+      return;
     }
 
     res.status(200).json(updatedProject);
@@ -87,26 +81,22 @@ export const deleteProject = async (req: Request, res: Response) => {
   const { id } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    // REMOVED 'return'
     res.status(404).json({ message: "Project not found (Invalid ID format)" });
-    return; // Use a standalone return to exit the function
+    return;
   }
 
   try {
     const deletedProject = await Project.findOneAndDelete({ _id: id });
 
     if (!deletedProject) {
-      // REMOVED 'return'
       res.status(404).json({ message: "Project not found" });
-      return; // Use a standalone return to exit the function
+      return;
     }
 
-    res
-      .status(200)
-      .json({
-        message: "Project deleted successfully",
-        project: deletedProject,
-      });
+    res.status(200).json({
+      message: "Project deleted successfully",
+      project: deletedProject,
+    });
   } catch (error) {
     res.status(500).json({ message: "Server error deleting project", error });
   }

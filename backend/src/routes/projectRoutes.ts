@@ -1,5 +1,3 @@
-// backend/src/routes/projectRoutes.ts
-
 import { Router } from "express";
 import {
   createProject,
@@ -18,7 +16,7 @@ router.route("/").get(getAllProjects).post(createProject);
 router
   .route("/:id")
   .get(getProjectById)
-  .patch(updateProject) // Using .patch is great for partial updates
+  .patch(updateProject)
   .delete(deleteProject);
 
 export default router;

@@ -46,6 +46,7 @@ import Customers from "./pages/admin/Customers";
 import Reports from "./pages/admin/Reports";
 import Settings from "./pages/admin/Settings";
 import AdminProjects from "./pages/admin/AdminProjects";
+import AdminProjectFormPage from "./pages/admin/ProjectFormPage"; // Import for the new project form page
 import Contracts from "./pages/admin/Contracts";
 import Messages from "./pages/admin/Messages";
 import CustomerUploads from "./pages/admin/CustomerUploads";
@@ -163,6 +164,15 @@ function App() {
                       <Route path="reports" element={<Reports />} />
                       <Route path="settings" element={<Settings />} />
                       <Route path="projects" element={<AdminProjects />} />
+                      {/* ADDED ROUTES FOR PROJECT FORM */}
+                      <Route
+                        path="projects/new"
+                        element={<AdminProjectFormPage />}
+                      />
+                      <Route
+                        path="projects/edit/:id"
+                        element={<AdminProjectFormPage />}
+                      />
                       <Route path="contracts" element={<Contracts />} />
                       <Route path="messages" element={<Messages />} />
                       <Route
