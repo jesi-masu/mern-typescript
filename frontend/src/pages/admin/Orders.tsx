@@ -1,5 +1,3 @@
-// src/pages/admin/Orders.tsx
-
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,7 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { useAuth } from "@/context/AuthContext"; // ✅ 1. IMPORT THE CORRECT AUTH HOOK
 import { useToast } from "@/hooks/use-toast";
 import OrderCard from "@/components/admin/orders/OrderCard";
 import OrderDetailsModal from "@/components/admin/orders/OrderDetailsModal";
@@ -48,21 +46,18 @@ import {
   List,
 } from "lucide-react";
 
-// --- OrderTable Component ---
+// --- OrderTable Component (No changes needed) ---
 const OrderTable: React.FC<{
   orders: Order[];
   onViewDetails: (order: Order) => void;
   onConfirmPayment: (order: Order) => void;
 }> = ({ orders, onViewDetails, onConfirmPayment }) => {
-  // --- START: MODIFICATION (1/2) ---
-  // Added the price formatting function
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-PH", {
       style: "currency",
       currency: "PHP",
     }).format(price);
   };
-  // --- END: MODIFICATION (1/2) ---
 
   const getStatusClasses = (
     status: OrderStatus | PaymentStatus | undefined
@@ -143,12 +138,9 @@ const OrderTable: React.FC<{
                 <TableCell>
                   {new Date(order.createdAt).toLocaleDateString()}
                 </TableCell>
-                {/* --- START: MODIFICATION (2/2) --- */}
-                {/* Use the formatPrice function here */}
                 <TableCell className="text-right font-medium">
                   {formatPrice(order.totalAmount)}
                 </TableCell>
-                {/* --- END: MODIFICATION (2/2) --- */}
                 <TableCell className="text-center">
                   <Badge className={getStatusClasses(currentPaymentStatus)}>
                     {currentPaymentStatus}
@@ -189,9 +181,9 @@ const OrderTable: React.FC<{
   );
 };
 
-// --- Main Orders Component (No changes below this line) ---
+// --- Main Orders Component ---
 const Orders: React.FC = () => {
-  const { logActivity } = useAdminAuth();
+  const { isLoading: isAuthLoading } = useAuth(); // ✅ 2. USE THE CORRECT AUTH HOOK
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -204,12 +196,13 @@ const Orders: React.FC = () => {
 
   const {
     data: orders = [],
-    isLoading,
+    isLoading: isOrdersLoading,
     isError,
     error,
   } = useQuery<Order[]>({
     queryKey: ["adminOrders"],
     queryFn: fetchAllOrders,
+    enabled: !isAuthLoading, // ✅ 3. PREVENT QUERY UNTIL AUTH IS LOADED
   });
 
   const updateOrderMutation = useMutation({
@@ -224,13 +217,11 @@ const Orders: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["adminOrders"] });
       toast({
         title: "Success",
-        description: `Order #${updatedOrder._id} has been updated successfully.`,
+        description: `Order #${updatedOrder._id.slice(
+          -6
+        )} has been updated successfully.`,
       });
-      logActivity(
-        "Order Update",
-        `Updated order #${updatedOrder._id}`,
-        "orders"
-      );
+      // Removed old logActivity function call
     },
     onError: (err: any) => {
       toast({
@@ -256,7 +247,6 @@ const Orders: React.FC = () => {
     const orderDate = new Date(order.createdAt)
       .toLocaleDateString()
       .toLowerCase();
-
     const matchesSearch =
       order._id.toLowerCase().includes(searchLower) ||
       order.customerInfo.firstName.toLowerCase().includes(searchLower) ||
@@ -269,10 +259,8 @@ const Orders: React.FC = () => {
       subdivision.includes(searchLower) ||
       street.includes(searchLower) ||
       additionalInfo.includes(searchLower);
-
     const matchesStatus =
       statusFilter === "all" || order.orderStatus === statusFilter;
-
     return matchesSearch && matchesStatus;
   });
 
@@ -282,7 +270,6 @@ const Orders: React.FC = () => {
       updateData: { orderStatus: newStatus },
     });
   };
-
   const handlePaymentConfirmation = (
     orderId: string,
     newStatus: PaymentStatus
@@ -292,18 +279,17 @@ const Orders: React.FC = () => {
       updateData: { paymentStatus: newStatus },
     });
   };
-
   const handleViewDetails = (order: Order) => {
     setSelectedOrder(order);
     setIsDetailsModalOpen(true);
   };
-
   const handleConfirmPayment = (order: Order) => {
     setSelectedOrder(order);
     setIsPaymentModalOpen(true);
   };
 
-  if (isLoading) {
+  // ✅ 4. COMBINE AUTH AND DATA LOADING STATES
+  if (isAuthLoading || isOrdersLoading) {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
@@ -333,20 +319,14 @@ const Orders: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
-          {" "}
-          {/* Styled badge */}
-          <Package className="h-6 w-6 text-indigo-600" />{" "}
-          {/* Changed icon and color */}
+          <Package className="h-6 w-6 text-indigo-600" />
           <span className="text-xl font-semibold text-gray-800">
             {orders.length}
-          </span>{" "}
-          {/* Larger count */}
+          </span>
           <span className="text-gray-500">Total Orders</span>
         </div>
       </div>
-
       <hr className="border-t border-gray-200" />
-
       <Card className="shadow-lg rounded-xl">
         <CardHeader>
           <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
@@ -394,13 +374,11 @@ const Orders: React.FC = () => {
             </div>
           </div>
         </CardHeader>
-
         <div className="pb-4 px-5 text-sm text-muted-foreground">
           Showing <strong>{filteredOrders.length}</strong> of{" "}
           <strong>{orders.length}</strong> total orders.
         </div>
       </Card>
-
       <div>
         {filteredOrders.length > 0 ? (
           viewMode === "card" ? (
@@ -435,7 +413,6 @@ const Orders: React.FC = () => {
           </Card>
         )}
       </div>
-
       <OrderDetailsModal
         order={selectedOrder}
         isOpen={isDetailsModalOpen}
@@ -445,7 +422,6 @@ const Orders: React.FC = () => {
           selectedOrder && handleConfirmPayment(selectedOrder)
         }
       />
-
       <PaymentConfirmationModal
         order={selectedOrder}
         isOpen={isPaymentModalOpen}

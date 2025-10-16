@@ -1,10 +1,14 @@
-import { Order, OrderStatus } from "@/types/order"; // We will create this type file next
+// src/services/orderService.ts
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "";
+import { Order, OrderStatus, PaymentStatus } from "@/types/order";
 
-// Helper to get the auth token from localStorage
+const API_BASE_URL =
+  import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
+
+// Helper to get the auth token from the correct localStorage key
 const getAuthToken = (): string | null => {
   try {
+    // Your main AuthContext stores the token under the key "token"
     return localStorage.getItem("token");
   } catch {
     return null;
@@ -15,9 +19,9 @@ const getAuthToken = (): string | null => {
 async function handleResponse(response: Response) {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({
-      message: "An unknown error occurred",
+      error: "An unknown error occurred",
     }));
-    throw new Error(errorData.message || response.statusText);
+    throw new Error(errorData.error || response.statusText);
   }
   return response.json();
 }
@@ -28,7 +32,10 @@ async function handleResponse(response: Response) {
  */
 export const fetchAllOrders = async (): Promise<Order[]> => {
   const token = getAuthToken();
-  if (!token) throw new Error("Authentication token not found.");
+  if (!token) {
+    // This will be caught by useQuery and displayed as an error
+    throw new Error("Authentication token not found. Please log in again.");
+  }
 
   const response = await fetch(`${API_BASE_URL}/api/orders`, {
     headers: {
@@ -47,10 +54,12 @@ export const fetchAllOrders = async (): Promise<Order[]> => {
  */
 export const updateOrderStatusAdmin = async (
   orderId: string,
-  updateData: { orderStatus?: OrderStatus; paymentStatus?: string }
+  updateData: { orderStatus?: OrderStatus; paymentStatus?: PaymentStatus }
 ): Promise<Order> => {
   const token = getAuthToken();
-  if (!token) throw new Error("Authentication token not found.");
+  if (!token) {
+    throw new Error("Authentication token not found. Please log in again.");
+  }
 
   const response = await fetch(`${API_BASE_URL}/api/orders/${orderId}`, {
     method: "PATCH",

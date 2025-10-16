@@ -1,4 +1,5 @@
-// adjusted fetch enabling and headers so the page can render for AdminAuthContext demo logins
+// src/pages/admin/Dashboard.tsx
+
 import { useQuery } from "@tanstack/react-query";
 import {
   Card,
@@ -19,11 +20,9 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
-import { useContext } from "react";
-import { AdminAuthContext } from "@/context/AdminAuthContext";
+import { useAuth } from "@/context/AuthContext"; // ✅ 1. IMPORT THE CORRECT AUTH HOOK
 
-// Define the expected structure for the dashboard statistics from the API
+// Define the expected structure for the dashboard statistics
 interface DashboardStats {
   totalRevenue: number;
   activeOrders: number;
@@ -35,56 +34,47 @@ interface DashboardStats {
   productsChange: number;
 }
 
-// Helper function to format currency
+// Helper functions for formatting
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("en-PH", {
     style: "currency",
     currency: "PHP",
   }).format(value);
 };
-
-// Helper function to format numbers with commas
 const formatNumber = (value: number) => {
   return new Intl.NumberFormat("en-US").format(value);
 };
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { token } = useAuth();
-  const adminContext = useContext(AdminAuthContext);
-  const isAdminLoggedInDemo = adminContext?.isAuthenticated === true;
+  const { user, token, isLoading: isAuthLoading } = useAuth(); // ✅ 2. USE THE CORRECT HOOK
 
-  // --- Data Fetching using React Query ---
+  // Data Fetching using React Query
   const fetchDashboardStats = async (): Promise<DashboardStats> => {
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-    // If token is absent but admin demo login is active, we still attempt the request (may fail on protected backend).
+    // This function will only be called if a token exists
     const response = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/dashboard/stats`,
       {
-        headers,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
       }
     );
     if (!response.ok) {
-      throw new Error("Network response was not ok");
+      throw new Error("Failed to fetch dashboard statistics");
     }
     return response.json();
   };
 
-  // useQuery hook to manage the fetching, caching, loading, and error states
-  // Enabled when we have a real token OR when admin demo is logged in (so page is accessible).
   const {
     data: stats,
-    isLoading,
+    isLoading: isStatsLoading, // Renamed to avoid conflicts
     error,
   } = useQuery<DashboardStats>({
     queryKey: ["dashboardStats"],
     queryFn: fetchDashboardStats,
-    enabled: !!token || isAdminLoggedInDemo, // run if token exists or demo admin is logged in
+    enabled: !isAuthLoading && !!token, // ✅ 3. Run query only when auth is loaded AND a token exists
   });
 
   const handleQuickAction = (action: string) => {
@@ -93,8 +83,8 @@ const Dashboard = () => {
 
   // --- UI States ---
 
-  // Loading State - combine both loaders
-  if (isLoading) {
+  // Loading State - wait for auth first, then for data
+  if (isAuthLoading || isStatsLoading) {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
@@ -117,7 +107,7 @@ const Dashboard = () => {
     );
   }
 
-  // Success State
+  // Data for the stat cards
   const statCards = stats
     ? [
         {
@@ -156,10 +146,11 @@ const Dashboard = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
-            Dashboard Overview
+            Welcome back, {user?.firstName || "Admin"}!{" "}
+            {/* ✅ 4. Use the correct user object */}
           </h1>
           <p className="text-gray-600 mt-2">
-            Welcome back! Here's what's happening with your business today.
+            Here's what's happening with your business today.
           </p>
         </div>
         <Badge
@@ -206,7 +197,6 @@ const Dashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* This section is static for now but could be powered by another API endpoint */}
             <div className="space-y-4">
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div>

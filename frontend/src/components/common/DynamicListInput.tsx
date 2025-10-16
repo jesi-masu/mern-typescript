@@ -53,7 +53,6 @@ const DynamicListInput: React.FC<DynamicListInputProps> = ({
           variant="outline"
           size="icon"
           onClick={handleAddItem}
-          // The button won't be clickable if the input is empty to avoid adding empty items
           disabled={!newInputItem.trim()}
         >
           <Plus className="h-4 w-4" />
@@ -64,13 +63,13 @@ const DynamicListInput: React.FC<DynamicListInputProps> = ({
           <Badge
             key={index}
             variant="secondary"
-            className="flex items-center gap-2 pr-1" // Added pr-1 for consistent spacing
+            className="flex items-center gap-2 pr-1"
           >
             <span className="max-w-[200px] truncate">{item}</span>
             <button
               type="button"
               onClick={() => handleRemoveItem(index)}
-              className="rounded-full hover:bg-muted-foreground/20 p-1" // Added padding for easier click
+              className="rounded-full hover:bg-muted-foreground/20 p-1"
             >
               <X className="h-3 w-3" />
             </button>

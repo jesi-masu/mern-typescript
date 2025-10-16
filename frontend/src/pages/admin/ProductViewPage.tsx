@@ -5,7 +5,21 @@ import { Product } from "@/types/product";
 import { fetchProductById } from "@/services/productService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Edit } from "lucide-react";
+import { ArrowLeft, Edit, Check } from "lucide-react";
+
+const getSketchfabEmbedUrl = (url?: string): string | null => {
+  if (!url || !url.includes("sketchfab.com")) return null;
+  const match = url.match(/([a-f0-9]{32})/i);
+  if (match && match[0]) {
+    const modelUid = match[0];
+    return `https://sketchfab.com/models/${modelUid}/embed`;
+  }
+  console.warn(
+    "Could not extract a valid Sketchfab model ID from the URL:",
+    url
+  );
+  return null;
+};
 
 const ProductViewPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -58,10 +72,24 @@ const ProductViewPage: React.FC = () => {
     );
   }
 
+  const sketchfabEmbedUrl = getSketchfabEmbedUrl(product.threeDModelUrl);
+
   return (
     <div className="container mx-auto py-8 space-y-6">
+      {/* ======================================================= */}
+      {/* =================== UPDATED HEADER ==================== */}
+      {/* ======================================================= */}
       <div className="flex items-center justify-between">
-        <div>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {product.productName}
+        </h1>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => navigate(`/admin/products/edit/${product._id}`)}
+          >
+            <Edit className="h-4 w-4 mr-2" />
+            Edit Product
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -70,14 +98,7 @@ const ProductViewPage: React.FC = () => {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Products
           </Button>
-          <h1 className="text-3xl font-bold tracking-tight mt-2">
-            {product.productName}
-          </h1>
         </div>
-        <Button onClick={() => navigate(`/admin/products/edit/${product._id}`)}>
-          <Edit className="h-4 w-4 mr-2" />
-          Edit Product
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -97,7 +118,7 @@ const ProductViewPage: React.FC = () => {
               <p className="text-muted-foreground">
                 {product.productShortDescription}
               </p>
-              <div className="mt-4 prose max-w-none">
+              <div className="mt-4 prose max-w-none text-foreground">
                 <p>{product.productLongDescription}</p>
               </div>
             </CardContent>
@@ -109,9 +130,30 @@ const ProductViewPage: React.FC = () => {
                 <CardTitle>Features</CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
                   {product.features.map((feature, index) => (
-                    <li key={index}>{feature}</li>
+                    <li key={index} className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-green-600" />
+                      <span className="text-muted-foreground">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+
+          {product.inclusion && product.inclusion.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>What's Included</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
+                  {product.inclusion.map((item, index) => (
+                    <li key={index} className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-green-600" />
+                      <span className="text-muted-foreground">{item}</span>
+                    </li>
                   ))}
                 </ul>
               </CardContent>
@@ -125,64 +167,83 @@ const ProductViewPage: React.FC = () => {
               <CardTitle>Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex justify-between">
-                <span className="font-semibold">Price</span>
+              <div className="flex justify-between items-center">
+                <span className="font-semibold text-muted-foreground">
+                  Price
+                </span>
                 <span className="text-lg font-bold">
                   ₱{product.productPrice.toLocaleString()}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="font-semibold">Category</span>
+              <div className="flex justify-between items-center">
+                <span className="font-semibold text-muted-foreground">
+                  Category
+                </span>
                 <span className="text-sm px-2 py-1 bg-secondary text-secondary-foreground rounded-full">
                   {product.category}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="font-semibold">Square Feet</span>
+              <div className="flex justify-between items-center">
+                <span className="font-semibold text-muted-foreground">
+                  Square Feet
+                </span>
                 <span>{product.squareFeet} sq ft</span>
               </div>
               {product.leadTime && (
-                <div className="flex justify-between">
-                  <span className="font-semibold">Lead Time</span>
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-muted-foreground">
+                    Lead Time
+                  </span>
                   <span>{product.leadTime}</span>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {product.specifications && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Specifications</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm">
-                  {Object.entries(product.specifications).map(([key, value]) =>
-                    value ? (
-                      <li key={key} className="flex justify-between">
-                        <strong className="capitalize">
-                          {key.replace(/([A-Z])/g, " $1")}:
-                        </strong>
-                        <span>{value}</span>
-                      </li>
-                    ) : null
-                  )}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
+          {product.specifications &&
+            Object.values(product.specifications).some((v) => v) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Specifications</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 text-sm">
+                    {Object.entries(product.specifications).map(
+                      ([key, value]) =>
+                        value ? (
+                          <li key={key} className="flex justify-between">
+                            <strong className="capitalize text-muted-foreground">
+                              {key.replace(/([A-Z])/g, " $1")}:
+                            </strong>
+                            <span>{value}</span>
+                          </li>
+                        ) : null
+                    )}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
 
-          {product.threeDModelUrl && (
+          {sketchfabEmbedUrl && (
             <Card>
               <CardHeader>
-                <CardTitle>3D Model</CardTitle>
+                <CardTitle>3D Model Preview</CardTitle>
               </CardHeader>
               <CardContent>
+                <div className="aspect-video w-full overflow-hidden rounded-md border">
+                  <iframe
+                    title={product.productName}
+                    allowFullScreen
+                    allow="autoplay; fullscreen; xr-spatial-tracking"
+                    src={sketchfabEmbedUrl}
+                    className="h-full w-full"
+                  />
+                </div>
                 <a
                   href={product.threeDModelUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary hover:underline"
+                  className="text-primary hover:underline text-sm mt-2 block text-center"
                 >
                   View on Sketchfab
                 </a>

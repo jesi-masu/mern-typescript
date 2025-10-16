@@ -6,6 +6,7 @@ import React, {
   ReactNode,
   useCallback,
 } from "react";
+import { useNavigate } from "react-router-dom"; // ✅ 1. IMPORT useNavigate
 import { useToast } from "@/components/ui/use-toast";
 
 /**
@@ -46,6 +47,7 @@ const STORAGE_TOKEN_KEY = "token";
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const { toast } = useToast();
+  const navigate = useNavigate(); // ✅ 2. INITIALIZE useNavigate
 
   // Initialize from localStorage so auth survives reloads.
   const [user, setUserState] = useState<User | null>(() => {
@@ -184,7 +186,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       title: "Logged Out",
       description: "You have been successfully logged out.",
     });
-  }, [toast]);
+
+    // ✅ 3. ADD NAVIGATION ON LOGOUT
+    navigate("/login"); // Redirect all users to the main login page
+  }, [toast, navigate]); // Add navigate to dependency array
 
   const value: AuthContextType = {
     user,

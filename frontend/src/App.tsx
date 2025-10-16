@@ -11,7 +11,6 @@ import { OrderProvider } from "./context/OrderContext";
 import { OrderUpdatesProvider } from "./context/OrderUpdatesContext";
 
 // Admin auth provider and protected route wrapper
-import { AdminAuthProvider } from "./context/AdminAuthContext";
 import ProtectedAdminRoute from "./components/admin/ProtectedAdminRoute";
 
 // Public / Customer pages
@@ -136,11 +135,9 @@ function App() {
                     <Route
                       path="/admin"
                       element={
-                        <AdminAuthProvider>
-                          <ProtectedAdminRoute>
-                            <AdminLayout />
-                          </ProtectedAdminRoute>
-                        </AdminAuthProvider>
+                        <ProtectedAdminRoute>
+                          <AdminLayout />
+                        </ProtectedAdminRoute>
                       }
                     >
                       {/* Nested admin routes, rendered inside AdminLayout's <Outlet /> */}

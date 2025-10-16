@@ -33,7 +33,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import DynamicListInput from "@/components/common/DynamicListInput"; // Import the new component
+import DynamicListInput from "@/components/common/DynamicListInput"; // Import the reusable component
 
 // Zod schema for the form's core, non-array fields
 const projectSchema = z.object({
@@ -70,7 +70,7 @@ const ProjectFormPage = () => {
   const isEditing = !!id;
   const [isLoading, setIsLoading] = useState(isEditing);
 
-  // States for managing dynamic arrays
+  // States for managing dynamic arrays (handled by DynamicListInput)
   const [features, setFeatures] = useState<string[]>([]);
   const [highlights, setHighlights] = useState<string[]>([]);
   const [images, setImages] = useState<string[]>([]);
@@ -269,6 +269,8 @@ const ProjectFormPage = () => {
                       </FormItem>
                     )}
                   />
+
+                  {/* Correctly using DynamicListInput */}
                   <DynamicListInput
                     title="Gallery Images"
                     placeholder="Add another image URL..."
@@ -281,6 +283,7 @@ const ProjectFormPage = () => {
                     items={imagesDesc}
                     setItems={setImagesDesc}
                   />
+
                   <FormField
                     control={form.control}
                     name="projectVideoLink"
@@ -324,6 +327,7 @@ const ProjectFormPage = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  {/* Correctly using DynamicListInput */}
                   <DynamicListInput
                     title="Layout Image URLs"
                     placeholder="Add a blueprint/layout image URL..."
@@ -373,6 +377,7 @@ const ProjectFormPage = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  {/* Correctly using DynamicListInput */}
                   <DynamicListInput
                     title="Key Features"
                     placeholder="Add a detailed feature..."
