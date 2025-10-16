@@ -4,6 +4,55 @@ import User from "../models/userModel";
 import { AuthRegisterBody } from "../types/express";
 
 /**
+ * GET /api/users/clients
+ * Fetches only users with the 'client' role and aggregates their order data.
+ */
+export const getAllClients: RequestHandler = async (req, res) => {
+  try {
+    const clients = await User.aggregate([
+      // Step 1: Filter to get only users with the role 'client'
+      {
+        $match: { role: "client" },
+      },
+      // Step 2: Join with the 'orders' collection
+      {
+        $lookup: {
+          from: "orders", // The name of your orders collection in MongoDB
+          localField: "_id",
+          foreignField: "userId", // ✅ CORRECTED: The user ID is at the root of the order document
+          as: "orders",
+        },
+      },
+      // Step 3: Create the new fields for totalOrders and totalSpent
+      {
+        $addFields: {
+          totalOrders: { $size: "$orders" },
+          totalSpent: { $sum: "$orders.totalAmount" },
+        },
+      },
+      // Step 4: Remove sensitive/unnecessary fields from the final output
+      {
+        $project: {
+          password: 0,
+          orders: 0,
+        },
+      },
+      // Step 5: Sort by the highest spenders first
+      {
+        $sort: {
+          totalSpent: -1,
+        },
+      },
+    ]);
+
+    res.status(200).json(clients);
+  } catch (error: any) {
+    console.error("Error fetching client data:", error?.message || error);
+    res.status(500).json({ error: "Server error fetching client data." });
+  }
+};
+
+/**
  * GET /api/users
  */
 export const getAllUsers: RequestHandler = async (req, res) => {

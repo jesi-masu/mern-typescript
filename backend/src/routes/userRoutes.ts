@@ -1,4 +1,3 @@
-// backend/src/routes/userRoutes.ts
 import express from "express";
 import {
   getAllUsers,
@@ -6,6 +5,7 @@ import {
   createUser,
   updateUser,
   deleteUser,
+  getAllClients, // Import the new controller
 } from "../controllers/userController";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { checkRole } from "../middleware/checkRole";
@@ -14,6 +14,14 @@ const router = express.Router();
 
 // GET all users (admin/personnel only)
 router.get("/", authMiddleware, checkRole(["admin", "personnel"]), getAllUsers);
+
+// GET all users with role 'client' (for customer management page)
+router.get(
+  "/clients",
+  authMiddleware,
+  checkRole(["admin", "personnel"]),
+  getAllClients
+);
 
 // GET single user by id (authenticated users; controller enforces access)
 router.get("/:id", authMiddleware, getUserById);
