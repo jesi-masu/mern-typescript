@@ -8,8 +8,9 @@ import productRoutes from "./routes/products";
 import userRoutes from "./routes/userRoutes";
 import dashboardRoutes from "./routes/dashboardRoutes";
 import orderRoutes from "./routes/orderRoutes";
-import uploadRoutes from "./routes/uploadRoutes"; // <-- ADDED: Import for the upload routes
+import uploadRoutes from "./routes/uploadRoutes";
 import projectRoutes from "./routes/projectRoutes";
+import reportsRoutes from "./routes/reportsRoutes";
 
 dotenv.config();
 
@@ -28,8 +29,9 @@ app.use("/api/products", productRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/orders", orderRoutes);
-app.use("/api/upload", uploadRoutes); // <-- ADDED: Use the new upload routes
+app.use("/api/upload", uploadRoutes);
 app.use("/api/projects", projectRoutes);
+app.use("/api/reports", reportsRoutes);
 
 app.use((req, res, next) => {
   res.status(404).json({ message: "API route not found" });
