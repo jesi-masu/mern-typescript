@@ -15,7 +15,7 @@ import {
   Package,
   ShoppingCart,
   TrendingUp,
-  DollarSign,
+  PhilippinePeso,
   Loader2,
   AlertTriangle,
 } from "lucide-react";
@@ -114,7 +114,7 @@ const Dashboard = () => {
           title: "Total Revenue",
           value: formatCurrency(stats.totalRevenue),
           change: `+${stats.revenueChange}%`,
-          icon: DollarSign,
+          icon: PhilippinePeso,
           color: "text-green-600",
         },
         {
