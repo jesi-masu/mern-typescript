@@ -1,30 +1,13 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/context/AuthContext"; // ✅ 1. IMPORT THE CORRECT AUTH HOOK
-import { useToast } from "@/hooks/use-toast";
-import {
-  Upload,
-  FileText,
-  CheckCircle,
-  AlertCircle,
-  Clock,
-  X,
-  Download,
-  FileSpreadsheet,
-  Database,
-  Loader2,
-} from "lucide-react";
+import { UploadForm } from "@/components/admin/uploads/UploadForm";
+import { ManualEntryForm } from "@/components/admin/uploads/ManualEntryForm";
+import { HistoryItemCard } from "@/components/admin/uploads/HistoryItemCard";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
+import { AlertCircle, Loader2, FileSpreadsheet } from "lucide-react";
 
 interface UploadRecord {
   id: string;
@@ -37,49 +20,32 @@ interface UploadRecord {
   errors?: string[];
 }
 
-// Helper function for checking permissions
 const hasPermission = (userRole: string, permission: string): boolean => {
-  const rolePermissions: Record<string, string[]> = {
-    admin: ["manage_settings", "view_reports" /* ... all admin perms */],
-    personnel: [
-      /* ... all personnel perms */
-    ],
-  };
-  return rolePermissions[userRole]?.includes(permission) || false;
+  return userRole === "admin";
 };
 
 const RecordsUpload: React.FC = () => {
-  const { user, isLoading: isAuthLoading } = useAuth(); // ✅ 2. USE THE CORRECT HOOK AND ITS LOADING STATE
+  const { user, token, isLoading: isAuthLoading } = useAuth();
   const { toast } = useToast();
 
-  // All other state remains the same
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [uploadHistory, setUploadHistory] = useState<UploadRecord[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [recordType, setRecordType] = useState<string>("");
+  const [recordType, setRecordType] = useState<string>("orders");
   const [description, setDescription] = useState<string>("");
-  const [uploadHistory, setUploadHistory] = useState<UploadRecord[]>([]); // Using local state for history
 
-  const recordTypes = [
-    { value: "customers", label: "Customer Records" },
-    { value: "orders", label: "Order History" },
-    { value: "products", label: "Product Catalog" },
-    { value: "contracts", label: "Contract Documents" },
-    { value: "projects", label: "Project Data" },
-  ];
+  const [validationResult, setValidationResult] = useState<{
+    validRecordCount: number;
+    totalRecords: number;
+    errors: string[];
+  } | null>(null);
+
+  const recordTypes = [{ value: "orders", label: "Order History" }];
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setValidationResult(null);
     const file = event.target.files?.[0];
     if (file) {
-      const allowedTypes = [".csv", ".xlsx", ".xls", ".json"];
-      const fileExtension = "." + file.name.split(".").pop()?.toLowerCase();
-
-      if (!allowedTypes.includes(fileExtension)) {
-        toast({
-          title: "Invalid file type",
-          description: "Please upload CSV, Excel, or JSON files only.",
-          variant: "destructive",
-        });
-        return;
-      }
       if (file.size > 10 * 1024 * 1024) {
         toast({
           title: "File too large",
@@ -92,90 +58,166 @@ const RecordsUpload: React.FC = () => {
     }
   };
 
-  const handleUpload = async () => {
-    if (!selectedFile || !recordType) {
+  const handleFileUpload = async (isConfirmed: boolean = false) => {
+    if (!selectedFile) return;
+    setIsProcessing(true);
+
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
+    const endpoint = isConfirmed
+      ? "/api/import/historical-orders"
+      : "/api/import/validate-historical-orders";
+    const newRecordId = `FILE-${Date.now()}`;
+
+    if (isConfirmed) {
+      const newRecord: UploadRecord = {
+        id: newRecordId,
+        fileName: selectedFile.name,
+        recordType,
+        uploadDate: new Date().toISOString(),
+        status: "processing",
+        recordCount: 0,
+        description,
+      };
+      setUploadHistory((prev) => [newRecord, ...prev]);
+    }
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}${endpoint}`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        }
+      );
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message);
+
+      if (isConfirmed) {
+        const updatedRecord: UploadRecord = {
+          id: newRecordId,
+          fileName: selectedFile.name,
+          recordType,
+          uploadDate: new Date().toISOString(),
+          status: "completed",
+          recordCount: result.importedCount || 0,
+          description,
+        };
+        setUploadHistory((prev) =>
+          prev.map((r) => (r.id === newRecordId ? updatedRecord : r))
+        );
+        toast({ title: "Import Successful", description: result.message });
+        setValidationResult(null);
+        setSelectedFile(null);
+        setDescription("");
+      } else {
+        setValidationResult(result);
+        toast({
+          title: "Validation Complete",
+          description: "Review the results before confirming the import.",
+        });
+      }
+    } catch (error: any) {
       toast({
-        title: "Missing information",
-        description: "Please select a file and record type.",
+        title: isConfirmed ? "Import Failed" : "Validation Failed",
+        description: error.message,
         variant: "destructive",
       });
-      return;
+      if (isConfirmed) {
+        const updatedRecord: UploadRecord = {
+          id: newRecordId,
+          fileName: selectedFile.name,
+          recordType,
+          uploadDate: new Date().toISOString(),
+          status: "failed",
+          recordCount: 0,
+          description,
+          errors: [error.message],
+        };
+        setUploadHistory((prev) =>
+          prev.map((r) => (r.id === newRecordId ? updatedRecord : r))
+        );
+      }
+      setValidationResult(null);
+    } finally {
+      setIsProcessing(false);
     }
+  };
+
+  const handleManualEntrySubmit = async (formData: any) => {
+    setIsProcessing(true);
+
     const newRecord: UploadRecord = {
-      id: `UP-${String(Math.floor(Math.random() * 1000)).padStart(3, "0")}`,
-      fileName: selectedFile.name,
-      recordType,
+      id: `MANUAL-${Date.now()}`,
+      fileName: "Manual Entry",
+      recordType: "orders",
       uploadDate: new Date().toISOString(),
       status: "processing",
       recordCount: 0,
-      description: description || undefined,
+      description: `Manual entry for order on ${formData.createdAt}`,
     };
-    setUploadHistory([newRecord, ...uploadHistory]);
 
-    // The old logActivity is removed as it was part of the demo context
-    toast({
-      title: "Upload started",
-      description: `Processing ${selectedFile.name}...`,
-    });
+    setUploadHistory((prev) => [newRecord, ...prev]);
 
-    // Simulate processing
-    setTimeout(() => {
+    try {
+      const payload = {
+        ...formData,
+        products: formData.products.filter(
+          (p: any) => p.productId.trim() !== ""
+        ),
+      };
+
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_BACKEND_URL
+        }/api/import/historical-order-manual`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message);
+
       const updatedRecord = {
         ...newRecord,
         status: "completed" as const,
-        recordCount: Math.floor(Math.random() * 200) + 50,
+        recordCount: 1,
       };
       setUploadHistory((prev) =>
-        prev.map((record) =>
-          record.id === newRecord.id ? updatedRecord : record
-        )
+        prev.map((r) => (r.id === newRecord.id ? updatedRecord : r))
       );
       toast({
-        title: "Upload completed",
-        description: `Successfully processed ${updatedRecord.recordCount} records.`,
+        title: "Success",
+        description: "Historical order added successfully.",
       });
-    }, 3000);
-
-    setSelectedFile(null);
-    setRecordType("");
-    setDescription("");
-  };
-
-  // Helper functions for UI (getStatusIcon, etc.) remain the same...
-  const getStatusIcon = (status: UploadRecord["status"]) => {
-    switch (status) {
-      case "completed":
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case "failed":
-        return <AlertCircle className="h-4 w-4 text-red-600" />;
-      case "processing":
-        return <Clock className="h-4 w-4 text-blue-600" />;
-      default:
-        return <Clock className="h-4 w-4 text-gray-600" />;
+    } catch (error: any) {
+      const updatedRecord = {
+        ...newRecord,
+        status: "failed" as const,
+        errors: [error.message || "Failed to add order."],
+      };
+      setUploadHistory((prev) =>
+        prev.map((r) => (r.id === newRecord.id ? updatedRecord : r))
+      );
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
     }
   };
-  const getStatusColor = (status: UploadRecord["status"]) => {
-    switch (status) {
-      case "completed":
-        return "bg-green-100 text-green-800";
-      case "failed":
-        return "bg-red-100 text-red-800";
-      case "processing":
-        return "bg-blue-100 text-blue-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
 
-  // ✅ 3. ADD A LOADING STATE CHECK
   if (isAuthLoading) {
     return (
       <div className="flex h-64 w-full items-center justify-center">
@@ -184,217 +226,121 @@ const RecordsUpload: React.FC = () => {
     );
   }
 
-  // ✅ 4. UPDATE THE PERMISSION CHECK
   if (!user || !hasPermission(user.role, "manage_settings")) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Access Denied
-          </h3>
-          <p className="text-gray-600">
-            You don't have permission to upload records.
-          </p>
-        </div>
+      <div className="text-center p-12">
+        <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold">Access Denied</h3>
+        <p className="text-gray-600">
+          You don't have permission to upload records.
+        </p>
       </div>
     );
   }
 
-  // The rest of the JSX is unchanged...
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Records Upload</h2>
-          <p className="text-gray-600">
-            Import existing records into the system
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Database className="h-5 w-5 text-gray-500" />
-          <span className="text-sm text-gray-500">
-            {uploadHistory.length} uploads
-          </span>
-        </div>
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Records Upload</h2>
+        <p className="text-gray-600">
+          Import historical and external data into the system.
+        </p>
       </div>
+
+      <Tabs defaultValue="file-upload" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="file-upload">Bulk Upload via File</TabsTrigger>
+          <TabsTrigger value="manual-entry">
+            Manual Entry (Single Order)
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="file-upload">
+          <UploadForm
+            selectedFile={selectedFile}
+            recordType={recordType}
+            description={description}
+            recordTypes={recordTypes}
+            onFileSelect={handleFileSelect}
+            onRecordTypeChange={setRecordType}
+            onDescriptionChange={setDescription}
+            onUpload={() => handleFileUpload(false)}
+            onClearFile={() => setSelectedFile(null)}
+            isUploading={isProcessing}
+          />
+          {validationResult && (
+            <Card className="mt-6 bg-gray-50">
+              <CardHeader>
+                <CardTitle>Validation Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>
+                  Found <strong>{validationResult.validRecordCount}</strong>{" "}
+                  valid records out of{" "}
+                  <strong>{validationResult.totalRecords}</strong>.
+                </p>
+                {validationResult.errors.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="font-semibold text-red-600">
+                      Errors Found ({validationResult.errors.length}):
+                    </h4>
+                    <ul className="text-sm text-red-500 list-disc pl-5 max-h-40 overflow-y-auto bg-red-50 p-2 rounded-md">
+                      {validationResult.errors.slice(0, 10).map((err, i) => (
+                        <li key={i}>{err}</li>
+                      ))}
+                      {validationResult.errors.length > 10 && (
+                        <li>
+                          ...and {validationResult.errors.length - 10} more.
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+                <Button
+                  className="mt-6"
+                  onClick={() => handleFileUpload(true)}
+                  disabled={
+                    isProcessing || validationResult.validRecordCount === 0
+                  }
+                >
+                  {isProcessing ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  Confirm and Import {validationResult.validRecordCount} Valid
+                  Records
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="manual-entry">
+          <ManualEntryForm
+            onSubmit={handleManualEntrySubmit}
+            isProcessing={isProcessing}
+          />
+        </TabsContent>
+      </Tabs>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Upload New Records
+            <FileSpreadsheet className="h-5 w-5" />
+            Upload History
           </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Select File
-                </label>
-                <div className="relative">
-                  <Input
-                    type="file"
-                    accept=".csv,.xlsx,.xls,.json"
-                    onChange={handleFileSelect}
-                    className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  />
-                </div>
-                {selectedFile && (
-                  <div className="mt-2 flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm text-gray-700">
-                      {selectedFile.name}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedFile(null)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Record Type
-                </label>
-                <Select value={recordType} onValueChange={setRecordType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select record type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {recordTypes.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Description (Optional)
-                </label>
-                <Textarea
-                  placeholder="Add a description for this upload..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={4}
-                />
-              </div>
-            </div>
-          </div>
-          <div className="flex justify-between items-center pt-4 border-t">
-            <div className="text-sm text-gray-500">
-              Supported formats: CSV, Excel (.xlsx, .xls), JSON • Max size: 10MB
-            </div>
-            <Button
-              onClick={handleUpload}
-              disabled={!selectedFile || !recordType}
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Upload Records
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <FileSpreadsheet className="h-5 w-5" />
-              Upload History
-            </CardTitle>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Export Log
-            </Button>
-          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {uploadHistory.length > 0 ? (
               uploadHistory.map((record) => (
-                <div
-                  key={record.id}
-                  className="border rounded-lg p-4 hover:bg-gray-50"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="font-semibold">{record.fileName}</span>
-                        <Badge className={getStatusColor(record.status)}>
-                          <div className="flex items-center gap-1">
-                            {getStatusIcon(record.status)}
-                            {record.status.charAt(0).toUpperCase() +
-                              record.status.slice(1)}
-                          </div>
-                        </Badge>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
-                        <div>
-                          <p className="text-sm text-gray-500">Record Type</p>
-                          <p className="font-medium capitalize">
-                            {record.recordType}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Upload Date</p>
-                          <p className="font-medium">
-                            {formatDate(record.uploadDate)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">
-                            Records Processed
-                          </p>
-                          <p className="font-medium">
-                            {record.recordCount.toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                      {record.description && (
-                        <div className="mb-2">
-                          <p className="text-sm text-gray-500">Description</p>
-                          <p className="text-sm">{record.description}</p>
-                        </div>
-                      )}
-                      {record.errors && record.errors.length > 0 && (
-                        <div className="mt-2">
-                          <p className="text-sm text-red-600 font-medium mb-1">
-                            Errors:
-                          </p>
-                          <ul className="text-sm text-red-600 space-y-1">
-                            {record.errors.map((error, index) => (
-                              <li
-                                key={index}
-                                className="flex items-start gap-2"
-                              >
-                                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                                {error}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <HistoryItemCard key={record.id} record={record} />
               ))
             ) : (
               <div className="text-center py-12">
                 <FileSpreadsheet className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  No uploads yet
-                </h3>
+                <h3 className="text-lg font-semibold">No import history</h3>
                 <p className="text-gray-600">
-                  Upload history will appear here.
+                  Your import history will appear here.
                 </p>
               </div>
             )}

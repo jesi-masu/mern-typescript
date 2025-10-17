@@ -10,6 +10,7 @@ export interface IOrder extends Document {
   _id: Types.ObjectId;
   userId: Types.ObjectId;
   products: IOrderProduct[];
+  source?: string;
   customerInfo: {
     firstName: string;
     lastName: string;

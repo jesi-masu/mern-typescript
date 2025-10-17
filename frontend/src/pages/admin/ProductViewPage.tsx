@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { Product } from "@/types/product";
 import { fetchProductById } from "@/services/productService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Edit, Check } from "lucide-react";
+import { ArrowLeft, Edit, Check, Copy } from "lucide-react";
 
 const getSketchfabEmbedUrl = (url?: string): string | null => {
   if (!url || !url.includes("sketchfab.com")) return null;
@@ -29,6 +29,7 @@ const ProductViewPage: React.FC = () => {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isCopied, setIsCopied] = useState<boolean>(false);
 
   useEffect(() => {
     if (id) {
@@ -51,6 +52,19 @@ const ProductViewPage: React.FC = () => {
       getProductDetails();
     }
   }, [id, toast]);
+
+  const handleCopyId = () => {
+    if (!product?._id) return;
+
+    navigator.clipboard.writeText(product._id).then(() => {
+      toast({
+        title: "Copied!",
+        description: "Product ID has been copied to your clipboard.",
+      });
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000); // Reset icon after 2 seconds
+    });
+  };
 
   if (loading) {
     return (
@@ -76,9 +90,6 @@ const ProductViewPage: React.FC = () => {
 
   return (
     <div className="container mx-auto py-8 space-y-6">
-      {/* ======================================================= */}
-      {/* =================== UPDATED HEADER ==================== */}
-      {/* ======================================================= */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">
           {product.productName}
@@ -197,6 +208,28 @@ const ProductViewPage: React.FC = () => {
                   <span>{product.leadTime}</span>
                 </div>
               )}
+              <div className="flex justify-between items-center pt-4 border-t">
+                <span className="font-semibold text-muted-foreground">
+                  Product ID
+                </span>
+                <div className="flex items-center gap-2">
+                  <code className="text-sm bg-muted px-2 py-1 rounded">
+                    {product._id}
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleCopyId}
+                    aria-label="Copy Product ID"
+                  >
+                    {isCopied ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
 

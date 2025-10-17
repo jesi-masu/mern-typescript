@@ -6,6 +6,7 @@ import {
   getProduct,
   deleteProduct,
   updateProduct,
+  searchProducts,
 } from "../controllers/productController";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { checkRole } from "../middleware/checkRole";
@@ -15,6 +16,9 @@ const router = express.Router();
 // Public Routes
 router.get("/", getProducts);
 router.get("/:id", getProduct);
+
+// GET products by search query
+router.get("/search", searchProducts);
 
 // Protected Routes
 router.post(

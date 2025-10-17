@@ -11,6 +11,7 @@ import orderRoutes from "./routes/orderRoutes";
 import uploadRoutes from "./routes/uploadRoutes";
 import projectRoutes from "./routes/projectRoutes";
 import reportsRoutes from "./routes/reportsRoutes";
+import importRoutes from "./routes/importRoutes";
 
 dotenv.config();
 
@@ -32,6 +33,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/reports", reportsRoutes);
+app.use("/api/import", importRoutes);
 
 app.use((req, res, next) => {
   res.status(404).json({ message: "API route not found" });

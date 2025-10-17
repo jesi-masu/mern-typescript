@@ -188,3 +188,26 @@ export const updateProduct = async (
       .json({ error: error?.message || "Product update failed." });
   }
 };
+
+export const searchProducts = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const query = req.query.q as string;
+    if (!query) {
+      res.json([]);
+      return;
+    }
+    // Find products where the name contains the query (case-insensitive)
+    const products = await Product.find({
+      productName: { $regex: query, $options: "i" },
+    })
+      .select("_id productName") // Only return the ID and name
+      .limit(10); // Limit to 10 results for performance
+
+    res.status(200).json(products);
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to search for products." });
+  }
+};
