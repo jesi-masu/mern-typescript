@@ -1,6 +1,5 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,8 +9,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Receipt, MapPin, Eye, Download, Filter } from "lucide-react";
-import { Upload } from "@/pages/admin/CustomerUploads"; // We will export this type from the main file
+import { Upload } from "@/pages/admin/CustomerUploads";
 
+//ako gi kuha ang badge
 interface UploadCardProps {
   upload: Upload;
 }
@@ -23,18 +23,7 @@ const UploadCard: React.FC<UploadCardProps> = ({ upload }) => {
     ) : (
       <MapPin className="h-4 w-4" />
     );
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pending":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "reviewed":
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      case "approved":
-        return "bg-green-100 text-green-800 border-green-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
+
   const formatDate = (dateString: string) =>
     new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -56,9 +45,6 @@ const UploadCard: React.FC<UploadCardProps> = ({ upload }) => {
                   {upload.fileName}
                 </span>
               </div>
-              <Badge className={`${getStatusColor(upload.status)} border`}>
-                {upload.status.charAt(0).toUpperCase() + upload.status.slice(1)}
-              </Badge>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <div className="space-y-1">

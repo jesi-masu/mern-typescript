@@ -58,12 +58,12 @@ const userSchema: Schema = new Schema(
   { timestamps: true }
 );
 
+// Middleware to hash password before saving
 userSchema.pre<IUser>("save", async function (next: (err?: any) => void) {
   try {
     if (!this.isModified("password")) {
       return next();
     }
-
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password as string, salt);
     next();
@@ -72,6 +72,7 @@ userSchema.pre<IUser>("save", async function (next: (err?: any) => void) {
   }
 });
 
+// Method to compare candidate password with the hashed password
 userSchema.methods.comparePassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
