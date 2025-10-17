@@ -1,4 +1,5 @@
 // backend/src/controllers/orderController.ts
+
 import { Request, Response, RequestHandler } from "express";
 import mongoose from "mongoose";
 import Order, { IOrder } from "../models/orderModel";
@@ -68,7 +69,7 @@ export const createOrder: RequestHandler = async (req, res) => {
       return;
     }
 
-    const productIds = products.map((p) => p.productId);
+    const productIds = products.map((p: any) => p.productId);
     const foundProducts = await Product.find({ _id: { $in: productIds } });
     if (foundProducts.length !== productIds.length) {
       res.status(404).json({ message: "One or more products not found." });
@@ -201,8 +202,6 @@ export const updateOrder = async (
     if (paymentStatus) {
       fieldsToSet["paymentInfo.paymentStatus"] = paymentStatus;
 
-      // --- MODIFICATION START: Automatically update installment stage ---
-      // Only apply this logic if the order is an installment plan
       if (order.paymentInfo.paymentMethod === "installment") {
         switch (paymentStatus) {
           case "50% Complete Paid":
@@ -215,11 +214,9 @@ export const updateOrder = async (
             fieldsToSet["paymentInfo.installmentStage"] = "final";
             break;
           default:
-            // For "Pending" or other statuses, do not change the stage
             break;
         }
       }
-      // --- MODIFICATION END ---
     }
 
     if (Object.keys(fieldsToSet).length > 0) {
@@ -260,5 +257,80 @@ export const updateOrder = async (
     res.status(status).json({
       message: error?.message || "Server error while updating order.",
     });
+  }
+};
+/**
+ * @desc    Get all customer uploads (receipts and location images)
+ * @route   GET /api/orders/uploads
+ * @access  Private (Admin/Personnel)
+ */
+export const getAllUploads: RequestHandler = async (req, res) => {
+  interface Upload {
+    id: string;
+    orderId: string;
+    customerName: string;
+    type: "payment_receipt" | "location_image";
+    fileUrl: string;
+    fileName: string;
+    uploadDate: Date;
+    status: string;
+  }
+
+  try {
+    const orders = await Order.find({})
+      .sort({ createdAt: -1 })
+      .select("customerInfo paymentInfo locationImages createdAt _id");
+
+    const uploads = orders.flatMap((order) => {
+      // The redundant 'typedOrder' variable is removed. 'order' is now correctly typed.
+      const allUploads: Upload[] = [];
+      const customerName = `${order.customerInfo.firstName} ${order.customerInfo.lastName}`;
+
+      // Process payment receipts
+      if (order.paymentInfo?.paymentReceipts) {
+        const receipts = order.paymentInfo.paymentReceipts;
+        const allReceiptUrls = [
+          ...(receipts.initial || []),
+          ...(receipts.pre_delivery || []),
+          ...(receipts.final || []),
+        ];
+
+        allReceiptUrls.forEach((url) => {
+          allUploads.push({
+            id: `${order._id}-${url}`, // No more error here
+            orderId: order._id.toString(), // No more error here
+            customerName,
+            type: "payment_receipt",
+            fileUrl: url,
+            fileName: url.split("/").pop()?.split("?")[0] || "receipt.jpg",
+            uploadDate: order.createdAt,
+            status: "pending",
+          });
+        });
+      }
+
+      // Process location images
+      if (order.locationImages && order.locationImages.length > 0) {
+        order.locationImages.forEach((url) => {
+          allUploads.push({
+            id: `${order._id}-${url}`, // No more error here
+            orderId: order._id.toString(), // No more error here
+            customerName,
+            type: "location_image",
+            fileUrl: url,
+            fileName: url.split("/").pop()?.split("?")[0] || "location.jpg",
+            uploadDate: order.createdAt,
+            status: "pending",
+          });
+        });
+      }
+
+      return allUploads;
+    });
+
+    res.status(200).json(uploads);
+  } catch (error: any) {
+    console.error("Error fetching uploads:", error);
+    res.status(500).json({ error: "Failed to fetch uploads." });
   }
 };

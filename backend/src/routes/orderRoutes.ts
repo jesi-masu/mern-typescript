@@ -1,4 +1,5 @@
 // backend/src/routes/orderRoutes.ts
+
 import express from "express";
 import {
   createOrder,
@@ -6,32 +7,33 @@ import {
   getOrderById,
   updateOrder,
   getUserOrders,
+  getAllUploads, // <-- IMPORT THE NEW CONTROLLER
 } from "../controllers/orderController";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { checkRole } from "../middleware/checkRole";
 
 const router = express.Router();
 
-// --- NEW ROUTE for logged-in users to get their own orders ---
+// --- Client facing routes ---
 router.get("/my-orders", authMiddleware, checkRole(["client"]), getUserOrders);
-
-// POST /api/orders - Create a new order (for logged-in clients)
 router.post("/", authMiddleware, checkRole(["client"]), createOrder);
 
-// GET /api/orders - Get all orders (for admins and personnel)
+// --- Admin/Personnel facing routes ---
 router.get("/", authMiddleware, checkRole(["admin", "personnel"]), getOrders);
 
-// GET /api/orders/:id - Get a single order by ID (for admins, personnel, or the order owner)
+// ✅ ADD THE NEW ROUTE FOR FETCHING ALL UPLOADS
+router.get(
+  "/uploads",
+  authMiddleware,
+  checkRole(["admin", "personnel"]),
+  getAllUploads
+);
+
+// This route can be accessed by clients to view their own order, or admin/personnel to view any
 router.get("/:id", authMiddleware, getOrderById);
 
-// --- FIX: REMOVED the restrictive checkRole middleware ---
-// PATCH /api/orders/:id - Update an order.
-// The controller itself now handles the specific permissions.
-router.patch(
-  "/:id",
-  authMiddleware,
-  // checkRole(["admin", "personnel"]), // <-- This line was removed
-  updateOrder
-);
+// This route allows clients to update their own orders (e.g., add receipts)
+// and allows admin/personnel to update status
+router.patch("/:id", authMiddleware, updateOrder);
 
 export default router;

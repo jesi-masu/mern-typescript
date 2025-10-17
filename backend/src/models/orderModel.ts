@@ -1,5 +1,5 @@
-// backend/src/models/orderModel.ts
 import mongoose, { Document, Schema, Types } from "mongoose";
+import bcrypt from "bcryptjs"; // Assuming this is used elsewhere, keeping it.
 
 interface IOrderProduct {
   productId: Types.ObjectId;
@@ -7,6 +7,7 @@ interface IOrderProduct {
 }
 
 export interface IOrder extends Document {
+  _id: Types.ObjectId;
   userId: Types.ObjectId;
   products: IOrderProduct[];
   customerInfo: {
@@ -34,7 +35,6 @@ export interface IOrder extends Document {
       | "50% Complete Paid"
       | "90% Complete Paid"
       | "100% Complete Paid";
-    // Changed paymentReceipts from a simple array to an object
     paymentReceipts?: {
       initial?: string[];
       pre_delivery?: string[];
@@ -55,6 +55,8 @@ export interface IOrder extends Document {
     | "Delivered"
     | "Completed"
     | "Cancelled";
+  createdAt: Date; // ✅ ADD THIS LINE
+  updatedAt: Date; // ✅ ADD THIS LINE
 }
 
 const orderProductSchema: Schema = new Schema(
@@ -68,10 +70,7 @@ const orderProductSchema: Schema = new Schema(
 const orderSchema: Schema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    products: {
-      type: [orderProductSchema],
-      required: true,
-    },
+    products: { type: [orderProductSchema], required: true },
     customerInfo: {
       type: {
         firstName: { type: String, required: true },
@@ -121,7 +120,6 @@ const orderSchema: Schema = new Schema(
           ],
           default: "Pending",
         },
-        // Updated the schema to match the new object structure
         paymentReceipts: {
           type: {
             initial: { type: [String], required: false },
@@ -141,10 +139,7 @@ const orderSchema: Schema = new Schema(
       },
       required: true,
     },
-    locationImages: {
-      type: [String],
-      required: false,
-    },
+    locationImages: { type: [String], required: false },
     totalAmount: { type: Number, required: true },
     orderStatus: {
       type: String,
