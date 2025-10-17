@@ -1,14 +1,19 @@
-// src/pages/admin/AdminProjects.tsx
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
-import { Project } from "@/types";
-import ProjectFilters from "@/components/admin/ProjectFilters";
+import { Project, ProjectStatus, ProjectCategory } from "@/types"; // Assuming types are defined
 import ProjectTable from "@/components/admin/ProjectTable";
+import { Plus, Filter, Search, Package } from "lucide-react";
 
 const AdminProjects = () => {
   const navigate = useNavigate();
@@ -76,6 +81,14 @@ const AdminProjects = () => {
     return <div className="p-6">Loading projects...</div>;
   }
 
+  // For populating filter dropdowns
+  const uniqueCategories = [
+    ...new Set(projects.map((p) => p.projectCategory)),
+  ] as ProjectCategory[];
+  const uniqueStatuses = [
+    ...new Set(projects.map((p) => p.projectStatus)),
+  ] as ProjectStatus[];
+
   const isInitialEmptyState =
     !searchQuery &&
     statusFilter === "all" &&
@@ -83,42 +96,103 @@ const AdminProjects = () => {
     projects.length === 0;
 
   return (
-    <div className="space-y-6 p-4">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 p-4 md:p-4 bg-gray-50 min-h-screen">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
             Projects Management
           </h1>
           <p className="text-gray-600 mt-1">
-            Manage all your prefab construction projects
+            Manage all your prefab construction projects from a centralized
+            dashboard.
           </p>
         </div>
-        <Button
-          onClick={handleAddProject}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
+        <Button onClick={handleAddProject}>
           <Plus className="w-4 h-4 mr-2" />
           Add New Project
         </Button>
       </div>
-      <Card>
-        <ProjectFilters
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          statusFilter={statusFilter}
-          setStatusFilter={setStatusFilter}
-          categoryFilter={categoryFilter}
-          setCategoryFilter={setCategoryFilter}
-          totalCount={projects.length}
-          filteredCount={filteredProjects.length}
-        />
-        <ProjectTable
-          projects={filteredProjects}
-          onDelete={handleDeleteProject}
-          onAdd={handleAddProject}
-          showEmptyState={isInitialEmptyState}
-        />
+
+      <hr className="border-t border-gray-200" />
+
+      <Card className="shadow-lg rounded-xl">
+        <CardHeader>
+          <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
+            <CardTitle className="flex items-center gap-3 text-2xl text-gray-800">
+              <Filter className="h-6 w-6 text-blue-600" />
+              Filter Projects
+            </CardTitle>
+            <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+              <div className="relative flex-grow">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
+                <Input
+                  placeholder="Search by title or location..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-12 pr-4 py-2 rounded-lg border border-gray-300 w-full"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-52 rounded-lg border border-gray-300">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  {uniqueStatuses.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full sm:w-52 rounded-lg border border-gray-300">
+                  <SelectValue placeholder="Filter by category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {uniqueCategories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardHeader>
+        <div className="pb-4 px-5 text-sm text-muted-foreground">
+          Showing <strong>{filteredProjects.length}</strong> of{" "}
+          <strong>{projects.length}</strong> total projects.
+        </div>
       </Card>
+
+      <div>
+        {filteredProjects.length > 0 || !isInitialEmptyState ? (
+          <ProjectTable
+            projects={filteredProjects}
+            onDelete={handleDeleteProject}
+            onAdd={handleAddProject}
+            showEmptyState={
+              isInitialEmptyState || filteredProjects.length === 0
+            }
+          />
+        ) : (
+          <Card className="text-center p-12 shadow-lg rounded-xl">
+            <Package className="h-16 w-16 text-gray-400 mb-6 mx-auto" />
+            <h3 className="text-2xl font-semibold text-gray-800 mb-3">
+              No Projects Yet
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Get started by adding your first construction project.
+            </p>
+            <Button onClick={handleAddProject}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add First Project
+            </Button>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };

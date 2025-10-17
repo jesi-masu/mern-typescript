@@ -1,11 +1,23 @@
-import React, { useState, useRef } from 'react'; // Import useRef
+import React, { useState, useRef } from "react"; // Import useRef
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   FileText,
   Download,
@@ -16,13 +28,13 @@ import {
   AlertCircle,
   XCircle,
   Printer,
-  FilePlus
+  FilePlus,
 } from "lucide-react";
 import { orders } from "@/data/orders";
 import { products } from "@/data/products";
-import { toast } from 'sonner';
+import { toast } from "sonner";
 import FormalContractDocument from "@/components/contract/FormalContractDocument";
-import html2pdf from 'html2pdf.js'; // Import html2pdf.js
+import html2pdf from "html2pdf.js"; // Import html2pdf.js
 
 const Contracts = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -34,34 +46,43 @@ const Contracts = () => {
   // Ref to hold the content of the FormalContractDocument for PDF generation
   const formalDocumentRef = useRef<HTMLDivElement>(null);
 
-  const contracts = orders.map(order => ({
+  const contracts = orders.map((order) => ({
     id: `contract-${order.id}`,
     orderId: order.id,
     customerName: order.customerName || "Unknown Customer",
     customerEmail: order.customerEmail || "No email provided",
-    productName: products.find(p => p.id === order.products[0]?.productId)?.name || "Unknown Product",
-    status: order.status === "Delivered" ? "Completed" :
-            order.status === "Cancelled" ? "Cancelled" :
-            order.status === "Ready for Delivery" ? "Ready for Delivery" : "Pending",
+    productName:
+      products.find((p) => p.id === order.products[0]?.productId)?.name ||
+      "Unknown Product",
+    status:
+      order.status === "Delivered"
+        ? "Completed"
+        : order.status === "Cancelled"
+        ? "Cancelled"
+        : order.status === "Ready for Delivery"
+        ? "Ready for Delivery"
+        : "Pending",
     createdAt: order.createdAt,
     signedAt: order.status === "Delivered" ? order.createdAt : null,
     contractValue: order.totalAmount,
     terms: "Standard prefab construction terms and conditions apply.",
     deliveryAddress: "Customer specified location",
     paymentTerms: "50% down payment, 40% on delivery, 10% upon completion",
-    warrantyPeriod: "2 years structural warranty"
+    warrantyPeriod: "2 years structural warranty",
   }));
 
-  const filteredContracts = contracts.filter(contract => {
+  const filteredContracts = contracts.filter((contract) => {
     const customerName = contract.customerName || "";
     const orderId = contract.orderId || "";
     const productName = contract.productName || "";
 
-    const matchesSearch = customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          productName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch =
+      customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      productName.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus = statusFilter === "all" || contract.status === statusFilter;
+    const matchesStatus =
+      statusFilter === "all" || contract.status === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
@@ -98,24 +119,24 @@ const Contracts = () => {
 
   const stats = {
     total: contracts.length,
-    signed: contracts.filter(c => c.status === "Completed").length,
-    pending: contracts.filter(c => c.status === "Pending").length,
-    cancelled: contracts.filter(c => c.status === "Cancelled").length
+    signed: contracts.filter((c) => c.status === "Completed").length,
+    pending: contracts.filter((c) => c.status === "Pending").length,
+    cancelled: contracts.filter((c) => c.status === "Cancelled").length,
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-PH', {
-      style: 'currency',
-      currency: 'PHP',
-      maximumFractionDigits: 0
+    return new Intl.NumberFormat("en-PH", {
+      style: "currency",
+      currency: "PHP",
+      maximumFractionDigits: 0,
     }).format(amount);
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-PH', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-PH", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
@@ -123,7 +144,7 @@ const Contracts = () => {
   const handleDownloadPDF = (contract: any) => {
     const printContent = generatePrintableContract(contract);
 
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open("", "_blank");
     if (printWindow) {
       printWindow.document.write(`
         <html>
@@ -162,7 +183,9 @@ const Contracts = () => {
         }, 1000);
       }, 500);
 
-      toast.success(`Contract PDF for Order #${contract.orderId} is ready for download`);
+      toast.success(
+        `Contract PDF for Order #${contract.orderId} is ready for download`
+      );
     }
   };
 
@@ -232,8 +255,12 @@ const Contracts = () => {
         <div class="section-title">TERMS AND CONDITIONS</div>
         <div class="terms-box">
           <p><strong>1. PAYMENT TERMS:</strong> ${contract.paymentTerms}</p>
-          <p><strong>2. DELIVERY:</strong> As per agreed schedule to ${contract.deliveryAddress}</p>
-          <p><strong>3. WARRANTY:</strong> ${contract.warrantyPeriod} from completion date</p>
+          <p><strong>2. DELIVERY:</strong> As per agreed schedule to ${
+            contract.deliveryAddress
+          }</p>
+          <p><strong>3. WARRANTY:</strong> ${
+            contract.warrantyPeriod
+          } from completion date</p>
           <p><strong>4. GENERAL CONDITIONS:</strong> ${contract.terms}</p>
         </div>
       </div>
@@ -268,8 +295,12 @@ const Contracts = () => {
     setTimeout(async () => {
       if (formalDocumentRef.current) {
         try {
-          await html2pdf().from(formalDocumentRef.current).save(`Formal_Contract_Order_${contract.orderId}.pdf`);
-          toast.success(`Formal Contract Document for Order #${contract.orderId} downloaded successfully!`);
+          await html2pdf()
+            .from(formalDocumentRef.current)
+            .save(`Formal_Contract_Order_${contract.orderId}.pdf`);
+          toast.success(
+            `Formal Contract Document for Order #${contract.orderId} downloaded successfully!`
+          );
         } catch (error) {
           console.error("Error generating PDF:", error);
           toast.error("Failed to generate PDF. Please try again.");
@@ -277,7 +308,9 @@ const Contracts = () => {
           setIsFormalDocumentOpen(false); // Close the dialog after download
         }
       } else {
-        toast.error("Formal contract document content not found for PDF generation.");
+        toast.error(
+          "Formal contract document content not found for PDF generation."
+        );
         setIsFormalDocumentOpen(false); // Close the dialog
       }
     }, 500); // Adjust delay if needed
@@ -294,11 +327,13 @@ const Contracts = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Contract Management</h1>
-          <p className="text-gray-600">View, manage and download customer contracts</p>
+          <p className="text-gray-600">
+            View, manage and download customer contracts
+          </p>
         </div>
       </div>
 
@@ -308,7 +343,9 @@ const Contracts = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Contracts</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Total Contracts
+                </p>
                 <p className="text-2xl font-bold">{stats.total}</p>
               </div>
               <FileText className="h-8 w-8 text-blue-600" />
@@ -321,7 +358,9 @@ const Contracts = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Signed</p>
-                <p className="text-2xl font-bold text-green-600">{stats.signed}</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {stats.signed}
+                </p>
               </div>
               <CheckCircle className="h-8 w-8 text-green-600" />
             </div>
@@ -333,7 +372,9 @@ const Contracts = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Pending</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+                <p className="text-2xl font-bold text-yellow-600">
+                  {stats.pending}
+                </p>
               </div>
               <Clock className="h-8 w-8 text-yellow-600" />
             </div>
@@ -345,7 +386,9 @@ const Contracts = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Cancelled</p>
-                <p className="text-2xl font-bold text-red-600">{stats.cancelled}</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {stats.cancelled}
+                </p>
               </div>
               <XCircle className="h-8 w-8 text-red-600" />
             </div>
@@ -403,23 +446,30 @@ const Contracts = () => {
         <CardContent>
           <div className="space-y-4">
             {filteredContracts.map((contract) => (
-              <div key={contract.id} className="border rounded-lg p-4 hover:bg-gray-50">
+              <div
+                key={contract.id}
+                className="border rounded-lg p-4 hover:bg-gray-50"
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <div>
                       <h3 className="font-semibold">{contract.productName}</h3>
                       <p className="text-sm text-gray-600">
-                        Customer: {contract.customerName} | Order: #{contract.orderId}
+                        Customer: {contract.customerName} | Order: #
+                        {contract.orderId}
                       </p>
                       <p className="text-sm text-gray-500">
                         Created: {formatDate(contract.createdAt)}
-                        {contract.signedAt && ` | Signed: ${formatDate(contract.signedAt)}`}
+                        {contract.signedAt &&
+                          ` | Signed: ${formatDate(contract.signedAt)}`}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
                     <div className="text-right">
-                      <p className="font-semibold">{formatCurrency(contract.contractValue)}</p>
+                      <p className="font-semibold">
+                        {formatCurrency(contract.contractValue)}
+                      </p>
                       <Badge className={getStatusColor(contract.status)}>
                         <div className="flex items-center gap-1">
                           {getStatusIcon(contract.status)}
@@ -477,8 +527,12 @@ const Contracts = () => {
               {/* Contract Header */}
               <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-lg">
                 <div className="text-center">
-                  <h2 className="text-2xl font-bold mb-2">CAMCO MEGA SALES CORP.</h2>
-                  <p className="text-lg font-semibold">PREFAB CONTAINER AND CAMHOUSE</p>
+                  <h2 className="text-2xl font-bold mb-2">
+                    CAMCO MEGA SALES CORP.
+                  </h2>
+                  <p className="text-lg font-semibold">
+                    PREFAB CONTAINER AND CAMHOUSE
+                  </p>
                   <div className="text-sm mt-3 opacity-90">
                     <p>0997-951-7188 | camco.prefab3@gmail.com</p>
                     <p>Masterson Ave., Upper Balulang, Cagayan de Oro City</p>
@@ -489,20 +543,38 @@ const Contracts = () => {
               {/* Contract Information */}
               <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Contract ID</label>
-                  <p className="text-base font-semibold">{selectedContract.id}</p>
+                  <label className="text-sm font-medium text-gray-600">
+                    Contract ID
+                  </label>
+                  <p className="text-base font-semibold">
+                    {selectedContract.id}
+                  </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Order Reference</label>
-                  <p className="text-base font-semibold">#{selectedContract.orderId}</p>
+                  <label className="text-sm font-medium text-gray-600">
+                    Order Reference
+                  </label>
+                  <p className="text-base font-semibold">
+                    #{selectedContract.orderId}
+                  </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Date Issued</label>
-                  <p className="text-base">{formatDate(selectedContract.createdAt)}</p>
+                  <label className="text-sm font-medium text-gray-600">
+                    Date Issued
+                  </label>
+                  <p className="text-base">
+                    {formatDate(selectedContract.createdAt)}
+                  </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Contract Status</label>
-                  <Badge className={`${getStatusColor(selectedContract.status)} ml-2`}>
+                  <label className="text-sm font-medium text-gray-600">
+                    Contract Status
+                  </label>
+                  <Badge
+                    className={`${getStatusColor(
+                      selectedContract.status
+                    )} ml-2`}
+                  >
                     <div className="flex items-center gap-1">
                       {getStatusIcon(selectedContract.status)}
                       {selectedContract.status}
@@ -513,18 +585,30 @@ const Contracts = () => {
 
               {/* Contract Parties */}
               <div>
-                <h3 className="text-lg font-semibold mb-4 text-blue-700 border-b-2 border-blue-700 pb-2">Contract Parties</h3>
+                <h3 className="text-lg font-semibold mb-4 text-blue-700 border-b-2 border-blue-700 pb-2">
+                  Contract Parties
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Card>
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Service Provider</CardTitle>
+                      <CardTitle className="text-base">
+                        Service Provider
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
                       <p className="font-semibold">CAMCO MEGA SALES CORP.</p>
-                      <p className="text-sm text-gray-600">Masterson Ave., Upper Balulang</p>
-                      <p className="text-sm text-gray-600">Cagayan de Oro City</p>
-                      <p className="text-sm text-gray-600">Contact: 0997-951-7188</p>
-                      <p className="text-sm text-gray-600">Email: camco.prefab3@gmail.com</p>
+                      <p className="text-sm text-gray-600">
+                        Masterson Ave., Upper Balulang
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Cagayan de Oro City
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Contact: 0997-951-7188
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Email: camco.prefab3@gmail.com
+                      </p>
                     </CardContent>
                   </Card>
 
@@ -533,9 +617,15 @@ const Contracts = () => {
                       <CardTitle className="text-base">Client</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                      <p className="font-semibold">{selectedContract.customerName}</p>
-                      <p className="text-sm text-gray-600">Email: {selectedContract.customerEmail}</p>
-                      <p className="text-sm text-gray-600">Delivery: {selectedContract.deliveryAddress}</p>
+                      <p className="font-semibold">
+                        {selectedContract.customerName}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Email: {selectedContract.customerEmail}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Delivery: {selectedContract.deliveryAddress}
+                      </p>
                     </CardContent>
                   </Card>
                 </div>
@@ -543,20 +633,30 @@ const Contracts = () => {
 
               {/* Product Specifications */}
               <div>
-                <h3 className="text-lg font-semibold mb-4 text-blue-700 border-b-2 border-blue-700 pb-2">Product Specifications</h3>
+                <h3 className="text-lg font-semibold mb-4 text-blue-700 border-b-2 border-blue-700 pb-2">
+                  Product Specifications
+                </h3>
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-blue-50">
                       <TableHead className="font-semibold">Product</TableHead>
-                      <TableHead className="font-semibold">Contract Value</TableHead>
-                      <TableHead className="font-semibold">Payment Terms</TableHead>
+                      <TableHead className="font-semibold">
+                        Contract Value
+                      </TableHead>
+                      <TableHead className="font-semibold">
+                        Payment Terms
+                      </TableHead>
                       <TableHead className="font-semibold">Warranty</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     <TableRow>
-                      <TableCell className="font-medium">{selectedContract.productName}</TableCell>
-                      <TableCell className="font-bold text-green-600">{formatCurrency(selectedContract.contractValue)}</TableCell>
+                      <TableCell className="font-medium">
+                        {selectedContract.productName}
+                      </TableCell>
+                      <TableCell className="font-bold text-green-600">
+                        {formatCurrency(selectedContract.contractValue)}
+                      </TableCell>
                       <TableCell>{selectedContract.paymentTerms}</TableCell>
                       <TableCell>{selectedContract.warrantyPeriod}</TableCell>
                     </TableRow>
@@ -566,34 +666,50 @@ const Contracts = () => {
 
               {/* Project Scope */}
               <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-                <h4 className="font-semibold text-blue-800 mb-2">Project Scope</h4>
+                <h4 className="font-semibold text-blue-800 mb-2">
+                  Project Scope
+                </h4>
                 <p className="text-sm text-blue-700">
-                  Supply, delivery, and installation of prefab container house as per agreed specifications and quality standards.
+                  Supply, delivery, and installation of prefab container house
+                  as per agreed specifications and quality standards.
                 </p>
               </div>
 
               {/* Terms and Conditions */}
               <div>
-                <h3 className="text-lg font-semibold mb-4 text-blue-700 border-b-2 border-blue-700 pb-2">Terms and Conditions</h3>
+                <h3 className="text-lg font-semibold mb-4 text-blue-700 border-b-2 border-blue-700 pb-2">
+                  Terms and Conditions
+                </h3>
                 <div className="bg-gray-50 p-6 rounded-lg space-y-4">
                   <div>
                     <h4 className="font-semibold mb-2">1. PAYMENT TERMS</h4>
-                    <p className="text-sm text-gray-700">{selectedContract.paymentTerms}</p>
+                    <p className="text-sm text-gray-700">
+                      {selectedContract.paymentTerms}
+                    </p>
                   </div>
                   <Separator />
                   <div>
                     <h4 className="font-semibold mb-2">2. DELIVERY</h4>
-                    <p className="text-sm text-gray-700">As per agreed schedule to {selectedContract.deliveryAddress}</p>
+                    <p className="text-sm text-gray-700">
+                      As per agreed schedule to{" "}
+                      {selectedContract.deliveryAddress}
+                    </p>
                   </div>
                   <Separator />
                   <div>
                     <h4 className="font-semibold mb-2">3. WARRANTY</h4>
-                    <p className="text-sm text-gray-700">{selectedContract.warrantyPeriod} from completion date</p>
+                    <p className="text-sm text-gray-700">
+                      {selectedContract.warrantyPeriod} from completion date
+                    </p>
                   </div>
                   <Separator />
                   <div>
-                    <h4 className="font-semibold mb-2">4. GENERAL CONDITIONS</h4>
-                    <p className="text-sm text-gray-700">{selectedContract.terms}</p>
+                    <h4 className="font-semibold mb-2">
+                      4. GENERAL CONDITIONS
+                    </h4>
+                    <p className="text-sm text-gray-700">
+                      {selectedContract.terms}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -603,9 +719,13 @@ const Contracts = () => {
                 <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <CheckCircle className="h-5 w-5 text-green-600" />
-                    <h4 className="font-semibold text-green-800">Contract Signed</h4>
+                    <h4 className="font-semibold text-green-800">
+                      Contract Signed
+                    </h4>
                   </div>
-                  <p className="text-sm text-green-700">Signed on: {formatDate(selectedContract.signedAt)}</p>
+                  <p className="text-sm text-green-700">
+                    Signed on: {formatDate(selectedContract.signedAt)}
+                  </p>
                 </div>
               )}
 
@@ -641,7 +761,10 @@ const Contracts = () => {
       </Dialog>
 
       {/* Formal Contract Document Dialog */}
-      <Dialog open={isFormalDocumentOpen} onOpenChange={setIsFormalDocumentOpen}>
+      <Dialog
+        open={isFormalDocumentOpen}
+        onOpenChange={setIsFormalDocumentOpen}
+      >
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0">
           <DialogHeader className="p-6 pb-0">
             <DialogTitle className="flex items-center gap-2">
@@ -651,7 +774,9 @@ const Contracts = () => {
           </DialogHeader>
           {/* Attach the ref to the FormalContractDocument's root element */}
           {selectedContract && (
-            <div ref={formalDocumentRef} className="p-6"> {/* Added a div wrapper with ref */}
+            <div ref={formalDocumentRef} className="p-6">
+              {" "}
+              {/* Added a div wrapper with ref */}
               <FormalContractDocument contract={selectedContract} />
             </div>
           )}
