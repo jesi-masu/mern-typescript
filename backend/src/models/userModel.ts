@@ -1,6 +1,8 @@
 import mongoose, { Document, Schema } from "mongoose";
 import bcrypt from "bcryptjs";
 
+type UserStatus = "active" | "on_leave" | "inactive";
+
 export interface IUser extends Document {
   firstName: string;
   lastName: string;
@@ -8,7 +10,8 @@ export interface IUser extends Document {
   phoneNumber: string;
   password: string;
   role: "client" | "personnel" | "admin";
-  address: {
+  address?: {
+    // Make address optional if not required for admin/personnel
     street: string;
     barangaySubdivision: string;
     additionalAddressLine?: string;
@@ -17,6 +20,9 @@ export interface IUser extends Document {
     postalCode: string;
     country: string;
   };
+  position?: string;
+  department?: string;
+  status?: UserStatus;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -51,14 +57,27 @@ const userSchema: Schema = new Schema(
         postalCode: { type: String, required: true, trim: true },
         country: { type: String, required: true, trim: true },
       },
-      required: true,
+      // Make address required only for clients
+      required: function (this: IUser) {
+        return this.role === "client";
+      },
       _id: false,
+    },
+    position: { type: String, required: false, trim: true },
+    department: { type: String, required: false, trim: true },
+    status: {
+      type: String,
+      enum: ["active", "on_leave", "inactive"],
+      default: "active",
+      // ✅ FIX: Explicitly type 'this' as IUser
+      required: function (this: IUser) {
+        return this.role === "personnel" || this.role === "admin";
+      },
     },
   },
   { timestamps: true }
 );
 
-// Middleware to hash password before saving
 userSchema.pre<IUser>("save", async function (next: (err?: any) => void) {
   try {
     if (!this.isModified("password")) {
@@ -72,7 +91,6 @@ userSchema.pre<IUser>("save", async function (next: (err?: any) => void) {
   }
 });
 
-// Method to compare candidate password with the hashed password
 userSchema.methods.comparePassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
@@ -80,5 +98,4 @@ userSchema.methods.comparePassword = async function (
 };
 
 const User = mongoose.model<IUser>("User", userSchema);
-
 export default User;

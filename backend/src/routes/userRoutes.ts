@@ -5,17 +5,18 @@ import {
   createUser,
   updateUser,
   deleteUser,
-  getAllClients, // Import the new controller
+  getAllClients,
+  getAllPersonnel, // ✅ Import the new controller
 } from "../controllers/userController";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { checkRole } from "../middleware/checkRole";
 
 const router = express.Router();
 
-// GET all users (admin/personnel only)
-router.get("/", authMiddleware, checkRole(["admin", "personnel"]), getAllUsers);
+// GET all users (potentially keep for high-level admin, or remove if getAllPersonnel/getAllClients covers needs)
+router.get("/", authMiddleware, checkRole(["admin"]), getAllUsers);
 
-// GET all users with role 'client' (for customer management page)
+// GET all users with role 'client' (for customer management)
 router.get(
   "/clients",
   authMiddleware,
@@ -23,13 +24,22 @@ router.get(
   getAllClients
 );
 
-// GET single user by id (authenticated users; controller enforces access)
+// ✅ NEW: GET all users with role 'admin' or 'personnel'
+router.get(
+  "/personnel",
+  authMiddleware,
+  checkRole(["admin"]), // Restrict this to admins only
+  getAllPersonnel
+);
+
+// GET single user by id
 router.get("/:id", authMiddleware, getUserById);
 
-// POST create user (admin/personnel only)
-router.post("/", authMiddleware, checkRole(["admin", "personnel"]), createUser);
+// POST create user (can be used by admin to add personnel)
+// Note: Ensure createUser handles role, position, department, status
+router.post("/", authMiddleware, checkRole(["admin"]), createUser);
 
-// PATCH update user (self, admin, or personnel)
+// PATCH update user (self, admin)
 router.patch("/:id", authMiddleware, updateUser);
 
 // DELETE remove user (admin only)

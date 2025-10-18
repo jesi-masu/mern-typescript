@@ -49,7 +49,7 @@ import AdminProjectFormPage from "./pages/admin/ProjectFormPage"; // Import for 
 import Contracts from "./pages/admin/Contracts";
 import Messages from "./pages/admin/Messages";
 import CustomerUploads from "./pages/admin/CustomerUploads";
-import ManagePersonnel from "./pages/admin/ManagePersonnel";
+import ManagePersonnel from "./pages/admin/ManagePersonnelPage";
 import RecordsUpload from "./pages/admin/RecordsUpload";
 import ActivityLog from "./pages/admin/ActivityLog";
 

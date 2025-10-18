@@ -56,7 +56,7 @@ export interface ProductRequestBody {
 }
 
 // ===================================
-//            AUTH TYPES
+//           AUTH TYPES
 // ===================================
 export interface AuthRegisterBody {
   firstName: string;
@@ -64,7 +64,8 @@ export interface AuthRegisterBody {
   email: string;
   phoneNumber: string;
   password: string;
-  address: {
+  // Make address optional if it's not required for admin/personnel
+  address?: {
     street: string;
     barangaySubdivision: string;
     additionalAddressLine?: string;
@@ -74,6 +75,10 @@ export interface AuthRegisterBody {
     country: string;
   };
   role?: "client" | "personnel" | "admin";
+  // ✅ ADDED THESE OPTIONAL FIELDS
+  position?: string;
+  department?: string;
+  status?: "active" | "on_leave" | "inactive";
 }
 
 export interface AuthLoginBody {
@@ -81,10 +86,12 @@ export interface AuthLoginBody {
   password: string;
 }
 
+// Consider if AuthRequestBody should also include the new fields if it's used elsewhere
+// If AuthRequestBody is purely for registration, this is fine.
 export type AuthRequestBody = AuthRegisterBody;
 
 // ===================================
-//      EXPRESS REQUEST EXTENSION
+//    EXPRESS REQUEST EXTENSION
 // ===================================
 declare global {
   namespace Express {
@@ -96,3 +103,14 @@ declare global {
     }
   }
 }
+
+// Make sure IUser is imported if you use it directly in Omit (or define types here)
+// Example assuming IUser fields were used for Omit:
+// export interface AuthRegisterBody extends Omit<IUser, 'password' | 'role' | 'createdAt' | 'updatedAt' | 'comparePassword' | '_id' | 'address'> {
+//   password?: string;
+//   role?: "client" | "personnel" | "admin";
+//   address?: { /* ... address fields ... */ }; // Need to redefine address if IUser makes it required
+//   position?: string;
+//   department?: string;
+//   status?: "active" | "on_leave" | "inactive";
+// }
