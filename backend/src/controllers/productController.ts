@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import Product, { IProduct } from "../models/productModel";
 import { ProductRequestBody } from "../types/express";
+import { logActivity } from "../services/logService";
 
 export const getProducts = async (
   req: Request,
@@ -99,6 +100,13 @@ export const createProduct = async (
       leadTime,
     });
 
+    await logActivity(
+      req.user?._id,
+      "Product Created",
+      `New product "${product.productName}" (ID: ${product._id}) was created.`,
+      "products"
+    );
+
     // Use 201 for resource creation
     res.status(201).json(product);
   } catch (error: any) {
@@ -136,6 +144,13 @@ export const deleteProduct = async (
       res.status(404).json({ mssg: "No such product" });
       return;
     }
+
+    await logActivity(
+      req.user?._id,
+      "Product Deleted",
+      `Product "${product.productName}" (ID: ${product._id}) was deleted.`,
+      "products"
+    );
 
     res.status(200).json(product);
   } catch (error: any) {
@@ -177,6 +192,13 @@ export const updateProduct = async (
       res.status(404).json({ mssg: "No such product" });
       return;
     }
+
+    await logActivity(
+      req.user?._id,
+      "Product Updated",
+      `Product "${product.productName}" (ID: ${product._id}) was updated.`,
+      "products"
+    );
 
     console.log("Backend: Product updated successfully:", product);
     res.status(200).json(product);

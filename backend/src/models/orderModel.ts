@@ -18,7 +18,7 @@ export interface IOrder extends Document {
     phoneNumber: string;
     deliveryAddress: {
       street: string;
-      subdivision: string;
+      barangaySubdivision: string;
       additionalAddressLine?: string;
       cityMunicipality: string;
       province: string;

@@ -12,6 +12,7 @@ import uploadRoutes from "./routes/uploadRoutes";
 import projectRoutes from "./routes/projectRoutes";
 import reportsRoutes from "./routes/reportsRoutes";
 import importRoutes from "./routes/importRoutes";
+import activityLogRoutes from "./routes/activityLogRoutes";
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/activity-logs", activityLogRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/reports", reportsRoutes);

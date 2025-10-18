@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import Order, { IOrder } from "../models/orderModel";
 import User from "../models/userModel";
 import Product from "../models/productModel";
+import { logActivity } from "../services/logService";
 
 /**
  * @desc    Get orders for the logged-in user
@@ -86,6 +87,13 @@ export const createOrder: RequestHandler = async (req, res) => {
       locationImages,
     });
 
+    await logActivity(
+      userId,
+      "Order Created",
+      `New order ${newOrder._id} was placed.`,
+      "orders"
+    );
+
     res.status(201).json(newOrder);
   } catch (error: any) {
     console.error("Error creating order:", error.message);
@@ -165,6 +173,7 @@ export const updateOrder = async (
   const { id } = req.params;
   const { orderStatus, paymentStatus, paymentReceiptUrl, paymentStage } =
     req.body;
+  const currentUserId = req.user?._id;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     res.status(400).json({ message: "Invalid Order ID format." });
@@ -194,13 +203,16 @@ export const updateOrder = async (
     } = {};
 
     const fieldsToSet: { [key: string]: string } = {};
+    let logDetails = "";
 
     if (orderStatus) {
       fieldsToSet.orderStatus = orderStatus;
+      logDetails += `Order status changed to ${orderStatus}. `;
     }
 
     if (paymentStatus) {
       fieldsToSet["paymentInfo.paymentStatus"] = paymentStatus;
+      logDetails += `Payment status changed to ${paymentStatus}. `;
 
       if (order.paymentInfo.paymentMethod === "installment") {
         switch (paymentStatus) {
@@ -236,6 +248,7 @@ export const updateOrder = async (
       }
       const updatePath = `paymentInfo.paymentReceipts.${paymentStage}`;
       updateData.$push = { [updatePath]: paymentReceiptUrl };
+      logDetails += `Payment receipt for ${paymentStage} stage uploaded. `;
     }
 
     if (Object.keys(updateData).length === 0) {
@@ -249,6 +262,15 @@ export const updateOrder = async (
       new: true,
       runValidators: true,
     });
+
+    if (logDetails) {
+      await logActivity(
+        currentUserId,
+        "Order Updated",
+        `Order ${id} was updated: ${logDetails.trim()}`,
+        "orders"
+      );
+    }
 
     res.status(200).json(updatedOrder);
   } catch (error: any) {

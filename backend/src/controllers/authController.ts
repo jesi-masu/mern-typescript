@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import User, { IUser } from "../models/userModel";
 import { AuthRequestBody } from "../types/express";
+import { logActivity } from "../services/logService";
 
 const createToken = (
   id: string,
@@ -41,6 +42,13 @@ export const registerUser = async (
 
     const token = createToken(newUser._id!.toString(), newUser.role);
 
+    await logActivity(
+      (newUser._id as any).toString(), // <-- FIX: Cast to any
+      "User Registered",
+      `New client account created for "${newUser.email}" (ID: ${newUser._id}).`,
+      "users"
+    );
+
     res.status(201).json({
       _id: newUser._id,
       firstName: newUser.firstName,
@@ -71,6 +79,13 @@ export const loginUser = async (
     }
 
     const token = createToken(user._id!.toString(), user.role);
+
+    await logActivity(
+      (user._id as any).toString(), // <-- FIX: Cast to any
+      "User Logged In",
+      `User "${user.email}" (ID: ${user._id}) logged in.`,
+      "users" // As requested, categorized under "users"
+    );
 
     res.status(200).json({
       _id: user._id,

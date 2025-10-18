@@ -1,7 +1,10 @@
+// backend/src/controllers/projectController.ts
+
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import Project from "../models/projectModel";
 import { ProjectRequestBody } from "../types/express.d";
+import { logActivity } from "../services/logService";
 
 // CREATE a new project
 export const createProject = async (
@@ -10,6 +13,16 @@ export const createProject = async (
 ) => {
   try {
     const project = await Project.create(req.body);
+    await logActivity(
+      req.user?._id,
+      "Project Created",
+      // --- FIX: Changed to projectTitle ---
+      `New project "${(project as any).projectTitle || "N/A"}" (ID: ${
+        project._id
+      }) was created.`,
+      "projects"
+    );
+
     res.status(201).json(project);
   } catch (error) {
     res.status(500).json({ message: "Error creating project", error });
@@ -54,7 +67,7 @@ export const updateProject = async (req: Request, res: Response) => {
   const { id } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    res.status(404).json({ message: "Project not found (Invalid ID format)" });
+    res.status(4404).json({ message: "Project not found (Invalid ID format)" });
     return;
   }
 
@@ -69,6 +82,16 @@ export const updateProject = async (req: Request, res: Response) => {
       res.status(404).json({ message: "Project not found" });
       return;
     }
+
+    await logActivity(
+      req.user?._id,
+      "Project Updated",
+      // --- FIX: Changed to projectTitle ---
+      `Project "${(updatedProject as any).projectTitle || "N/A"}" (ID: ${
+        updatedProject._id
+      }) was updated.`,
+      "projects"
+    );
 
     res.status(200).json(updatedProject);
   } catch (error) {
@@ -92,6 +115,16 @@ export const deleteProject = async (req: Request, res: Response) => {
       res.status(404).json({ message: "Project not found" });
       return;
     }
+
+    await logActivity(
+      req.user?._id,
+      "Project Deleted",
+      // --- FIX: Changed to projectTitle ---
+      `Project "${(deletedProject as any).projectTitle || "N/A"}" (ID: ${
+        deletedProject._id
+      }) was deleted.`,
+      "projects"
+    );
 
     res.status(200).json({
       message: "Project deleted successfully",

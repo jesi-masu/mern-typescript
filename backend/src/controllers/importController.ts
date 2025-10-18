@@ -1,3 +1,5 @@
+// backend/src/controllers/importController.ts
+
 import { Request, Response, RequestHandler } from "express";
 import fs from "fs";
 import csv from "csv-parser";
@@ -5,6 +7,7 @@ import mongoose from "mongoose";
 import Order, { IOrder } from "../models/orderModel";
 import User from "../models/userModel";
 import Product from "../models/productModel";
+import { logActivity } from "../services/logService"; // <-- ADD THIS LINE
 
 const processCsv = (filePath: string): Promise<any[]> => {
   return new Promise((resolve, reject) => {
@@ -145,8 +148,8 @@ export const importHistoricalOrders: RequestHandler = async (req, res) => {
           phoneNumber: "N/A",
           deliveryAddress: {
             street: "N/A",
-            subdivision: "N/A",
-            cityMunicipality: "N/A",
+            barangaySubdivision: "N/A", // Corrected field name
+            cityMunicipality: "N/A", // Corrected field name
             province: "N/A",
             postalCode: "N/A",
             country: "N/A",
@@ -166,6 +169,13 @@ export const importHistoricalOrders: RequestHandler = async (req, res) => {
     const result = await Order.insertMany(ordersToCreate, { session });
 
     await session.commitTransaction();
+
+    await logActivity(
+      req.user?._id, // The admin uploading
+      "Records Uploaded",
+      `Successfully imported ${result.length} historical orders via CSV upload.`,
+      "orders" // Categorized as "orders"
+    );
 
     res.status(201).json({
       message: `Successfully imported ${result.length} historical orders.`,
@@ -212,7 +222,7 @@ export const createManualHistoricalOrder: RequestHandler = async (req, res) => {
     }
     const historicalUserId = historicalUser._id as mongoose.Types.ObjectId;
 
-    const productIds = products.map((p) => p.productId);
+    const productIds = products.map((p: any) => p.productId); // Added 'any' type for temp fix
     const foundProducts = await Product.find({
       _id: { $in: productIds },
     }).select("_id");
@@ -238,8 +248,8 @@ export const createManualHistoricalOrder: RequestHandler = async (req, res) => {
         phoneNumber: "N/A",
         deliveryAddress: {
           street: "N/A",
-          subdivision: "N/A",
-          cityMunicipality: "N/A",
+          barangaySubdivision: "N/A", // Corrected field name
+          city: "N/A", // Corrected field name
           province: "N/A",
           postalCode: "N/A",
           country: "N/A",
@@ -258,6 +268,14 @@ export const createManualHistoricalOrder: RequestHandler = async (req, res) => {
     });
 
     await newOrder.save();
+
+    await logActivity(
+      req.user?._id, // The admin creating the record
+      "Record Created",
+      `A manual historical order (ID: ${newOrder._id}) was created.`,
+      "orders"
+    );
+
     res.status(201).json({ message: "Historical order created successfully." });
   } catch (error: any) {
     res.status(500).json({ message: `An error occurred: ${error.message}` });

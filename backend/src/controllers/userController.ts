@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import mongoose from "mongoose";
 import User, { IUser } from "../models/userModel"; // Assuming IUser includes the new fields
 import { AuthRegisterBody } from "../types/express"; // Assuming this includes the new optional fields
+import { logActivity } from "../services/logService";
 
 /**
  * GET /api/users/clients
@@ -124,12 +125,10 @@ export const createUser: RequestHandler<
 
   // Basic validation for core fields
   if (!firstName || !lastName || !email || !phoneNumber || !password) {
-    res
-      .status(400)
-      .json({
-        error:
-          "Please include all required fields (name, email, phone, password).",
-      });
+    res.status(400).json({
+      error:
+        "Please include all required fields (name, email, phone, password).",
+    });
     return;
   }
   // Address is required only for clients based on the updated model logic
@@ -161,8 +160,15 @@ export const createUser: RequestHandler<
           : undefined, // Set status only for admin/personnel
     });
 
+    await logActivity(
+      req.user?._id, // The admin performing the action
+      "User Created",
+      `A new user account for "${newUser.email}" (ID: ${newUser._id}) was created by an admin.`,
+      "users"
+    );
+
     const userObj = newUser.toObject();
-    delete (userObj as any).password; // Remove password before sending response
+    delete (userObj as any).password;
     res.status(201).json(userObj);
   } catch (error: any) {
     console.error("Error creating user:", error?.message || error);
@@ -215,11 +221,9 @@ export const updateUser: RequestHandler<
     // Users cannot change their own role or status (only admin/personnel)
     if (req.user._id === user.id && (req.body.role || req.body.status)) {
       if (req.user.role !== "admin" && req.user.role !== "personnel") {
-        res
-          .status(403)
-          .json({
-            error: "Forbidden: You cannot change your own role or status.",
-          });
+        res.status(403).json({
+          error: "Forbidden: You cannot change your own role or status.",
+        });
         return;
       }
     }
@@ -242,6 +246,14 @@ export const updateUser: RequestHandler<
     }
 
     const updatedUser = await user.save();
+
+    await logActivity(
+      req.user?._id, // The user performing the action
+      "User Updated",
+      `User account "${updatedUser.email}" (ID: ${updatedUser._id}) was updated.`,
+      "users"
+    );
+
     const userObj = updatedUser.toObject();
     delete (userObj as any).password;
     res.status(200).json(userObj);
@@ -277,12 +289,23 @@ export const deleteUser: RequestHandler<{ id: string }> = async (req, res) => {
       return;
     }
     // Prevent admin from deleting themselves? Optional check:
-    // if (req.user._id === user.id) {
-    //   res.status(400).json({ error: "Cannot delete your own admin account." });
-    //   return;
-    // }
+    if (req.user._id === user.id) {
+      res.status(400).json({ error: "Cannot delete your own admin account." });
+      return;
+    }
+
+    const userEmail = user.email;
+    const userId = user._id;
 
     await user.deleteOne();
+
+    await logActivity(
+      req.user?._id, // The admin performing the action
+      "User Deleted",
+      `User account "${userEmail}" (ID: ${userId}) was deleted.`,
+      "users"
+    );
+
     res.status(200).json({ message: "User deleted successfully." });
   } catch (error: any) {
     console.error("Error deleting user:", error?.message || error);

@@ -18,11 +18,15 @@ import {
   PhilippinePeso,
   Loader2,
   AlertTriangle,
+  ListOrdered, // Icon for Recent Activities
+  AlertCircle, // Icon for error
+  Activity, // Icon for empty state
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext"; // ✅ 1. IMPORT THE CORRECT AUTH HOOK
+import { useAuth } from "@/context/AuthContext";
+import { formatDistanceToNow } from "date-fns"; // Make sure to install: npm install date-fns
 
-// Define the expected structure for the dashboard statistics
+// --- Main Dashboard Stats Type ---
 interface DashboardStats {
   totalRevenue: number;
   activeOrders: number;
@@ -34,7 +38,33 @@ interface DashboardStats {
   productsChange: number;
 }
 
-// Helper functions for formatting
+// --- Type for Activity Log ---
+// (This should match the type in your ActivityLog.tsx)
+interface ActivityLogType {
+  _id: string;
+  userId: string | null;
+  userName: string;
+  action: string;
+  details: string;
+  category:
+    | "orders"
+    | "products"
+    | "projects"
+    | "contracts"
+    | "users"
+    | "system";
+  createdAt: string;
+}
+
+interface FetchLogsResponse {
+  logs: ActivityLogType[];
+  page: number;
+  limit: number;
+  totalPages: number;
+  totalLogs: number;
+}
+
+// --- Helper functions for formatting ---
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("en-PH", {
     style: "currency",
@@ -45,13 +75,21 @@ const formatNumber = (value: number) => {
   return new Intl.NumberFormat("en-US").format(value);
 };
 
+// --- Helper function for relative time ---
+const formatRelativeTime = (dateString: string) => {
+  try {
+    return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+  } catch (error) {
+    return "just now";
+  }
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, token, isLoading: isAuthLoading } = useAuth(); // ✅ 2. USE THE CORRECT HOOK
+  const { user, token, isLoading: isAuthLoading } = useAuth();
 
-  // Data Fetching using React Query
+  // --- Query 1: Dashboard Stats ---
   const fetchDashboardStats = async (): Promise<DashboardStats> => {
-    // This function will only be called if a token exists
     const response = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/dashboard/stats`,
       {
@@ -69,22 +107,86 @@ const Dashboard = () => {
 
   const {
     data: stats,
-    isLoading: isStatsLoading, // Renamed to avoid conflicts
-    error,
+    isLoading: isStatsLoading,
+    error: statsError, // Renamed to avoid conflict
   } = useQuery<DashboardStats>({
     queryKey: ["dashboardStats"],
     queryFn: fetchDashboardStats,
-    enabled: !isAuthLoading && !!token, // ✅ 3. Run query only when auth is loaded AND a token exists
+    enabled: !isAuthLoading && !!token,
+  });
+
+  // --- Query 2: Recent Order Activities ---
+  const fetchRecentOrderActivities = async (): Promise<FetchLogsResponse> => {
+    // Fetches page 1, limit 10, for the 'orders' category
+    const response = await fetch(
+      `${
+        import.meta.env.VITE_BACKEND_URL
+      }/api/activity-logs?category=orders&limit=10&page=1`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    if (!response.ok) {
+      throw new Error("Failed to fetch recent activities");
+    }
+    return response.json();
+  };
+
+  const {
+    data: activitiesData,
+    isLoading: isActivitiesLoading,
+    error: activitiesError,
+  } = useQuery<FetchLogsResponse>({
+    queryKey: ["recentOrderActivities"],
+    queryFn: fetchRecentOrderActivities,
+    enabled: !isAuthLoading && !!token, // Run query only when auth is loaded
   });
 
   const handleQuickAction = (action: string) => {
     navigate(`/admin/${action}`);
   };
 
+  // --- Helper to render activity badges ---
+  const renderActivityBadge = (action: string) => {
+    if (action.includes("Created")) {
+      return (
+        <Badge
+          variant="outline"
+          className="bg-green-50 text-green-700 border-green-200"
+        >
+          New
+        </Badge>
+      );
+    }
+    if (action.includes("Uploaded")) {
+      return (
+        <Badge
+          variant="outline"
+          className="bg-blue-50 text-blue-700 border-blue-200"
+        >
+          Upload
+        </Badge>
+      );
+    }
+    if (action.includes("Updated")) {
+      return (
+        <Badge
+          variant="outline"
+          className="bg-yellow-50 text-yellow-700 border-yellow-200"
+        >
+          Update
+        </Badge>
+      );
+    }
+    return <Badge variant="outline">Log</Badge>;
+  };
+
   // --- UI States ---
 
-  // Loading State - wait for auth first, then for data
-  if (isAuthLoading || isStatsLoading) {
+  // Main loading state
+  if (isAuthLoading || (isStatsLoading && !stats)) {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
@@ -92,8 +194,8 @@ const Dashboard = () => {
     );
   }
 
-  // Error State
-  if (error) {
+  // Error State for *main stats*
+  if (statsError) {
     return (
       <div className="flex flex-col h-full w-full items-center justify-center bg-red-50 p-4 rounded-lg">
         <AlertTriangle className="h-8 w-8 text-red-500 mb-2" />
@@ -147,7 +249,6 @@ const Dashboard = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
             Welcome back, {user?.firstName || "Admin"}!{" "}
-            {/* ✅ 4. Use the correct user object */}
           </h1>
           <p className="text-gray-600 mt-2">
             Here's what's happening with your business today.
@@ -186,36 +287,64 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* --- Recent Activities Card (Updated) --- */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Recent Activity
+              <ListOrdered className="h-5 w-5" />
+              Recent Order Activities
             </CardTitle>
             <CardDescription>
-              Latest updates from your business (Static Example)
+              The 10 latest activities from the 'orders' category.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium">New order received</p>
-                  <p className="text-sm text-gray-600">Order #ORD-2024-001</p>
-                </div>
-                <Badge variant="outline">New</Badge>
+          <CardContent className="h-[350px] overflow-y-auto pr-2">
+            {isActivitiesLoading ? (
+              <div className="flex h-full items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
               </div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <p className="font-medium">Product updated</p>
-                  <p className="text-sm text-gray-600">Modern Container Home</p>
-                </div>
-                <Badge variant="outline">Updated</Badge>
+            ) : activitiesError ? (
+              <div className="flex flex-col h-full items-center justify-center text-red-500">
+                <AlertCircle className="h-8 w-8 mb-2" />
+                <p className="font-medium">Failed to load activities</p>
               </div>
-            </div>
+            ) : !activitiesData || activitiesData.logs.length === 0 ? (
+              <div className="flex flex-col h-full items-center justify-center text-gray-500">
+                <Activity className="h-8 w-8 mb-2" />
+                <p className="font-medium">No recent order activity</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {activitiesData.logs.map((log) => (
+                  <div
+                    key={log._id}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  >
+                    <div className="flex-1 overflow-hidden">
+                      <p className="font-medium truncate" title={log.action}>
+                        {log.action}
+                      </p>
+                      <p
+                        className="text-sm text-gray-600 truncate"
+                        title={log.details}
+                      >
+                        {log.details}
+                      </p>
+                      <p className="text-xs text-gray-500 pt-1">
+                        {formatRelativeTime(log.createdAt)} by {log.userName}
+                      </p>
+                    </div>
+                    <div className="pl-2">
+                      {renderActivityBadge(log.action)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
+        {/* --- Quick Actions Card (Unchanged) --- */}
         <Card>
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
@@ -252,7 +381,8 @@ const Dashboard = () => {
                 className="p-4 text-left bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors cursor-pointer"
               >
                 <BarChart3 className="h-6 w-6 text-orange-600 mb-2" />
-                <p className="font-medium text-orange-900">View Reports</p>
+                <p className="font-medium text-orange-900">View Reports</p>{" "}
+                {/* <-- THIS IS THE FIXED LINE */}
                 <p className="text-sm text-orange-700">Check analytics</p>
               </button>
             </div>

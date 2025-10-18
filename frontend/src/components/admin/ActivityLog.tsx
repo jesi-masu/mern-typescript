@@ -1,4 +1,7 @@
+// frontend/src/pages/admin/ActivityLog.tsx (or wherever you placed it)
+
 import React, { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -9,8 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAuth } from "@/context/AuthContext"; // ✅ 1. IMPORT THE CORRECT AUTH HOOK
-import { ActivityLog as ActivityLogType } from "@/types/admin";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/context/AuthContext";
 import {
   Clock,
   User,
@@ -18,9 +21,72 @@ import {
   Filter,
   Loader2,
   AlertCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
-// Helper function for permissions (can be moved to a shared utils file)
+// --- Types ---
+// NOTE: This type now matches the data coming from your backend API.
+// You should update your `@/types/admin.ts` file to match this structure.
+export interface ActivityLogType {
+  _id: string; // Mongoose uses _id
+  userId: string | null;
+  userName: string;
+  action: string;
+  details: string;
+  category:
+    | "orders"
+    | "products"
+    | "projects"
+    | "contracts"
+    | "users"
+    | "system";
+  createdAt: string; // Mongoose uses createdAt
+}
+
+interface FetchLogsResponse {
+  logs: ActivityLogType[];
+  page: number;
+  limit: number;
+  totalPages: number;
+  totalLogs: number;
+}
+
+// --- API Fetching Function ---
+const fetchActivityLogs = async (
+  token: string,
+  page: number,
+  search: string,
+  category: string
+): Promise<FetchLogsResponse> => {
+  const params = new URLSearchParams();
+  params.append("page", String(page));
+  params.append("limit", "20"); // You can make this dynamic
+  if (search) {
+    params.append("search", search);
+  }
+  if (category && category !== "all") {
+    params.append("category", category);
+  }
+
+  const response = await fetch(
+    `${
+      import.meta.env.VITE_BACKEND_URL
+    }/api/activity-logs?${params.toString()}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch activity logs.");
+  }
+  return response.json();
+};
+
+// Helper function for permissions (same as your file)
 const hasPermission = (userRole: string, permission: string): boolean => {
   const rolePermissions: Record<string, string[]> = {
     admin: [
@@ -47,34 +113,56 @@ const hasPermission = (userRole: string, permission: string): boolean => {
   return rolePermissions[userRole]?.includes(permission) || false;
 };
 
+// --- The Component ---
 const ActivityLog: React.FC = () => {
-  const { user, isLoading: isAuthLoading } = useAuth(); // ✅ 2. USE THE CORRECT HOOK
+  // Make sure your useAuth hook provides `token`
+  const { user, token, isLoading: isAuthLoading } = useAuth();
 
-  // ✅ 3. MOVE ACTIVITY LOG STATE MANAGEMENT HERE
-  const [activityLogs, setActivityLogs] = useState<ActivityLogType[]>(() => {
-    try {
-      const saved = localStorage.getItem("adminActivityLogs");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
+  // --- State Management ---
+  const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
 
-  const filteredLogs = activityLogs.filter((log) => {
-    const matchesSearch =
-      log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.details.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.userName.toLowerCase().includes(searchQuery.toLowerCase());
+  // --- Debouncing Effect ---
+  // Prevents spamming the API on every single keystroke
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(1); // Reset to page 1 on a new search
+    }, 500); // 500ms delay
 
-    const matchesCategory =
-      categoryFilter === "all" || log.category === categoryFilter;
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery]);
 
-    return matchesSearch && matchesCategory;
+  // --- Data Fetching with React Query ---
+  const {
+    data,
+    isLoading: isLogsLoading,
+    isFetching,
+    error,
+  } = useQuery<FetchLogsResponse>({
+    // queryKey uniquely identifies this query
+    queryKey: ["activityLogs", page, debouncedSearch, categoryFilter],
+    // The query function to run
+    queryFn: () =>
+      fetchActivityLogs(token!, page, debouncedSearch, categoryFilter),
+    // Only run this query if we are logged in (have a token and user)
+    enabled: !!token && !!user,
+    // This is a nice UX touch: it keeps the old data visible
+    // while the new page is fetching in the background.
+    keepPreviousData: true,
   });
 
+  // --- Event Handlers ---
+  const handleCategoryChange = (value: string) => {
+    setCategoryFilter(value);
+    setPage(1); // Reset to page 1 on new filter
+  };
+
+  // --- Helper Functions (same as your file) ---
   const getCategoryColor = (category: ActivityLogType["category"]) => {
     const colors = {
       orders: "bg-blue-100 text-blue-800",
@@ -97,7 +185,7 @@ const ActivityLog: React.FC = () => {
     });
   };
 
-  // ✅ 4. ADD LOADING STATE CHECK
+  // --- Render States ---
   if (isAuthLoading) {
     return (
       <div className="flex h-64 w-full items-center justify-center">
@@ -106,7 +194,6 @@ const ActivityLog: React.FC = () => {
     );
   }
 
-  // ✅ 5. UPDATE PERMISSION CHECK
   if (!user || !hasPermission(user.role, "view_activity_logs")) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -123,6 +210,7 @@ const ActivityLog: React.FC = () => {
     );
   }
 
+  // --- Main Component JSX ---
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -135,7 +223,7 @@ const ActivityLog: React.FC = () => {
         <div className="flex items-center gap-2">
           <Activity className="h-5 w-5 text-gray-500" />
           <span className="text-sm text-gray-500">
-            {filteredLogs.length} activities
+            {data ? `${data.totalLogs} total activities` : "Loading..."}
           </span>
         </div>
       </div>
@@ -144,17 +232,20 @@ const ActivityLog: React.FC = () => {
         <CardHeader>
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
             <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
+              <Filter className="h-5 w-5 text-blue-500" />
               Filter Activities
             </CardTitle>
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
               <Input
-                placeholder="Search activities..."
+                placeholder="Search by action, user, or details..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="sm:w-64"
               />
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <Select
+                value={categoryFilter}
+                onValueChange={handleCategoryChange}
+              >
                 <SelectTrigger className="sm:w-48">
                   <SelectValue />
                 </SelectTrigger>
@@ -172,11 +263,22 @@ const ActivityLog: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {filteredLogs.length > 0 ? (
-              filteredLogs.map((log) => (
+          {/* --- Loading & Error States for the query --- */}
+          {isLogsLoading ? (
+            <div className="flex justify-center items-center h-40">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          ) : error ? (
+            <div className="text-center py-10 text-red-500">
+              <AlertCircle className="w-8 h-8 mx-auto mb-2" /> Error loading
+              data.
+            </div>
+          ) : data && data.logs.length > 0 ? (
+            // --- Render Logs ---
+            <div className="space-y-3">
+              {data.logs.map((log) => (
                 <div
-                  key={log.id}
+                  key={log._id}
                   className="border rounded-lg p-4 hover:bg-gray-50"
                 >
                   <div className="flex items-start justify-between">
@@ -197,27 +299,62 @@ const ActivityLog: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-1">
                           <Clock className="h-4 w-4" />
-                          {formatDate(log.timestamp)}
+                          {/* Use createdAt, not timestamp */}
+                          {formatDate(log.createdAt)}
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              ))
-            ) : (
-              <div className="text-center py-12">
-                <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  No activities found
-                </h3>
-                <p className="text-gray-600">
-                  {searchQuery || categoryFilter !== "all"
-                    ? "No activities match your current filters."
-                    : "Activity logs will appear here as actions are performed."}
-                </p>
+              ))}
+            </div>
+          ) : (
+            // --- Empty State ---
+            <div className="text-center py-12">
+              <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                No activities found
+              </h3>
+              <p className="text-gray-600">
+                {searchQuery || categoryFilter !== "all"
+                  ? "No activities match your current filters."
+                  : "Activity logs will appear here as actions are performed."}
+              </p>
+            </div>
+          )}
+
+          {/* --- Pagination Controls --- */}
+          {data && data.totalPages > 1 && (
+            <div className="flex items-center justify-between pt-6 mt-6 border-t">
+              <span className="text-sm text-gray-600">
+                Page {data.page} of {data.totalPages}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                  disabled={page <= 1 || isFetching}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={page >= data.totalPages || isFetching}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                  {/* Show a mini-loader when fetching next page */}
+                  {isFetching && (
+                    <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                  )}
+                </Button>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
