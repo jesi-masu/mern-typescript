@@ -161,7 +161,7 @@ const ProjectFormPage = () => {
   }
 
   return (
-    <div className="container mx-auto py-10">
+    <div className="container mx-auto p-12">
       <div className="max-w-7xl mx-auto">
         <div className="mb-6 flex items-center justify-between">
           <div>
