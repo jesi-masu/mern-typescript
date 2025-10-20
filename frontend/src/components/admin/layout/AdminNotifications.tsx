@@ -8,7 +8,9 @@ import {
   Truck,
   Loader2,
   CheckCheck,
-} from "lucide-react"; // Added CheckCheck
+  ListOrdered,
+  UserPlus,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,7 +19,7 @@ import {
   CardHeader,
   CardTitle,
   CardFooter,
-} from "@/components/ui/card"; // Added CardFooter
+} from "@/components/ui/card";
 import {
   Popover,
   PopoverContent,
@@ -27,7 +29,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 
-interface CustomerNotification {
+interface AdminNotification {
   _id: string;
   userId: string;
   orderId?: string;
@@ -39,7 +41,7 @@ interface CustomerNotification {
 
 const fetchNotifications = async (
   token: string | null
-): Promise<CustomerNotification[]> => {
+): Promise<AdminNotification[]> => {
   if (!token) return [];
   const response = await fetch(
     `${import.meta.env.VITE_BACKEND_URL}/api/notifications`,
@@ -57,7 +59,7 @@ const markAsReadAPI = async ({
 }: {
   notificationId: string;
   token: string | null;
-}): Promise<CustomerNotification> => {
+}): Promise<AdminNotification> => {
   if (!token) throw new Error("Not authenticated");
   const response = await fetch(
     `${
@@ -72,7 +74,6 @@ const markAsReadAPI = async ({
   return response.json();
 };
 
-// --- NEW: API function to mark all as read ---
 const markAllAsReadAPI = async (
   token: string | null
 ): Promise<{ message: string; modifiedCount: number }> => {
@@ -88,7 +89,6 @@ const markAllAsReadAPI = async (
   return response.json();
 };
 
-// --- Simple Relative Time Formatter ---
 const formatRelativeTime = (dateString: string): string => {
   const date = new Date(dateString);
   const now = new Date();
@@ -105,7 +105,7 @@ const formatRelativeTime = (dateString: string): string => {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 };
 
-const CustomerNotifications: React.FC = () => {
+export const AdminNotifications: React.FC = () => {
   const { user, token, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -116,10 +116,13 @@ const CustomerNotifications: React.FC = () => {
     data: notifications = [],
     isLoading,
     error,
-  } = useQuery<CustomerNotification[]>({
-    queryKey: ["customerNotifications", user?._id],
+  } = useQuery<AdminNotification[]>({
+    queryKey: ["adminNotifications", user?._id],
     queryFn: () => fetchNotifications(token),
-    enabled: isAuthenticated && !!user?._id,
+    enabled:
+      isAuthenticated &&
+      !!user?._id &&
+      (user.role === "admin" || user.role === "personnel"),
     refetchInterval: 60000,
     staleTime: 30000,
   });
@@ -127,15 +130,15 @@ const CustomerNotifications: React.FC = () => {
   const markAsReadMutation = useMutation({
     mutationFn: markAsReadAPI,
     onSuccess: (updatedNotification) => {
-      queryClient.setQueryData<CustomerNotification[]>(
-        ["customerNotifications", user?._id],
+      queryClient.setQueryData<AdminNotification[]>(
+        ["adminNotifications", user?._id],
         (oldData) =>
           oldData?.map((n) =>
             n._id === updatedNotification._id ? { ...n, readStatus: true } : n
           ) ?? []
       );
       if (updatedNotification.orderId) {
-        navigate(`/order-tracking/${updatedNotification.orderId}`);
+        navigate(`/admin/orders/${updatedNotification.orderId}`);
         setIsOpen(false);
       }
     },
@@ -149,14 +152,12 @@ const CustomerNotifications: React.FC = () => {
     },
   });
 
-  // --- NEW: Mutation for marking all as read ---
   const markAllAsReadMutation = useMutation({
     mutationFn: () => markAllAsReadAPI(token),
     onSuccess: (data) => {
       toast({ description: data.message });
-      // Update cache: Mark all as read locally
-      queryClient.setQueryData<CustomerNotification[]>(
-        ["customerNotifications", user?._id],
+      queryClient.setQueryData<AdminNotification[]>(
+        ["adminNotifications", user?._id],
         (oldData) => oldData?.map((n) => ({ ...n, readStatus: true })) ?? []
       );
     },
@@ -171,11 +172,11 @@ const CustomerNotifications: React.FC = () => {
 
   const unreadNotifications = notifications.filter((n) => !n.readStatus).length;
 
-  const handleNotificationClick = (notification: CustomerNotification) => {
+  const handleNotificationClick = (notification: AdminNotification) => {
     if (!notification.readStatus) {
       markAsReadMutation.mutate({ notificationId: notification._id, token });
     } else if (notification.orderId) {
-      navigate(`/order-tracking/${notification.orderId}`);
+      navigate(`/admin/orders/${notification.orderId}`);
       setIsOpen(false);
     } else {
       setIsOpen(false);
@@ -183,47 +184,45 @@ const CustomerNotifications: React.FC = () => {
   };
 
   const handleMarkAllRead = () => {
-    markAllAsReadMutation.mutate();
+    if (unreadNotifications > 0) {
+      markAllAsReadMutation.mutate();
+    }
   };
 
-  const getNotificationIcon = (type: CustomerNotification["type"]) => {
+  const getNotificationIcon = (type: AdminNotification["type"]) => {
     switch (type) {
+      case "new_order_admin":
+        return (
+          <ListOrdered className="h-4 w-4 text-indigo-500 flex-shrink-0" />
+        );
       case "order_update":
         return <Clock className="h-4 w-4 text-blue-500 flex-shrink-0" />;
       case "payment_confirmed":
         return <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />;
-      case "contract_ready":
-        return <FileText className="h-4 w-4 text-purple-500 flex-shrink-0" />;
-      case "delivery_scheduled":
-        return <Truck className="h-4 w-4 text-orange-500 flex-shrink-0" />;
-      case "order_placed_confirmation":
-        return <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />;
-      case "new_order_admin":
-        return <Bell className="h-4 w-4 text-indigo-500 flex-shrink-0" />; // Example for admin
       default:
         return <Bell className="h-4 w-4 text-gray-500 flex-shrink-0" />;
     }
   };
-  const getNotificationColor = (type: CustomerNotification["type"]) => {
+  const getNotificationColor = (type: AdminNotification["type"]) => {
     switch (type) {
+      case "new_order_admin":
+        return "border-indigo-300";
       case "order_update":
         return "border-blue-300";
       case "payment_confirmed":
         return "border-green-300";
-      case "contract_ready":
-        return "border-purple-300";
-      case "delivery_scheduled":
-        return "border-orange-300";
-      case "order_placed_confirmation":
-        return "border-green-300";
-      case "new_order_admin":
-        return "border-indigo-300";
       default:
         return "border-gray-300";
     }
   };
 
-  if (!isAuthenticated) return null;
+  if (
+    !isAuthenticated ||
+    !user ||
+    (user.role !== "admin" && user.role !== "personnel")
+  ) {
+    return null;
+  }
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -259,12 +258,12 @@ const CustomerNotifications: React.FC = () => {
               </div>
             ) : error ? (
               <div className="text-center py-8 px-4 text-red-600 text-sm">
-                Failed to load notifications. Please try again.
+                Failed to load notifications.
               </div>
             ) : notifications.length === 0 ? (
               <div className="text-center py-10 text-gray-500">
                 <Bell className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                <p className="text-sm">You're all caught up!</p>
+                <p className="text-sm">No new notifications</p>
               </div>
             ) : (
               <div className="divide-y divide-gray-100">
@@ -313,7 +312,7 @@ const CustomerNotifications: React.FC = () => {
               <Button
                 variant="link"
                 size="sm"
-                className="w-full text-xs text-blue-600 hover:text-blue-800"
+                className="w-full text-xs text-blue-600 hover:text-blue-800 disabled:text-gray-400"
                 onClick={handleMarkAllRead}
                 disabled={markAllAsReadMutation.isPending}
               >
@@ -331,5 +330,3 @@ const CustomerNotifications: React.FC = () => {
     </Popover>
   );
 };
-
-export default CustomerNotifications;
