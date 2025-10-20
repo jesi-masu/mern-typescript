@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { EditPersonnelModal } from "@/components/admin/personnel/EditPersonnelModal";
+import { AdminProfileCard } from "@/components/admin/personnel/AdminProfileCard";
 
 export interface Personnel {
   _id: string;
@@ -245,6 +246,8 @@ const ManagePersonnelPage: React.FC = () => {
 
   return (
     <div className="space-y-8 p-4 sm:p-8 bg-gray-50 min-h-screen">
+      <AdminProfileCard />
+
       <PersonnelStatsHeader
         totalCount={totalCount}
         activeCount={activeCount}

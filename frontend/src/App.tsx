@@ -43,7 +43,6 @@ import ProductViewPage from "./pages/admin/ProductViewPage";
 import Orders from "./pages/admin/Orders";
 import Customers from "./pages/admin/Customers";
 import Reports from "./pages/admin/Reports";
-import Settings from "./pages/admin/Settings";
 import AdminProjects from "./pages/admin/AdminProjects";
 import AdminProjectFormPage from "./pages/admin/ProjectFormPage"; // Import for the new project form page
 import Contracts from "./pages/admin/Contracts";
@@ -55,6 +54,7 @@ import ActivityLog from "./pages/admin/ActivityLog";
 
 // Customer-protected route component
 import ProtectedCustomerRoute from "./components/ProtectedCustomerRoute";
+import SettingsPage from "./pages/admin/SettingsPage";
 
 const queryClient = new QueryClient();
 
@@ -159,7 +159,7 @@ function App() {
                       <Route path="orders" element={<Orders />} />
                       <Route path="customers" element={<Customers />} />
                       <Route path="reports" element={<Reports />} />
-                      <Route path="settings" element={<Settings />} />
+                      <Route path="settings" element={<SettingsPage />} />
                       <Route path="projects" element={<AdminProjects />} />
                       {/* ADDED ROUTES FOR PROJECT FORM */}
                       <Route
