@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react"; // Import useRef
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +34,9 @@ import { orders } from "@/data/orders";
 import { products } from "@/data/products";
 import { toast } from "sonner";
 import FormalContractDocument from "@/components/contract/FormalContractDocument";
-import html2pdf from "html2pdf.js"; // Import html2pdf.js
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import ReactDOM from "react-dom/client";
 
 const Contracts = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -42,9 +44,6 @@ const Contracts = () => {
   const [selectedContract, setSelectedContract] = useState<any>(null);
   const [isContractViewOpen, setIsContractViewOpen] = useState(false);
   const [isFormalDocumentOpen, setIsFormalDocumentOpen] = useState(false);
-
-  // Ref to hold the content of the FormalContractDocument for PDF generation
-  const formalDocumentRef = useRef<HTMLDivElement>(null);
 
   const contracts = orders.map((order) => ({
     id: `contract-${order.id}`,
@@ -67,7 +66,7 @@ const Contracts = () => {
     contractValue: order.totalAmount,
     terms: "Standard prefab construction terms and conditions apply.",
     deliveryAddress: "Customer specified location",
-    paymentTerms: "50% down payment, 40% on delivery, 10% upon completion",
+    paymentTerms: "50% down payment, 50% on delivery",
     warrantyPeriod: "2 years structural warranty",
   }));
 
@@ -140,52 +139,154 @@ const Contracts = () => {
     });
   };
 
-  // Original handleDownloadPDF for the generated HTML content (simpler contract view)
-  const handleDownloadPDF = (contract: any) => {
-    const printContent = generatePrintableContract(contract);
+  const handleDownloadPDF = async (contract: any) => {
+    try {
+      toast.info("Generating PDF... Please wait");
 
-    const printWindow = window.open("", "_blank");
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Contract ${contract.orderId}</title>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
-              .header { background: #1e40af; color: white; padding: 20px; text-align: center; margin-bottom: 30px; }
-              .company-name { font-size: 28px; font-weight: bold; margin-bottom: 5px; }
-              .company-subtitle { font-size: 18px; margin-bottom: 10px; }
-              .contact-info { font-size: 14px; }
-              .contract-info { text-align: right; margin-bottom: 30px; font-size: 14px; }
-              .section { margin: 30px 0; }
-              .section-title { font-size: 18px; font-weight: bold; color: #1e40af; border-bottom: 2px solid #1e40af; padding-bottom: 5px; margin-bottom: 15px; }
-              table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-              th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-              th { background: #f8f9fa; font-weight: bold; }
-              .highlight { background: #e3f2fd; padding: 15px; border-left: 4px solid #2196f3; margin: 15px 0; }
-              .terms-box { background: #f8f9fa; border: 1px solid #dee2e6; padding: 20px; margin: 20px 0; }
-              .signature-section { margin-top: 50px; }
-              .signature-box { border: 2px dashed #6c757d; padding: 30px; margin: 20px 0; text-align: center; }
-              @media print { body { margin: 0; } }
-            </style>
-          </head>
-          <body>
-            ${printContent}
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
+      // Create a temporary container to render the FormalContractDocument
+      const tempContainer = document.createElement("div");
+      tempContainer.style.position = "absolute";
+      tempContainer.style.left = "-9999px";
+      tempContainer.style.top = "0";
+      tempContainer.style.width = "210mm"; // A4 width
+      tempContainer.style.background = "white";
+      tempContainer.style.padding = "20mm"; // A4 margins
+      tempContainer.style.boxSizing = "border-box";
 
-      setTimeout(() => {
-        printWindow.print();
-        setTimeout(() => {
-          printWindow.close();
-        }, 1000);
-      }, 500);
+      // Add CSS for proper table rendering
+      const style = document.createElement("style");
+      style.textContent = `
+        [role="table"] { display: table !important; width: 100%; border-collapse: collapse; border: 1px solid #000; }
+        [role="rowgroup"] { display: table-row-group !important; }
+        [role="row"] { display: table-row !important; }
+        [role="columnheader"] { display: table-cell !important; border: 1px solid #000; padding: 0.75rem; background-color: #dbeafe; font-weight: 700; text-align: center; }
+        [role="cell"] { display: table-cell !important; border: 1px solid #000; padding: 0.75rem; vertical-align: top; }
+        table { border-collapse: collapse; border: 1px solid #000; }
+        th, td { border: 1px solid #000 !important; padding: 0.75rem; }
+        .border { border: 1px solid #000 !important; }
+      `;
+      tempContainer.appendChild(style);
+      document.body.appendChild(tempContainer);
 
-      toast.success(
-        `Contract PDF for Order #${contract.orderId} is ready for download`
-      );
+      // Render the FormalContractDocument component
+      const root = ReactDOM.createRoot(tempContainer);
+
+      await new Promise<void>((resolve) => {
+        root.render(
+          <div id="pdf-contract-content">
+            <FormalContractDocument contract={contract} />
+          </div>
+        );
+        // Wait for render to complete
+        setTimeout(resolve, 1000);
+      });
+
+      const element = tempContainer.querySelector(
+        "#formal-contract-content"
+      ) as HTMLElement;
+      if (!element) {
+        throw new Error("Contract content not found");
+      }
+
+      // PDF settings for A4 size with margins
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 20; // 20mm margins
+      const contentWidth = pageWidth - 2 * margin;
+      const contentHeight = pageHeight - 2 * margin;
+
+      // Find page breaks
+      const pageBreaks = element.querySelectorAll(".page-break");
+      const sections: HTMLElement[] = [];
+
+      if (pageBreaks.length > 0) {
+        // Split content by page breaks
+        let currentSection = document.createElement("div");
+        currentSection.style.background = "white";
+        currentSection.style.width = "170mm"; // Content width (210mm - 40mm margins)
+        currentSection.style.padding = "0";
+        currentSection.style.boxSizing = "border-box";
+
+        Array.from(element.children).forEach((child) => {
+          if (child.classList.contains("page-break")) {
+            if (currentSection.children.length > 0) {
+              sections.push(currentSection);
+            }
+            currentSection = document.createElement("div");
+            currentSection.style.background = "white";
+            currentSection.style.width = "170mm";
+            currentSection.style.padding = "0";
+            currentSection.style.boxSizing = "border-box";
+          } else {
+            currentSection.appendChild(child.cloneNode(true));
+          }
+        });
+
+        if (currentSection.children.length > 0) {
+          sections.push(currentSection);
+        }
+      } else {
+        sections.push(element);
+      }
+
+      // Render each section to PDF
+      for (let i = 0; i < sections.length; i++) {
+        const section = sections[i];
+        const sectionContainer = document.createElement("div");
+        sectionContainer.style.position = "absolute";
+        sectionContainer.style.left = "-9999px";
+        sectionContainer.style.background = "white";
+        sectionContainer.style.width = "170mm"; // Content width
+        sectionContainer.style.padding = "0";
+        sectionContainer.style.boxSizing = "border-box";
+        sectionContainer.appendChild(section);
+        document.body.appendChild(sectionContainer);
+
+        const canvas = await html2canvas(section, {
+          scale: 2.5, // Higher scale for better quality
+          useCORS: true,
+          logging: false,
+          backgroundColor: "#ffffff",
+          windowWidth: 1700, // Width in pixels (170mm * 10)
+          imageTimeout: 0,
+        });
+
+        const imgData = canvas.toDataURL("image/png", 1.0);
+
+        // Calculate image dimensions to fit within content area with margins
+        const imgWidth = contentWidth;
+        const imgHeight = (canvas.height * contentWidth) / canvas.width;
+
+        if (i > 0) {
+          pdf.addPage();
+        }
+
+        // Add image with proper margins
+        pdf.addImage(
+          imgData,
+          "PNG",
+          margin,
+          margin,
+          imgWidth,
+          imgHeight,
+          undefined,
+          "FAST"
+        );
+        document.body.removeChild(sectionContainer);
+      }
+
+      // Clean up
+      root.unmount();
+      document.body.removeChild(tempContainer);
+
+      // Save the PDF
+      const quoteNumber = `RB-2024-${contract.orderId}`;
+      pdf.save(`Contract_${quoteNumber}.pdf`);
+      toast.success("PDF downloaded successfully!");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.error("Failed to generate PDF. Please try again.");
     }
   };
 
@@ -286,48 +387,17 @@ const Contracts = () => {
     `;
   };
 
-  // New function to handle PDF download of the FormalContractDocument
-  const handleDownloadFormalPDF = async (contract: any) => {
-    setSelectedContract(contract); // Ensure the contract is selected for the FormalContractDocument to render
-    setIsFormalDocumentOpen(true); // Open the dialog to render the component
-
-    // Use a small delay to ensure the component has rendered in the DOM
-    setTimeout(async () => {
-      if (formalDocumentRef.current) {
-        try {
-          await html2pdf()
-            .from(formalDocumentRef.current)
-            .save(`Formal_Contract_Order_${contract.orderId}.pdf`);
-          toast.success(
-            `Formal Contract Document for Order #${contract.orderId} downloaded successfully!`
-          );
-        } catch (error) {
-          console.error("Error generating PDF:", error);
-          toast.error("Failed to generate PDF. Please try again.");
-        } finally {
-          setIsFormalDocumentOpen(false); // Close the dialog after download
-        }
-      } else {
-        toast.error(
-          "Formal contract document content not found for PDF generation."
-        );
-        setIsFormalDocumentOpen(false); // Close the dialog
-      }
-    }, 500); // Adjust delay if needed
+  const handleViewContract = (contract: any) => {
+    window.location.href = `/admin/contracts/${contract.id}`;
   };
 
-  const handleViewContract = (contract: unknown) => {
-    setSelectedContract(contract);
-    setIsContractViewOpen(true);
-  };
-
-  const handleGenerateFormalDocument = (contract: unknown) => {
+  const handleGenerateFormalDocument = (contract: any) => {
     setSelectedContract(contract);
     setIsFormalDocumentOpen(true);
   };
 
   return (
-    <div className="space-y-6 p-4">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Contract Management</h1>
@@ -498,7 +568,7 @@ const Contracts = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDownloadFormalPDF(contract)} // Changed to new handler
+                        onClick={() => handleDownloadPDF(contract)}
                         className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
                       >
                         <Download className="h-4 w-4 mr-2" />
@@ -513,253 +583,6 @@ const Contracts = () => {
         </CardContent>
       </Card>
 
-      {/* Enhanced Contract View Dialog */}
-      <Dialog open={isContractViewOpen} onOpenChange={setIsContractViewOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Contract Review - Order #{selectedContract?.orderId}
-            </DialogTitle>
-          </DialogHeader>
-          {selectedContract && (
-            <div className="space-y-6">
-              {/* Contract Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-lg">
-                <div className="text-center">
-                  <h2 className="text-2xl font-bold mb-2">
-                    CAMCO MEGA SALES CORP.
-                  </h2>
-                  <p className="text-lg font-semibold">
-                    PREFAB CONTAINER AND CAMHOUSE
-                  </p>
-                  <div className="text-sm mt-3 opacity-90">
-                    <p>0997-951-7188 | camco.prefab3@gmail.com</p>
-                    <p>Masterson Ave., Upper Balulang, Cagayan de Oro City</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Contract Information */}
-              <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <label className="text-sm font-medium text-gray-600">
-                    Contract ID
-                  </label>
-                  <p className="text-base font-semibold">
-                    {selectedContract.id}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">
-                    Order Reference
-                  </label>
-                  <p className="text-base font-semibold">
-                    #{selectedContract.orderId}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">
-                    Date Issued
-                  </label>
-                  <p className="text-base">
-                    {formatDate(selectedContract.createdAt)}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">
-                    Contract Status
-                  </label>
-                  <Badge
-                    className={`${getStatusColor(
-                      selectedContract.status
-                    )} ml-2`}
-                  >
-                    <div className="flex items-center gap-1">
-                      {getStatusIcon(selectedContract.status)}
-                      {selectedContract.status}
-                    </div>
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Contract Parties */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4 text-blue-700 border-b-2 border-blue-700 pb-2">
-                  Contract Parties
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">
-                        Service Provider
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <p className="font-semibold">CAMCO MEGA SALES CORP.</p>
-                      <p className="text-sm text-gray-600">
-                        Masterson Ave., Upper Balulang
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Cagayan de Oro City
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Contact: 0997-951-7188
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Email: camco.prefab3@gmail.com
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Client</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <p className="font-semibold">
-                        {selectedContract.customerName}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Email: {selectedContract.customerEmail}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        Delivery: {selectedContract.deliveryAddress}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-
-              {/* Product Specifications */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4 text-blue-700 border-b-2 border-blue-700 pb-2">
-                  Product Specifications
-                </h3>
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-blue-50">
-                      <TableHead className="font-semibold">Product</TableHead>
-                      <TableHead className="font-semibold">
-                        Contract Value
-                      </TableHead>
-                      <TableHead className="font-semibold">
-                        Payment Terms
-                      </TableHead>
-                      <TableHead className="font-semibold">Warranty</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell className="font-medium">
-                        {selectedContract.productName}
-                      </TableCell>
-                      <TableCell className="font-bold text-green-600">
-                        {formatCurrency(selectedContract.contractValue)}
-                      </TableCell>
-                      <TableCell>{selectedContract.paymentTerms}</TableCell>
-                      <TableCell>{selectedContract.warrantyPeriod}</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </div>
-
-              {/* Project Scope */}
-              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-                <h4 className="font-semibold text-blue-800 mb-2">
-                  Project Scope
-                </h4>
-                <p className="text-sm text-blue-700">
-                  Supply, delivery, and installation of prefab container house
-                  as per agreed specifications and quality standards.
-                </p>
-              </div>
-
-              {/* Terms and Conditions */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4 text-blue-700 border-b-2 border-blue-700 pb-2">
-                  Terms and Conditions
-                </h3>
-                <div className="bg-gray-50 p-6 rounded-lg space-y-4">
-                  <div>
-                    <h4 className="font-semibold mb-2">1. PAYMENT TERMS</h4>
-                    <p className="text-sm text-gray-700">
-                      {selectedContract.paymentTerms}
-                    </p>
-                  </div>
-                  <Separator />
-                  <div>
-                    <h4 className="font-semibold mb-2">2. DELIVERY</h4>
-                    <p className="text-sm text-gray-700">
-                      As per agreed schedule to{" "}
-                      {selectedContract.deliveryAddress}
-                    </p>
-                  </div>
-                  <Separator />
-                  <div>
-                    <h4 className="font-semibold mb-2">3. WARRANTY</h4>
-                    <p className="text-sm text-gray-700">
-                      {selectedContract.warrantyPeriod} from completion date
-                    </p>
-                  </div>
-                  <Separator />
-                  <div>
-                    <h4 className="font-semibold mb-2">
-                      4. GENERAL CONDITIONS
-                    </h4>
-                    <p className="text-sm text-gray-700">
-                      {selectedContract.terms}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Signature Status */}
-              {selectedContract.signedAt && (
-                <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    <h4 className="font-semibold text-green-800">
-                      Contract Signed
-                    </h4>
-                  </div>
-                  <p className="text-sm text-green-700">
-                    Signed on: {formatDate(selectedContract.signedAt)}
-                  </p>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-6 border-t">
-                <Button
-                  onClick={() => handleDownloadFormalPDF(selectedContract)} // Ensure this calls the correct handler
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-                >
-                  <Download className="h-4 w-4" />
-                  Download as PDF
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => window.print()}
-                  className="flex items-center gap-2"
-                >
-                  <Printer className="h-4 w-4" />
-                  Print Contract
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => handleGenerateFormalDocument(selectedContract)}
-                  className="flex items-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
-                >
-                  <FilePlus className="h-4 w-4" />
-                  Formal Document
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
       {/* Formal Contract Document Dialog */}
       <Dialog
         open={isFormalDocumentOpen}
@@ -772,13 +595,8 @@ const Contracts = () => {
               Formal Contract Document - Order #{selectedContract?.orderId}
             </DialogTitle>
           </DialogHeader>
-          {/* Attach the ref to the FormalContractDocument's root element */}
           {selectedContract && (
-            <div ref={formalDocumentRef} className="p-6">
-              {" "}
-              {/* Added a div wrapper with ref */}
-              <FormalContractDocument contract={selectedContract} />
-            </div>
+            <FormalContractDocument contract={selectedContract} />
           )}
         </DialogContent>
       </Dialog>

@@ -33,6 +33,7 @@ import OrderTracking from "./pages/OrderTracking";
 import NotFound from "./pages/NotFound";
 import FAQPage from "./pages/FAQPage";
 import ContactPage from "./pages/ContactPage";
+import MessengerButton from "./components/MessengerButton";
 
 // Admin pages & layout
 import AdminLayout from "./components/admin/AdminLayout";
@@ -64,6 +65,7 @@ function App() {
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <MessengerButton />
         <BrowserRouter>
           {/* Global providers: AuthProvider wraps the whole app (customer auth) */}
           <AuthProvider>

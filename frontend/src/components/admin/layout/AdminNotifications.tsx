@@ -137,8 +137,12 @@ export const AdminNotifications: React.FC = () => {
             n._id === updatedNotification._id ? { ...n, readStatus: true } : n
           ) ?? []
       );
-      if (updatedNotification.orderId) {
-        navigate(`/admin/orders/${updatedNotification.orderId}`);
+
+      if (
+        updatedNotification.type.includes("order") ||
+        updatedNotification.orderId
+      ) {
+        navigate(`/admin/orders`);
         setIsOpen(false);
       }
     },
@@ -173,13 +177,11 @@ export const AdminNotifications: React.FC = () => {
   const unreadNotifications = notifications.filter((n) => !n.readStatus).length;
 
   const handleNotificationClick = (notification: AdminNotification) => {
+    setIsOpen(false);
     if (!notification.readStatus) {
       markAsReadMutation.mutate({ notificationId: notification._id, token });
-    } else if (notification.orderId) {
-      navigate(`/admin/orders/${notification.orderId}`);
-      setIsOpen(false);
-    } else {
-      setIsOpen(false);
+    } else if (notification.type.includes("order") || notification.orderId) {
+      navigate(`/admin/orders`);
     }
   };
 
@@ -203,6 +205,7 @@ export const AdminNotifications: React.FC = () => {
         return <Bell className="h-4 w-4 text-gray-500 flex-shrink-0" />;
     }
   };
+
   const getNotificationColor = (type: AdminNotification["type"]) => {
     switch (type) {
       case "new_order_admin":
@@ -330,3 +333,5 @@ export const AdminNotifications: React.FC = () => {
     </Popover>
   );
 };
+
+export default AdminNotifications;

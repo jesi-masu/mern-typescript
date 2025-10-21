@@ -274,6 +274,9 @@ const MultiStepCheckout = () => {
                   customerInfo={customerInfo}
                   items={items}
                   totalAmount={totalAmount}
+                  // ✅ --- THIS IS THE FIX --- ✅
+                  // Pass the deliveryAddress from the paymentInfo state
+                  deliveryAddress={paymentInfo.deliveryAddress}
                 />
               )}
               <CheckoutNavigation

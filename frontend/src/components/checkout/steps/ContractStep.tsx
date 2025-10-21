@@ -14,15 +14,26 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
-import { ContractInfo, CustomerInfo } from "../../../types/checkout";
+import {
+  ContractInfo,
+  CustomerInfo,
+  PaymentInfo,
+} from "../../../types/checkout";
 import { CartItem } from "../../../context/CartContext";
 import { formatPrice } from "../../../lib/formatters";
 import SignaturePad from "../../contract/SignaturePad";
 
+type DeliveryAddress = PaymentInfo["deliveryAddress"];
+
+interface UpdatedContractInfo extends ContractInfo {
+  signatureTimestamp?: string;
+}
+
 interface ContractStepProps {
-  contractInfo: ContractInfo;
-  onChange: (info: Partial<ContractInfo>) => void;
+  contractInfo: UpdatedContractInfo;
+  onChange: (info: Partial<UpdatedContractInfo>) => void;
   customerInfo: CustomerInfo;
+  deliveryAddress?: DeliveryAddress;
   items: CartItem[];
   totalAmount: number;
 }
@@ -31,18 +42,31 @@ const ContractStep: React.FC<ContractStepProps> = ({
   contractInfo,
   onChange,
   customerInfo,
+  deliveryAddress,
   items,
   totalAmount,
 }) => {
   const [showContract, setShowContract] = useState(false);
 
   const handleSignatureSave = (signature: string) => {
-    onChange({ signature });
+    onChange({ signature, signatureTimestamp: new Date().toISOString() });
     setShowContract(true);
   };
 
   const isContractComplete =
     contractInfo.signature && contractInfo.agreedToTerms;
+
+  const getSignatureDate = () => {
+    return contractInfo.signatureTimestamp
+      ? new Date(contractInfo.signatureTimestamp).toLocaleDateString()
+      : new Date().toLocaleDateString();
+  };
+
+  const getSignatureTime = () => {
+    return contractInfo.signatureTimestamp
+      ? new Date(contractInfo.signatureTimestamp).toLocaleTimeString()
+      : new Date().toLocaleTimeString();
+  };
 
   return (
     <div className="space-y-8">
@@ -54,7 +78,6 @@ const ContractStep: React.FC<ContractStepProps> = ({
           Review your order details and complete the digital signing process
         </p>
       </div>
-
       <div className="flex items-center justify-center space-x-4">
         <div
           className={`flex items-center space-x-2 ${
@@ -82,7 +105,6 @@ const ContractStep: React.FC<ContractStepProps> = ({
           <span className="text-sm font-medium">Digitally Signed</span>
         </div>
       </div>
-
       <Card className="border-2 border-gray-100">
         <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
           <CardTitle className="flex items-center gap-2 text-gray-900">
@@ -104,9 +126,7 @@ const ContractStep: React.FC<ContractStepProps> = ({
                 </p>
               </div>
             </div>
-
             <Separator />
-
             <div className="p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-4 mb-4">
                 <Package className="h-6 w-6 text-gray-500" />
@@ -132,28 +152,37 @@ const ContractStep: React.FC<ContractStepProps> = ({
                 <span>{formatPrice(totalAmount)}</span>
               </div>
             </div>
-
             <Separator />
-
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
               <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
                 <Shield className="h-4 w-4" />
                 Delivery Address
               </h4>
               <div className="text-sm text-blue-800 space-y-1">
-                <p>{customerInfo.address1}</p>
-                {customerInfo.address2 && <p>{customerInfo.address2}</p>}
-                <p>
-                  {customerInfo.city}, {customerInfo.province}{" "}
-                  {customerInfo.postalCode}
-                </p>
-                <p>{customerInfo.country}</p>
+                {deliveryAddress ? (
+                  <>
+                    <p>{deliveryAddress.street || "[No Street]"}</p>
+                    <p>{deliveryAddress.subdivision || "[No Subdivision]"}</p>
+                    {deliveryAddress.additionalAddressLine && (
+                      <p>{deliveryAddress.additionalAddressLine}</p>
+                    )}
+                    <p>
+                      {deliveryAddress.cityMunicipality || "[No City]"},{" "}
+                      {deliveryAddress.province || "[No Province]"}{" "}
+                      {deliveryAddress.postalCode || "[No Postal Code]"}
+                    </p>
+                    <p>{deliveryAddress.country || "[No Country]"}</p>
+                  </>
+                ) : (
+                  <p className="text-red-600 italic">
+                    Delivery address has not been provided.
+                  </p>
+                )}
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
-
       <Card className="border-2 border-gray-100">
         <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
           <CardTitle className="text-gray-900">Terms & Conditions</CardTitle>
@@ -161,9 +190,6 @@ const ContractStep: React.FC<ContractStepProps> = ({
         <CardContent className="pt-6">
           <div className="space-y-4">
             <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-              <h4 className="font-semibold text-gray-900 mb-3">
-                Contract Terms
-              </h4>
               <ul className="space-y-2 text-sm text-gray-700">
                 <li className="flex items-start gap-2">
                   <span className="text-blue-600 font-bold">•</span>
@@ -187,7 +213,6 @@ const ContractStep: React.FC<ContractStepProps> = ({
                 </li>
               </ul>
             </div>
-
             <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
               <Checkbox
                 id="terms"
@@ -209,7 +234,6 @@ const ContractStep: React.FC<ContractStepProps> = ({
           </div>
         </CardContent>
       </Card>
-
       <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-blue-900">
@@ -240,6 +264,169 @@ const ContractStep: React.FC<ContractStepProps> = ({
           <SignaturePad onSave={handleSignatureSave} />
         </CardContent>
       </Card>
+      {contractInfo.signature && (
+        <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-green-900">
+                <FileText className="h-5 w-5" />
+                Contract Document
+                <Badge className="bg-green-100 text-green-800">Ready</Badge>
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowContract(!showContract)}
+                className="flex items-center gap-2 border-green-300 hover:bg-green-100"
+              >
+                {showContract ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+                {showContract ? "Hide" : "View"} Contract
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          {showContract && (
+            <CardContent>
+              <div className="bg-white p-6 rounded-lg border space-y-6">
+                <div className="text-center border-b pb-4">
+                  <h2 className="text-xl font-bold">
+                    PREFAB CONSTRUCTION CONTRACT
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-2">
+                    Contract No: PC-
+                    {contractInfo.signatureTimestamp
+                      ? new Date(contractInfo.signatureTimestamp).getTime()
+                      : "N/A"}
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="font-semibold mb-2">Customer Information</h3>
+                    <div className="text-sm space-y-1">
+                      <p>
+                        <strong>Name:</strong> {customerInfo.firstName}{" "}
+                        {customerInfo.lastName}
+                      </p>
+                      <p>
+                        <strong>Email:</strong> {customerInfo.email}
+                      </p>
+                      <p>
+                        <strong>Phone:</strong> {customerInfo.phoneNumber}
+                      </p>
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-2">Product Details</h3>
+                    <div className="text-sm space-y-2">
+                      {items.map((item) => (
+                        <p key={item.id}>
+                          <strong>Product:</strong> {item.name} (x
+                          {item.quantity})
+                          <br />
+                          <strong>Price:</strong>{" "}
+                          {formatPrice(item.price * item.quantity)}
+                        </p>
+                      ))}
+                      <p className="border-t pt-1 font-bold">
+                        <strong>Total:</strong> {formatPrice(totalAmount)}
+                      </p>
+                      <p>
+                        <strong>Contract Date:</strong> {getSignatureDate()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-2">Delivery Address</h3>
+                  <div className="text-sm bg-gray-50 p-3 rounded">
+                    {deliveryAddress ? (
+                      <>
+                        <p>{deliveryAddress.street || "[No Street]"}</p>
+                        <p>
+                          {deliveryAddress.subdivision || "[No Subdivision]"}
+                        </p>
+                        {deliveryAddress.additionalAddressLine && (
+                          <p>{deliveryAddress.additionalAddressLine}</p>
+                        )}
+                        <p>
+                          {deliveryAddress.cityMunicipality || "[No City]"},{" "}
+                          {deliveryAddress.province || "[No Province]"}{" "}
+                          {deliveryAddress.postalCode || "[No Postal Code]"}
+                        </p>
+                        <p>{deliveryAddress.country || "[No Country]"}</p>
+                      </>
+                    ) : (
+                      <p className="text-red-600 italic">
+                        Delivery address has not been provided.
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-2">Terms and Conditions</h3>
+                  <div className="text-sm space-y-2">
+                    <p>
+                      1. Standard prefab construction terms and conditions
+                      apply.
+                    </p>
+                    <p>
+                      2. Estimated delivery time: 8-12 weeks from order
+                      confirmation.
+                    </p>
+                    <p>3. Installation will be scheduled upon delivery.</p>
+                    <p>4. All payments must be completed before delivery.</p>
+                    <p>
+                      5. Warranty terms as specified in product documentation.
+                    </p>
+                  </div>
+                </div>
+                <div className="border-t pt-4">
+                  <h3 className="font-semibold mb-2">Customer Signature</h3>
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={contractInfo.signature}
+                      alt="Customer Signature"
+                      className="border border-gray-300 rounded max-w-48 bg-white"
+                    />
+                    <div className="text-sm">
+                      <p>
+                        <strong>Signed by:</strong> {customerInfo.firstName}{" "}
+                        {customerInfo.lastName}
+                      </p>
+                      <p>
+                        <strong>Date:</strong> {getSignatureDate()}
+                      </p>
+                      <p>
+                        <strong>Time:</strong> {getSignatureTime()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          )}
+        </Card>
+      )}
+
+      {isContractComplete && (
+        <Card className="border-2 border-green-300 bg-gradient-to-r from-green-50 to-emerald-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-center gap-3 text-green-800">
+              <CheckCircle className="h-6 w-6" />
+              <span className="text-lg font-semibold">
+                Contract Ready for Finalization
+              </span>
+            </div>
+            <p className="text-center text-sm text-green-700 mt-2">
+              All requirements have been met. You may now proceed to place your
+              order.
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

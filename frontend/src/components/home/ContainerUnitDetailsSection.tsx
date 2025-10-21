@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // 1. IMPORTED HOOK
 import {
   ArrowLeft,
   ArrowRight,
@@ -65,7 +66,7 @@ const ContainerUnitDetailsSection = () => {
   const [activeCategory, setActiveCategory] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const [animateDetails, setAnimateDetails] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const navigate = useNavigate(); // 2. INITIALIZED HOOK
 
   // Simulate intersection observer for scroll animation
   useEffect(() => {
@@ -258,9 +259,9 @@ const ContainerUnitDetailsSection = () => {
                   ))}
                 </div>
 
-                {/* CTA Button */}
+                {/* 3. UPDATED CTA Button */}
                 <button
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={() => navigate("/shop")} // <-- CHANGED THIS LINE
                   className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 group"
                 >
                   <span className="flex items-center">
@@ -295,179 +296,6 @@ const ContainerUnitDetailsSection = () => {
       </div>
 
       {/* Detailed Features Modal */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-              Complete Container Unit Specifications
-            </DialogTitle>
-            <DialogDescription className="text-lg text-slate-600">
-              Comprehensive breakdown of all components and features
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6 mt-6">
-            {/* Feature Categories Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {containerFeatures.map((category, index) => {
-                // Assign icons based on category
-                const getCategoryIcon = () => {
-                  switch (category.title) {
-                    case "Structure":
-                      return <Shield className="w-6 h-6 text-blue-600" />;
-                    case "Roofing":
-                      return <Layers className="w-6 h-6 text-green-600" />;
-                    case "Flooring":
-                      return <Package className="w-6 h-6 text-purple-600" />;
-                    case "Electrical":
-                      return <Zap className="w-6 h-6 text-yellow-600" />;
-                    default:
-                      return <CheckCircle className="w-6 h-6 text-blue-600" />;
-                  }
-                };
-
-                const getCategoryColor = () => {
-                  switch (category.title) {
-                    case "Structure":
-                      return "from-blue-50 to-blue-100 border-blue-200";
-                    case "Roofing":
-                      return "from-green-50 to-green-100 border-green-200";
-                    case "Flooring":
-                      return "from-purple-50 to-purple-100 border-purple-200";
-                    case "Electrical":
-                      return "from-yellow-50 to-yellow-100 border-yellow-200";
-                    default:
-                      return "from-slate-50 to-slate-100 border-slate-200";
-                  }
-                };
-
-                return (
-                  <div
-                    key={category.id}
-                    className={`bg-gradient-to-br ${getCategoryColor()} border-2 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1`}
-                  >
-                    {/* Category Header */}
-                    <div className="flex items-center gap-3 mb-4 pb-3 border-b-2 border-white">
-                      <div className="bg-white p-2 rounded-lg shadow-sm">
-                        {getCategoryIcon()}
-                      </div>
-                      <h3 className="text-2xl font-bold text-slate-900">
-                        {category.title}
-                      </h3>
-                    </div>
-
-                    {/* Features List */}
-                    <ul className="space-y-3">
-                      {category.details.map((detail, idx) => (
-                        <li key={idx} className="flex items-start gap-3 group">
-                          <div className="mt-1 flex-shrink-0">
-                            <CheckCircle className="w-5 h-5 text-green-600 group-hover:scale-110 transition-transform" />
-                          </div>
-                          <span className="text-slate-700 font-medium leading-relaxed">
-                            {detail}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Additional Information Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-xl text-center shadow-lg">
-                <div className="text-4xl font-bold mb-2">20+</div>
-                <div className="text-sm font-medium opacity-90">
-                  Premium Components
-                </div>
-              </div>
-              <div className="bg-gradient-to-br from-green-500 to-green-600 text-white p-6 rounded-xl text-center shadow-lg">
-                <div className="text-4xl font-bold mb-2">100%</div>
-                <div className="text-sm font-medium opacity-90">
-                  Quality Assured
-                </div>
-              </div>
-              <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-6 rounded-xl text-center shadow-lg">
-                <div className="text-4xl font-bold mb-2">5★</div>
-                <div className="text-sm font-medium opacity-90">
-                  Customer Rating
-                </div>
-              </div>
-            </div>
-
-            {/* Key Highlights */}
-            <div className="bg-gradient-to-r from-slate-50 to-blue-50 border-2 border-blue-200 rounded-2xl p-6">
-              <h4 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <Shield className="w-6 h-6 text-blue-600" />
-                Why Choose Our Container Units?
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-600 mt-1 flex-shrink-0" />
-                  <div>
-                    <p className="font-semibold text-slate-900">
-                      Durable Construction
-                    </p>
-                    <p className="text-sm text-slate-600">
-                      Built to withstand harsh weather conditions
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-600 mt-1 flex-shrink-0" />
-                  <div>
-                    <p className="font-semibold text-slate-900">
-                      Energy Efficient
-                    </p>
-                    <p className="text-sm text-slate-600">
-                      Insulated walls and roof for temperature control
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-600 mt-1 flex-shrink-0" />
-                  <div>
-                    <p className="font-semibold text-slate-900">
-                      Quick Installation
-                    </p>
-                    <p className="text-sm text-slate-600">
-                      Ready to use in just 2-3 days
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-600 mt-1 flex-shrink-0" />
-                  <div>
-                    <p className="font-semibold text-slate-900">Customizable</p>
-                    <p className="text-sm text-slate-600">
-                      Flexible layouts to meet your needs
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-4 pt-4">
-              <button
-                onClick={() => {
-                  window.location.href = "/contact";
-                }}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 px-6 rounded-xl font-bold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
-              >
-                Request a Quote
-              </button>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="px-6 py-4 border-2 border-slate-300 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </section>
   );
 };
