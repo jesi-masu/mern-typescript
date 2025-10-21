@@ -2,7 +2,8 @@ import { Toaster } from "./components/ui/toaster";
 import { Toaster as Sonner } from "./components/ui/sonner";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+// ✨ 1. Import useLocation
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 
 // Main (customer) auth + app-level providers
 import { AuthProvider } from "./context/AuthContext";
@@ -33,7 +34,7 @@ import OrderTracking from "./pages/OrderTracking";
 import NotFound from "./pages/NotFound";
 import FAQPage from "./pages/FAQPage";
 import ContactPage from "./pages/ContactPage";
-import MessengerButton from "./components/MessengerButton";
+import MessengerButton from "./components/MessengerButton"; // Keep this import
 
 // Admin pages & layout
 import AdminLayout from "./components/admin/AdminLayout";
@@ -45,7 +46,7 @@ import Orders from "./pages/admin/Orders";
 import Customers from "./pages/admin/Customers";
 import Reports from "./pages/admin/Reports";
 import AdminProjects from "./pages/admin/AdminProjects";
-import AdminProjectFormPage from "./pages/admin/ProjectFormPage"; // Import for the new project form page
+import AdminProjectFormPage from "./pages/admin/ProjectFormPage";
 import Contracts from "./pages/admin/Contracts";
 import Messages from "./pages/admin/Messages";
 import CustomerUploads from "./pages/admin/CustomerUploads";
@@ -59,141 +60,137 @@ import SettingsPage from "./pages/admin/SettingsPage";
 
 const queryClient = new QueryClient();
 
+// ✨ 2. Create a new inner component
+// This component is *inside* <BrowserRouter> so it can use useLocation()
+const AppContent = () => {
+  const location = useLocation();
+  const isAdminPage = location.pathname.startsWith("/admin");
+
+  return (
+    <AuthProvider>
+      <OrderUpdatesProvider>
+        <CartProvider>
+          <OrderProvider>
+            {/* ✨ 3. Conditionally render the button here */}
+            {!isAdminPage && <MessengerButton />}
+
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<Index />} />
+              <Route path="/home" element={<Home />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/shop" element={<Shop />} />
+              <Route path="/product/:id" element={<ProductDetail />} />
+              <Route path="/projects" element={<Projects />} />
+              <Route path="/project/:id" element={<ProjectDetail />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<SignUp />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/faq" element={<FAQPage />} />
+
+              {/* Customer Protected Routes */}
+              <Route
+                path="/checkout"
+                element={
+                  <ProtectedCustomerRoute>
+                    <Checkout />
+                  </ProtectedCustomerRoute>
+                }
+              />
+              <Route
+                path="/customer-profile"
+                element={
+                  <ProtectedCustomerRoute>
+                    <CustomerProfile />
+                  </ProtectedCustomerRoute>
+                }
+              />
+              <Route
+                path="/customer-dashboard"
+                element={
+                  <ProtectedCustomerRoute>
+                    <CustomerDashboardPage />
+                  </ProtectedCustomerRoute>
+                }
+              />
+              <Route
+                path="/order-history"
+                element={
+                  <ProtectedCustomerRoute>
+                    <OrderHistory />
+                  </ProtectedCustomerRoute>
+                }
+              />
+              <Route
+                path="/order-tracking/:id"
+                element={
+                  <ProtectedCustomerRoute>
+                    <OrderTracking />
+                  </ProtectedCustomerRoute>
+                }
+              />
+
+              {/* Admin route tree */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedAdminRoute>
+                    <AdminLayout />
+                  </ProtectedAdminRoute>
+                }
+              >
+                {/* Nested admin routes, rendered inside AdminLayout's <Outlet /> */}
+                <Route index element={<Dashboard />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="products" element={<Products />} />
+                <Route path="products/new" element={<ProductFormPage />} />
+                <Route path="products/edit/:id" element={<ProductFormPage />} />
+                <Route path="products/view/:id" element={<ProductViewPage />} />
+                <Route path="orders" element={<Orders />} />
+                <Route path="customers" element={<Customers />} />
+                <Route path="reports" element={<Reports />} />
+                <Route path="settings" element={<SettingsPage />} />
+                <Route path="projects" element={<AdminProjects />} />
+                <Route path="projects/new" element={<AdminProjectFormPage />} />
+                <Route
+                  path="projects/edit/:id"
+                  element={<AdminProjectFormPage />}
+                />
+                <Route path="contracts" element={<Contracts />} />
+                <Route path="messages" element={<Messages />} />
+                <Route path="customer-uploads" element={<CustomerUploads />} />
+                <Route path="personnel" element={<ManagePersonnel />} />
+                <Route path="records" element={<RecordsUpload />} />
+                <Route path="activity" element={<ActivityLog />} />
+              </Route>
+
+              {/* 404 Not Found */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </OrderProvider>
+        </CartProvider>
+      </OrderUpdatesProvider>
+    </AuthProvider>
+  );
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <MessengerButton />
+        {/* ✨ 4. Move BrowserRouter to wrap everything */}
         <BrowserRouter>
-          {/* Global providers: AuthProvider wraps the whole app (customer auth) */}
-          <AuthProvider>
-            <OrderUpdatesProvider>
-              <CartProvider>
-                <OrderProvider>
-                  <Routes>
-                    {/* Public Routes */}
-                    <Route path="/" element={<Index />} />
-                    <Route path="/home" element={<Home />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="/contact" element={<ContactPage />} />
-                    <Route path="/shop" element={<Shop />} />
-                    <Route path="/product/:id" element={<ProductDetail />} />
-                    <Route path="/projects" element={<Projects />} />
-                    <Route path="/project/:id" element={<ProjectDetail />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/signup" element={<SignUp />} />
-                    <Route
-                      path="/forgot-password"
-                      element={<ForgotPassword />}
-                    />
-                    <Route path="/reset-password" element={<ResetPassword />} />
-                    <Route path="/faq" element={<FAQPage />} />
+          <Toaster />
+          <Sonner />
+          {/* ❌ <MessengerButton /> is removed from here */}
 
-                    {/* Customer Protected Routes */}
-                    <Route
-                      path="/checkout"
-                      element={
-                        <ProtectedCustomerRoute>
-                          <Checkout />
-                        </ProtectedCustomerRoute>
-                      }
-                    />
-                    <Route
-                      path="/customer-profile"
-                      element={
-                        <ProtectedCustomerRoute>
-                          <CustomerProfile />
-                        </ProtectedCustomerRoute>
-                      }
-                    />
-                    <Route
-                      path="/customer-dashboard"
-                      element={
-                        <ProtectedCustomerRoute>
-                          <CustomerDashboardPage />
-                        </ProtectedCustomerRoute>
-                      }
-                    />
-                    <Route
-                      path="/order-history"
-                      element={
-                        <ProtectedCustomerRoute>
-                          <OrderHistory />
-                        </ProtectedCustomerRoute>
-                      }
-                    />
-                    <Route
-                      path="/order-tracking/:id"
-                      element={
-                        <ProtectedCustomerRoute>
-                          <OrderTracking />
-                        </ProtectedCustomerRoute>
-                      }
-                    />
-
-                    {/* Admin route tree */}
-                    <Route
-                      path="/admin"
-                      element={
-                        <ProtectedAdminRoute>
-                          <AdminLayout />
-                        </ProtectedAdminRoute>
-                      }
-                    >
-                      {/* Nested admin routes, rendered inside AdminLayout's <Outlet /> */}
-                      <Route index element={<Dashboard />} />
-                      <Route path="dashboard" element={<Dashboard />} />
-                      <Route path="products" element={<Products />} />
-                      <Route
-                        path="products/new"
-                        element={<ProductFormPage />}
-                      />
-                      <Route
-                        path="products/edit/:id"
-                        element={<ProductFormPage />}
-                      />
-                      <Route
-                        path="products/view/:id"
-                        element={<ProductViewPage />}
-                      />
-                      <Route path="orders" element={<Orders />} />
-                      <Route path="customers" element={<Customers />} />
-                      <Route path="reports" element={<Reports />} />
-                      <Route path="settings" element={<SettingsPage />} />
-                      <Route path="projects" element={<AdminProjects />} />
-                      {/* ADDED ROUTES FOR PROJECT FORM */}
-                      <Route
-                        path="projects/new"
-                        element={<AdminProjectFormPage />}
-                      />
-                      <Route
-                        path="projects/edit/:id"
-                        element={<AdminProjectFormPage />}
-                      />
-                      <Route path="contracts" element={<Contracts />} />
-                      <Route path="messages" element={<Messages />} />
-                      <Route
-                        path="customer-uploads"
-                        element={<CustomerUploads />}
-                      />
-                      <Route path="personnel" element={<ManagePersonnel />} />
-                      <Route path="records" element={<RecordsUpload />} />
-                      <Route path="activity" element={<ActivityLog />} />
-                    </Route>
-
-                    {/* 404 Not Found */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </OrderProvider>
-              </CartProvider>
-            </OrderUpdatesProvider>
-          </AuthProvider>
+          {/* ✨ 5. Render the new AppContent component */}
+          <AppContent />
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
   );
 }
-
 export default App;
