@@ -20,20 +20,20 @@ interface UploadRecord {
   errors?: string[];
 }
 
+// --- MODIFICATION: Allow "personnel" role ---
 const hasPermission = (userRole: string, permission: string): boolean => {
-  return userRole === "admin";
+  return userRole === "admin" || userRole === "personnel";
 };
+// --- END MODIFICATION ---
 
 const RecordsUpload: React.FC = () => {
   const { user, token, isLoading: isAuthLoading } = useAuth();
   const { toast } = useToast();
-
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadHistory, setUploadHistory] = useState<UploadRecord[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [recordType, setRecordType] = useState<string>("orders");
   const [description, setDescription] = useState<string>("");
-
   const [validationResult, setValidationResult] = useState<{
     validRecordCount: number;
     totalRecords: number;
@@ -61,10 +61,8 @@ const RecordsUpload: React.FC = () => {
   const handleFileUpload = async (isConfirmed: boolean = false) => {
     if (!selectedFile) return;
     setIsProcessing(true);
-
     const formData = new FormData();
     formData.append("file", selectedFile);
-
     const endpoint = isConfirmed
       ? "/api/import/historical-orders"
       : "/api/import/validate-historical-orders";
@@ -92,7 +90,6 @@ const RecordsUpload: React.FC = () => {
           body: formData,
         }
       );
-
       const result = await response.json();
       if (!response.ok) throw new Error(result.message);
 
@@ -149,7 +146,6 @@ const RecordsUpload: React.FC = () => {
 
   const handleManualEntrySubmit = async (formData: any) => {
     setIsProcessing(true);
-
     const newRecord: UploadRecord = {
       id: `MANUAL-${Date.now()}`,
       fileName: "Manual Entry",
@@ -159,7 +155,6 @@ const RecordsUpload: React.FC = () => {
       recordCount: 0,
       description: `Manual entry for order on ${formData.createdAt}`,
     };
-
     setUploadHistory((prev) => [newRecord, ...prev]);
 
     try {
@@ -169,7 +164,6 @@ const RecordsUpload: React.FC = () => {
           (p: any) => p.productId.trim() !== ""
         ),
       };
-
       const response = await fetch(
         `${
           import.meta.env.VITE_BACKEND_URL
@@ -183,10 +177,8 @@ const RecordsUpload: React.FC = () => {
           body: JSON.stringify(payload),
         }
       );
-
       const result = await response.json();
       if (!response.ok) throw new Error(result.message);
-
       const updatedRecord = {
         ...newRecord,
         status: "completed" as const,
@@ -226,6 +218,7 @@ const RecordsUpload: React.FC = () => {
     );
   }
 
+  // This check will now pass for "admin" OR "personnel"
   if (!user || !hasPermission(user.role, "manage_settings")) {
     return (
       <div className="text-center p-12">
@@ -246,7 +239,6 @@ const RecordsUpload: React.FC = () => {
           Import historical and external data into the system.
         </p>
       </div>
-
       <Tabs defaultValue="file-upload" className="space-y-6">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="file-upload">Bulk Upload via File</TabsTrigger>
@@ -254,7 +246,6 @@ const RecordsUpload: React.FC = () => {
             Manual Entry (Single Order)
           </TabsTrigger>
         </TabsList>
-
         <TabsContent value="file-upload">
           <UploadForm
             selectedFile={selectedFile}
@@ -313,7 +304,6 @@ const RecordsUpload: React.FC = () => {
             </Card>
           )}
         </TabsContent>
-
         <TabsContent value="manual-entry">
           <ManualEntryForm
             onSubmit={handleManualEntrySubmit}
@@ -321,7 +311,6 @@ const RecordsUpload: React.FC = () => {
           />
         </TabsContent>
       </Tabs>
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -350,5 +339,4 @@ const RecordsUpload: React.FC = () => {
     </div>
   );
 };
-
 export default RecordsUpload;

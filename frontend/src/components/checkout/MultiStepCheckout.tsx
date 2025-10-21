@@ -1,4 +1,3 @@
-// src/components/checkout/MultiStepCheckout.tsx
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -144,7 +143,6 @@ const MultiStepCheckout = () => {
       );
       const locationImagesUrls = await Promise.all(locationImageUploads);
 
-      // --- MODIFICATION START: Conditionally build the paymentInfo payload ---
       const paymentInfoPayload: any = {
         paymentMethod: paymentInfo.paymentMethod,
         paymentMode: paymentInfo.paymentMode,
@@ -152,11 +150,9 @@ const MultiStepCheckout = () => {
         paymentReceipts: uploadedReceipts,
       };
 
-      // Only add installmentStage if the method is 'installment'
       if (paymentInfo.paymentMethod === "installment") {
         paymentInfoPayload.installmentStage = paymentInfo.installmentStage;
       }
-      // --- MODIFICATION END ---
 
       const orderPayload = {
         products: items.map((item) => ({
@@ -180,7 +176,6 @@ const MultiStepCheckout = () => {
             country: paymentInfo.deliveryAddress?.country ?? "",
           },
         },
-        // Use the new, clean payload
         paymentInfo: paymentInfoPayload,
         contractInfo: {
           signature: contractInfo.signature,
@@ -274,8 +269,6 @@ const MultiStepCheckout = () => {
                   customerInfo={customerInfo}
                   items={items}
                   totalAmount={totalAmount}
-                  // ✅ --- THIS IS THE FIX --- ✅
-                  // Pass the deliveryAddress from the paymentInfo state
                   deliveryAddress={paymentInfo.deliveryAddress}
                 />
               )}

@@ -4,7 +4,7 @@ import {
   Bell,
   CheckCircle,
   Clock,
-  FileText,
+  FileText, // Added FileText
   Truck,
   Loader2,
   CheckCheck,
@@ -137,9 +137,9 @@ export const AdminNotifications: React.FC = () => {
             n._id === updatedNotification._id ? { ...n, readStatus: true } : n
           ) ?? []
       );
-
       if (
         updatedNotification.type.includes("order") ||
+        updatedNotification.type === "payment_uploaded" || // Added this
         updatedNotification.orderId
       ) {
         navigate(`/admin/orders`);
@@ -180,7 +180,11 @@ export const AdminNotifications: React.FC = () => {
     setIsOpen(false);
     if (!notification.readStatus) {
       markAsReadMutation.mutate({ notificationId: notification._id, token });
-    } else if (notification.type.includes("order") || notification.orderId) {
+    } else if (
+      notification.type.includes("order") ||
+      notification.type === "payment_uploaded" || // Added this
+      notification.orderId
+    ) {
       navigate(`/admin/orders`);
     }
   };
@@ -201,6 +205,9 @@ export const AdminNotifications: React.FC = () => {
         return <Clock className="h-4 w-4 text-blue-500 flex-shrink-0" />;
       case "payment_confirmed":
         return <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />;
+      // Added case for payment_uploaded
+      case "payment_uploaded":
+        return <FileText className="h-4 w-4 text-teal-500 flex-shrink-0" />;
       default:
         return <Bell className="h-4 w-4 text-gray-500 flex-shrink-0" />;
     }
@@ -214,6 +221,9 @@ export const AdminNotifications: React.FC = () => {
         return "border-blue-300";
       case "payment_confirmed":
         return "border-green-300";
+      // Added case for payment_uploaded
+      case "payment_uploaded":
+        return "border-teal-300";
       default:
         return "border-gray-300";
     }
@@ -333,5 +343,4 @@ export const AdminNotifications: React.FC = () => {
     </Popover>
   );
 };
-
 export default AdminNotifications;

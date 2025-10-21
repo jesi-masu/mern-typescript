@@ -3,13 +3,12 @@ import { Label } from "../../ui/label";
 import { Input } from "../../ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import { Button } from "../../ui/button";
-import { MapPin, Receipt, X, Info, CreditCard, Upload } from "lucide-react"; // Added missing icons
+import { MapPin, Receipt, X, Info, CreditCard, Upload } from "lucide-react";
 import { PaymentInfo } from "../../../types/checkout";
 import { formatPrice } from "../../../lib/formatters";
 import PaymentSelector from "../PaymentSelector";
 import DeliveryAddressStep from "./DeliveryAddressStep";
 
-// Define the keys for type safety
 type PaymentStageKey = "initial" | "pre_delivery" | "final";
 
 interface ExtendedPaymentInfo extends PaymentInfo {
@@ -31,7 +30,7 @@ interface ExtendedPaymentInfo extends PaymentInfo {
     pre_delivery?: File[];
     final?: File[];
   };
-  locationImages?: File[]; // Added this based on your component usage
+  locationImages?: File[];
 }
 
 interface PaymentStepProps {
@@ -68,7 +67,10 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   };
 
   const handlePaymentMethodChange = (method: "installment" | "full" | "") => {
-    const updates: Partial<ExtendedPaymentInfo> = { paymentMethod: method };
+    const updates: Partial<ExtendedPaymentInfo> = {
+      ...paymentInfo, // Keep existing state
+      paymentMethod: method,
+    };
     if (method === "installment") {
       updates.installmentStage = "initial";
     } else {
@@ -100,6 +102,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
     const existingFilesForStage = existingReceipts[stageKey] || [];
 
     onChange({
+      ...paymentInfo, // Keep existing state
       paymentReceipts: {
         ...existingReceipts,
         [stageKey]: [...existingFilesForStage, ...files],
@@ -112,15 +115,13 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   ) => {
     const files = Array.from(e.target.files || []);
     const existingFiles = paymentInfo.locationImages || [];
-    onChange({ locationImages: [...existingFiles, ...files] });
+    onChange({ ...paymentInfo, locationImages: [...existingFiles, ...files] });
   };
 
   // --- THIS IS THE FIX ---
   const handleAddressChange = (
     addressInfo: Partial<PaymentInfo["deliveryAddress"]>
   ) => {
-    // Instead of just sending { deliveryAddress: addressInfo },
-    // we merge it with the existing paymentInfo state.
     onChange({
       ...paymentInfo, // Keep existing values (paymentMethod, etc.)
       deliveryAddress: {
@@ -134,7 +135,6 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   const removePaymentReceipt = (stage: PaymentStageKey, index: number) => {
     const existingReceipts = { ...(paymentInfo.paymentReceipts || {}) };
     const filesForStage = existingReceipts[stage] || [];
-
     const updatedFiles = filesForStage.filter((_, i) => i !== index);
 
     if (updatedFiles.length > 0) {
@@ -142,19 +142,21 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
     } else {
       delete existingReceipts[stage];
     }
-
-    onChange({ paymentReceipts: existingReceipts });
+    onChange({ ...paymentInfo, paymentReceipts: existingReceipts });
   };
 
   const removeLocationImage = (index: number) => {
     const updatedFiles = (paymentInfo.locationImages || []).filter(
       (_, i) => i !== index
     );
-    onChange({ locationImages: updatedFiles });
+    onChange({ ...paymentInfo, locationImages: updatedFiles });
   };
 
   const handlePaymentTimingChange = (timing: "now" | "later" | "") => {
-    const updates: Partial<ExtendedPaymentInfo> = { paymentTiming: timing };
+    const updates: Partial<ExtendedPaymentInfo> = {
+      ...paymentInfo,
+      paymentTiming: timing,
+    };
     if (timing === "later") {
       updates.paymentReceipts = {};
     }
@@ -172,15 +174,15 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
         paymentMethod={paymentInfo.paymentMethod}
         onPaymentMethodChange={handlePaymentMethodChange}
         installmentStage={paymentInfo.installmentStage}
-        onInstallmentStageChange={
-          (stage) => onChange({ ...paymentInfo, installmentStage: stage }) // Merged update
+        onInstallmentStageChange={(stage) =>
+          onChange({ ...paymentInfo, installmentStage: stage })
         }
         paymentMode={paymentInfo.paymentMode}
         onPaymentModeChange={(mode) =>
           onChange({ ...paymentInfo, paymentMode: mode })
-        } // Merged update
+        }
         paymentTiming={paymentInfo.paymentTiming}
-        onPaymentTimingChange={handlePaymentTimingChange} // Kept as is, it has special logic
+        onPaymentTimingChange={handlePaymentTimingChange}
       />
 
       {paymentInfo.paymentTiming === "now" && (
@@ -291,7 +293,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" /> {/* Changed from MapPin */}
+            <Upload className="h-5 w-5" />
             Installation Location
           </CardTitle>
         </CardHeader>

@@ -1,5 +1,4 @@
 // src/pages/admin/Dashboard.tsx
-
 import { useQuery } from "@tanstack/react-query";
 import {
   Card,
@@ -24,7 +23,9 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { formatDistanceToNow } from "date-fns"; // Make sure to install: npm install date-fns
+import { formatDistanceToNow } from "date-fns";
+// ✨ 1. IMPORT THE PERMISSION CHECKER
+import { hasUserPermission } from "@/utils/adminPermissions";
 
 // --- Main Dashboard Stats Type ---
 interface DashboardStats {
@@ -39,7 +40,6 @@ interface DashboardStats {
 }
 
 // --- Type for Activity Log ---
-// (This should match the type in your ActivityLog.tsx)
 interface ActivityLogType {
   _id: string;
   userId: string | null;
@@ -55,7 +55,6 @@ interface ActivityLogType {
     | "system";
   createdAt: string;
 }
-
 interface FetchLogsResponse {
   logs: ActivityLogType[];
   page: number;
@@ -86,6 +85,7 @@ const formatRelativeTime = (dateString: string) => {
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  // ✨ 2. GET THE FULL USER OBJECT (it includes the role)
   const { user, token, isLoading: isAuthLoading } = useAuth();
 
   // --- Query 1: Dashboard Stats ---
@@ -108,16 +108,20 @@ const Dashboard = () => {
   const {
     data: stats,
     isLoading: isStatsLoading,
-    error: statsError, // Renamed to avoid conflict
+    error: statsError,
   } = useQuery<DashboardStats>({
     queryKey: ["dashboardStats"],
     queryFn: fetchDashboardStats,
-    enabled: !isAuthLoading && !!token,
+    // Only fetch stats if the user is authorized to see them
+    enabled:
+      !isAuthLoading &&
+      !!token &&
+      !!user &&
+      hasUserPermission(user.role, "view_company_stats"),
   });
 
   // --- Query 2: Recent Order Activities ---
   const fetchRecentOrderActivities = async (): Promise<FetchLogsResponse> => {
-    // Fetches page 1, limit 10, for the 'orders' category
     const response = await fetch(
       `${
         import.meta.env.VITE_BACKEND_URL
@@ -141,7 +145,7 @@ const Dashboard = () => {
   } = useQuery<FetchLogsResponse>({
     queryKey: ["recentOrderActivities"],
     queryFn: fetchRecentOrderActivities,
-    enabled: !isAuthLoading && !!token, // Run query only when auth is loaded
+    enabled: !isAuthLoading && !!token,
   });
 
   const handleQuickAction = (action: string) => {
@@ -184,9 +188,7 @@ const Dashboard = () => {
   };
 
   // --- UI States ---
-
-  // Main loading state
-  if (isAuthLoading || (isStatsLoading && !stats)) {
+  if (isAuthLoading) {
     return (
       <div className="flex h-full w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
@@ -194,8 +196,12 @@ const Dashboard = () => {
     );
   }
 
-  // Error State for *main stats*
-  if (statsError) {
+  // Error State for stats *if* the user was supposed to see them
+  if (
+    statsError &&
+    user &&
+    hasUserPermission(user.role, "view_company_stats")
+  ) {
     return (
       <div className="flex flex-col h-full w-full items-center justify-center bg-red-50 p-4 rounded-lg">
         <AlertTriangle className="h-8 w-8 text-red-500 mb-2" />
@@ -248,10 +254,12 @@ const Dashboard = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
-            Welcome back, {user?.firstName || "Admin"}!{" "}
+            Welcome back, {user?.firstName || "Staff"}!
           </h1>
           <p className="text-gray-600 mt-2">
-            Here's what's happening with your business today.
+            {user && hasUserPermission(user.role, "view_company_stats")
+              ? "Here's what's happening with your business today."
+              : "Manage your assigned tasks and orders."}
           </p>
         </div>
         <Badge
@@ -262,32 +270,62 @@ const Dashboard = () => {
         </Badge>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statCards.map((stat, index) => (
-          <Card key={index} className="hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                {stat.title}
-              </CardTitle>
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-900">
-                {stat.value}
-              </div>
-              <p
-                className={`text-xs ${stat.color} flex items-center gap-1 mt-1`}
-              >
-                <TrendingUp className="h-3 w-3" />
-                {stat.change} from last month
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* ✨ 3. WRAP THE STATS IN THE PERMISSION CHECK */}
+      {user && hasUserPermission(user.role, "view_company_stats") ? (
+        // This is what ONLY ADMINS will see:
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {isStatsLoading
+            ? // Show skeletons or loader while stats are loading
+              Array.from({ length: 4 }).map((_, index) => (
+                <Card key={index}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-8 bg-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                  </CardContent>
+                </Card>
+              ))
+            : // Show the stat cards once loaded
+              statCards.map((stat, index) => (
+                <Card key={index} className="hover:shadow-lg transition-shadow">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-gray-600">
+                      {stat.title}
+                    </CardTitle>
+                    <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-gray-900">
+                      {stat.value}
+                    </div>
+                    <p
+                      className={`text-xs ${stat.color} flex items-center gap-1 mt-1`}
+                    >
+                      <TrendingUp className="h-3 w-3" />
+                      {stat.change} from last month
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+        </div>
+      ) : (
+        // This is what PERSONNEL will see instead:
+        <Card>
+          <CardHeader>
+            <CardTitle>Personnel Dashboard</CardTitle>
+            <CardDescription>
+              You can manage your assigned orders, projects, and messages using
+              the sidebar.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+      {/* END OF PERMISSION CHECK */}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* --- Recent Activities Card (Updated) --- */}
+        {/* --- Recent Activities Card (Visible to both) --- */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -344,7 +382,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* --- Quick Actions Card (Unchanged) --- */}
+        {/* --- Quick Actions Card (Visible to both) --- */}
         <Card>
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
@@ -381,8 +419,7 @@ const Dashboard = () => {
                 className="p-4 text-left bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors cursor-pointer"
               >
                 <BarChart3 className="h-6 w-6 text-orange-600 mb-2" />
-                <p className="font-medium text-orange-900">View Reports</p>{" "}
-                {/* <-- THIS IS THE FIXED LINE */}
+                <p className="font-medium text-orange-900">View Reports</p>
                 <p className="text-sm text-orange-700">Check analytics</p>
               </button>
             </div>
@@ -392,5 +429,4 @@ const Dashboard = () => {
     </div>
   );
 };
-
 export default Dashboard;

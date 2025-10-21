@@ -111,7 +111,6 @@ const OrderTracking = () => {
             <p className="text-gray-600">Order #{order._id}</p>
           </div>
           <div className="flex items-center gap-3">
-            <CustomerNotifications />
             <Button
               variant="outline"
               onClick={() => navigate("/order-history")}

@@ -43,7 +43,6 @@ export const createOrder: RequestHandler = async (req, res) => {
       totalAmount,
       locationImages,
     } = req.body;
-
     if (
       !products ||
       !Array.isArray(products) ||
@@ -63,14 +62,12 @@ export const createOrder: RequestHandler = async (req, res) => {
       res.status(401).json({ message: "User not authenticated." });
       return;
     }
-
     const productIds = products.map((p: any) => p.productId);
     const foundProducts = await Product.find({ _id: { $in: productIds } });
     if (foundProducts.length !== productIds.length) {
       res.status(404).json({ message: "One or more products not found." });
       return;
     }
-
     const newOrder: IOrder = await Order.create({
       userId,
       products,
@@ -81,7 +78,6 @@ export const createOrder: RequestHandler = async (req, res) => {
       locationImages,
       source: "live",
     });
-
     // --- Create Activity Log for Order Creation ---
     try {
       await ActivityLog.create({
@@ -101,7 +97,6 @@ export const createOrder: RequestHandler = async (req, res) => {
       );
     }
     // --- End Activity Log ---
-
     // --- Notification Logic ---
     try {
       const staffUsers = await User.find({
@@ -138,7 +133,6 @@ export const createOrder: RequestHandler = async (req, res) => {
       console.error("Failed to create notifications:", notificationError);
     }
     // --- End Notification Logic ---
-
     res.status(201).json(newOrder);
   } catch (error: any) {
     console.error("Error creating order:", error.message);
@@ -177,21 +171,16 @@ export const getOrderById: RequestHandler = async (req, res) => {
       return;
     }
     if (!order.userId || !(order.userId as any)._id) {
-      res
-        .status(500)
-        .json({
-          message: "Order data is incomplete (missing user reference).",
-        });
+      res.status(500).json({
+        message: "Order data is incomplete (missing user reference).",
+      });
       return;
     }
     const orderOwnerId = (order.userId as any)._id.toString();
-
     if (req.user?.role === "client" && orderOwnerId !== req.user?._id) {
-      res
-        .status(403)
-        .json({
-          message: "Forbidden: You are not authorized to view this order.",
-        });
+      res.status(403).json({
+        message: "Forbidden: You are not authorized to view this order.",
+      });
       return;
     }
     res.status(200).json(order);
@@ -208,19 +197,16 @@ export const updateOrder = async (
   const { id } = req.params;
   const { orderStatus, paymentStatus, paymentReceiptUrl, paymentStage } =
     req.body;
-
   if (!mongoose.Types.ObjectId.isValid(id)) {
     res.status(400).json({ message: "Invalid Order ID format." });
     return;
   }
-
   try {
     const orderBeforeUpdate = await Order.findById(id).lean();
     if (!orderBeforeUpdate) {
       res.status(404).json({ message: "Order not found." });
       return;
     }
-
     if (req.user?.role === "client") {
       if (orderBeforeUpdate.userId.toString() !== req.user?._id) {
         res
@@ -235,14 +221,12 @@ export const updateOrder = async (
         return;
       }
     }
-
     const updateData: {
       $set?: { [key: string]: any };
       $push?: { [key: string]: any };
     } = {};
     const fieldsToSet: { [key: string]: string } = {};
     let logDetails = "";
-
     if (req.user?.role !== "client") {
       if (orderStatus && orderStatus !== orderBeforeUpdate.orderStatus) {
         fieldsToSet.orderStatus = orderStatus;
@@ -259,7 +243,6 @@ export const updateOrder = async (
         updateData.$set = fieldsToSet;
       }
     }
-
     if (paymentReceiptUrl && paymentStage) {
       if (!["initial", "pre_delivery", "final"].includes(paymentStage)) {
         res.status(400).json({ message: "Invalid payment stage provided." });
@@ -276,12 +259,10 @@ export const updateOrder = async (
       }
       logDetails += `Receipt uploaded for ${paymentStage} stage. `;
     }
-
     if (Object.keys(updateData).length === 0) {
       res.status(400).json({ message: "No valid fields provided for update." });
       return;
     }
-
     const updatedOrder = await Order.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
@@ -293,7 +274,6 @@ export const updateOrder = async (
         .json({ message: "Order not found after update attempt." });
       return;
     }
-
     // --- Create Activity Log for Order Update ---
     if (logDetails.trim()) {
       try {
@@ -314,7 +294,56 @@ export const updateOrder = async (
     }
     // --- End Activity Log ---
 
-    // --- Create Notification Logic ---
+    // --- ADMIN NOTIFICATION LOGIC (for receipt upload) ---
+    if (paymentReceiptUrl && paymentStage) {
+      try {
+        // Find all admin and personnel users
+        const staffUsers = await User.find({
+          role: { $in: ["admin", "personnel"] },
+        }).select("_id");
+
+        if (staffUsers.length > 0) {
+          // --- MODIFICATION: Create a human-readable label ---
+          let stageLabel = "Payment"; // Default
+          if (paymentStage === "initial") {
+            stageLabel = "Initial Payment (50%)";
+          } else if (paymentStage === "pre_delivery") {
+            stageLabel = "Pre-Delivery Payment (40%)";
+          } else if (paymentStage === "final") {
+            stageLabel = "Final Payment (10%)";
+          }
+          // --- END MODIFICATION ---
+
+          // Get customer name from the order
+          const customerName = `${updatedOrder.customerInfo.firstName} ${updatedOrder.customerInfo.lastName}`;
+
+          // --- MODIFICATION: Update message to include the label ---
+          const adminMessage = `Receipt for [${stageLabel}] uploaded for order #${updatedOrder._id
+            .toString()
+            .slice(-6)} by ${customerName}.`;
+
+          // Create a notification for each staff member
+          const notificationPromises = staffUsers.map((staff) =>
+            Notification.create({
+              userId: staff._id, // The admin/personnel user's ID
+              orderId: updatedOrder._id,
+              message: adminMessage, // Use the new, more specific message
+              type: "payment_uploaded",
+            })
+          );
+          await Promise.all(notificationPromises);
+        }
+      } catch (notificationError) {
+        console.error(
+          "Failed to create admin notification for receipt upload:",
+          notificationError
+        );
+        // Do not fail the main request, just log this error
+      }
+    }
+    // --- END OF ADMIN NOTIFICATION LOGIC ---
+
+    // --- Create Notification Logic (For Client) ---
     let notificationMessage = "";
     let notificationType = "general";
     if (fieldsToSet.orderStatus) {
@@ -341,16 +370,13 @@ export const updateOrder = async (
       }
     }
     // --- End Notification Logic ---
-
     res.status(200).json(updatedOrder);
   } catch (error: any) {
     console.error("Error updating order:", error.message);
     const status = error?.name === "ValidationError" ? 400 : 500;
-    res
-      .status(status)
-      .json({
-        message: error?.message || "Server error while updating order.",
-      });
+    res.status(status).json({
+      message: error?.message || "Server error while updating order.",
+    });
   }
 };
 
@@ -369,11 +395,9 @@ export const getAllUploads: RequestHandler = async (req, res) => {
     const orders = await Order.find({})
       .sort({ createdAt: -1 })
       .select("customerInfo paymentInfo locationImages createdAt _id");
-
     const uploads = orders.flatMap((order) => {
       const allUploads: Upload[] = [];
       const customerName = `${order.customerInfo.firstName} ${order.customerInfo.lastName}`;
-
       if (order.paymentInfo?.paymentReceipts) {
         const receipts = order.paymentInfo.paymentReceipts;
         const allReceiptUrls = [

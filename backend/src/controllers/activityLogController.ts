@@ -1,20 +1,21 @@
-// backend/src/controllers/activityLogController.ts
-
 import { Request, Response, RequestHandler } from "express";
 import ActivityLog from "../models/activityLogModel";
 
 /**
  * @desc    Get all activity logs (with pagination, search, and filtering)
  * @route   GET /api/activity-logs
- * @access  Private (Admin)
+ * @access  Private (Admin & Personnel)
  */
 export const getActivityLogs: RequestHandler = async (req, res) => {
-  if (req.user?.role !== "admin") {
+  // --- MODIFICATION: Allow 'admin' and 'personnel' roles ---
+  const allowedRoles = ["admin", "personnel"];
+  if (!req.user || !allowedRoles.includes(req.user.role)) {
     res.status(403).json({
       message: "Forbidden: You do not have permission to view logs.",
     });
     return;
   }
+  // --- END MODIFICATION ---
 
   try {
     // --- Pagination ---
@@ -27,11 +28,9 @@ export const getActivityLogs: RequestHandler = async (req, res) => {
 
     // Build the query object for Mongoose
     const query: { [key: string]: any } = {};
-
     if (category && typeof category === "string" && category !== "all") {
       query.category = category;
     }
-
     if (search && typeof search === "string") {
       const searchRegex = { $regex: search, $options: "i" }; // 'i' for case-insensitive
       query.$or = [

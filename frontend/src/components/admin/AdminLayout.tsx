@@ -3,6 +3,9 @@ import { Outlet, useLocation } from "react-router-dom";
 import { AdminSidebar } from "./layout/AdminSidebar";
 import { AdminHeader } from "./layout/AdminHeader";
 import { useAuth } from "@/context/AuthContext";
+// ✨ Import the central permission checker
+// (Adjust this path if your adminPermission.ts file is elsewhere, e.g., @/lib/...)
+import { hasUserPermission } from "@/utils/adminPermissions";
 import {
   LayoutDashboard,
   Package,
@@ -21,34 +24,8 @@ import {
 } from "lucide-react";
 import { Loader2 } from "lucide-react";
 
-const hasPermission = (userRole: string, permission: string): boolean => {
-  const rolePermissions: Record<string, string[]> = {
-    admin: [
-      "view_dashboard",
-      "view_projects",
-      "view_products",
-      "manage_orders",
-      "view_contracts",
-      "view_customers",
-      "manage_users",
-      "view_reports",
-      "manage_settings",
-      "view_activity_logs",
-      "view_messages", // Added
-      "view_customer_uploads", // Added
-    ],
-    personnel: [
-      "view_dashboard",
-      "view_projects",
-      "view_products",
-      "manage_orders",
-      "view_customers",
-      "view_messages", // Added
-      "view_customer_uploads", // Added
-    ],
-  };
-  return rolePermissions[userRole]?.includes(permission) || false;
-};
+// ❌ The local hasPermission function has been REMOVED.
+// We now use the imported `hasUserPermission` function.
 
 const navItems = [
   {
@@ -115,7 +92,7 @@ const navItems = [
     to: "/admin/records",
     icon: Upload,
     label: "Records Upload",
-    permission: "manage_settings",
+    permission: "manage_records", // ✨ Use the dedicated permission
   },
   {
     to: "/admin/activity",
@@ -142,8 +119,9 @@ const AdminLayout: React.FC = () => {
     );
   }
 
+  // ✨ MODIFIED: This now uses the imported `hasUserPermission` function
   const filteredNavItems = user
-    ? navItems.filter((item) => hasPermission(user.role, item.permission))
+    ? navItems.filter((item) => hasUserPermission(user.role, item.permission))
     : [];
 
   return (
@@ -167,5 +145,4 @@ const AdminLayout: React.FC = () => {
     </div>
   );
 };
-
 export default AdminLayout;
