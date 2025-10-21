@@ -106,7 +106,7 @@ const ProjectsHero = ({ stats, scrollY }: ProjectsHeroProps) => {
       </div>
       <div className="absolute bottom-0 left-0 right-0">
         <svg
-          className="w-full h-16 md:h-24 text-gray-50 dark:text-gray-900"
+          className="w-full h-18 md:h-24 text-gray-50 dark:text-gray-900"
           viewBox="0 0 1440 120"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"

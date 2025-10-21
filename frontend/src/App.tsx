@@ -17,7 +17,6 @@ import ProtectedAdminRoute from "./components/admin/ProtectedAdminRoute";
 import Index from "./pages/Index";
 import Home from "./pages/Home";
 import About from "./pages/About";
-import Contact from "./pages/Contact";
 import Shop from "./pages/Shop";
 import ProductDetail from "./pages/ProductDetail";
 import Projects from "./pages/Projects";
@@ -26,13 +25,14 @@ import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
-import FAQ from "./pages/FAQ";
 import Checkout from "./pages/Checkout";
 import CustomerProfile from "./pages/CustomerProfile";
 import CustomerDashboardPage from "./pages/CustomerDashboard";
 import OrderHistory from "./pages/OrderHistory";
 import OrderTracking from "./pages/OrderTracking";
 import NotFound from "./pages/NotFound";
+import FAQPage from "./pages/FAQPage";
+import ContactPage from "./pages/ContactPage";
 
 // Admin pages & layout
 import AdminLayout from "./components/admin/AdminLayout";
@@ -75,7 +75,7 @@ function App() {
                     <Route path="/" element={<Index />} />
                     <Route path="/home" element={<Home />} />
                     <Route path="/about" element={<About />} />
-                    <Route path="/contact" element={<Contact />} />
+                    <Route path="/contact" element={<ContactPage />} />
                     <Route path="/shop" element={<Shop />} />
                     <Route path="/product/:id" element={<ProductDetail />} />
                     <Route path="/projects" element={<Projects />} />
@@ -87,7 +87,7 @@ function App() {
                       element={<ForgotPassword />}
                     />
                     <Route path="/reset-password" element={<ResetPassword />} />
-                    <Route path="/faq" element={<FAQ />} />
+                    <Route path="/faq" element={<FAQPage />} />
 
                     {/* Customer Protected Routes */}
                     <Route

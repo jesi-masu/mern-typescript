@@ -30,27 +30,27 @@ const Home = () => {
         </div>
 
         <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
-          <Featured />
-        </div>
-
-        <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
           <StatisticsSection />
         </div>
 
-        <div className="animate-fade-in" style={{ animationDelay: "0.4s" }}>
-          <CreativeDesignsCarousel />
+        <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
+          <Featured />
         </div>
 
         <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
           <Collections />
         </div>
 
+        <div className="animate-fade-in" style={{ animationDelay: "0.4s" }}>
+          <CreativeDesignsCarousel />
+        </div>
+
         <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
           <FeaturesSection />
         </div>
 
-        <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
-          <PhilippinesMapSection />
+        <div className="animate-fade-in" style={{ animationDelay: "0.6s" }}>
+          <ElegantFeaturesSection />
         </div>
 
         <div className="animate-fade-in" style={{ animationDelay: "0.5s" }}>
@@ -61,16 +61,8 @@ const Home = () => {
           <ContainerUnitDetailsSection />
         </div>
 
-        <div className="animate-fade-in" style={{ animationDelay: "0.6s" }}>
-          <ElegantFeaturesSection />
-        </div>
-
         <div className="animate-fade-in" style={{ animationDelay: "0.7s" }}>
           <PrefabVsContainerSection />
-        </div>
-
-        <div className="flex w-full flex-col">
-          <div className="card bg-base-300 rounded-box grid h-20 place-items-center"></div>
         </div>
 
         <div className="animate-fade-in" style={{ animationDelay: "0.8s" }}>
@@ -79,6 +71,14 @@ const Home = () => {
 
         <div className="animate-fade-in" style={{ animationDelay: "0.9s" }}>
           <TestimonialsSection />
+        </div>
+
+        <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
+          <PhilippinesMapSection />
+        </div>
+
+        <div className="flex w-full flex-col">
+          <div className="card bg-base-300 rounded-box grid h-20 place-items-center"></div>
         </div>
 
         <div className="animate-fade-in" style={{ animationDelay: "1.0s" }}>

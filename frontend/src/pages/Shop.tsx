@@ -6,6 +6,7 @@ import ProductGrid from "@/components/shop/ProductGrid";
 import ShopPagination from "@/components/shop/ShopPagination";
 import { Product } from "@/types/product";
 import { fetchProducts } from "@/services/productService";
+import { Sparkles } from "lucide-react";
 // No longer need 'Package', can be removed if not used elsewhere
 
 const Shop = () => {
@@ -119,7 +120,7 @@ const Shop = () => {
   return (
     <Layout>
       {/* --- New Animated Hero Section from Test File --- */}
-      <section className="relative bg-gradient-to-br from-blue-900 via-blue-700 to-indigo-800 text-white py-32 overflow-hidden">
+      <section className="relative bg-gradient-to-br from-blue-900 via-blue-700 to-indigo-800 text-white pt-16 pb-24 overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
           <div
             className="absolute w-96 h-96 bg-blue-400/20 rounded-full blur-3xl -top-48 -left-48 animate-pulse"
@@ -148,8 +149,18 @@ const Shop = () => {
             ))}
           </div>
         </div>
-        <div className="container mx-auto px-4 relative z-10">
+
+        <div className="container mx-auto mb-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
+            <div
+              className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-6 py-3 rounded-full mb-8 border border-white/20 shadow-xl animate-fade-in-down hover:bg-white/20 transition-all duration-300 cursor-pointer group"
+              style={{ animationDelay: "0.2s" }}
+            >
+              <Sparkles className="w-4 h-4 animate-pulse" />
+              <span className="text-sm font-semibold tracking-wider uppercase">
+                Premium Collection
+              </span>
+            </div>
             <h1
               className="text-6xl md:text-7xl lg:text-8xl font-black mb-6 tracking-tight animate-fade-in-up"
               style={{ animationDelay: "0.3s" }}
@@ -201,7 +212,7 @@ const Shop = () => {
         </div>
         <div className="absolute bottom-0 left-0 right-0">
           <svg
-            className="w-full h-16 md:h-24 text-white"
+            className="w-full h-18 md:h-24 text-white"
             viewBox="0 0 1440 120"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -215,7 +226,7 @@ const Shop = () => {
       </section>
 
       {/* --- Main Content Section with animations applied --- */}
-      <section className="py-12 bg-white">
+      <section className="py-12 bg-white -mt-5">
         <div className="container">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             <div className="animate-fade-in-left">

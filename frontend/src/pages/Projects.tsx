@@ -58,7 +58,7 @@ const Projects = () => {
     <Layout>
       <ProjectsHero stats={stats} scrollY={scrollY} />
 
-      <section className="py-16 md:py-20 bg-gray-50 dark:bg-gray-900">
+      <section className="py-16 md:py-20 bg-gray-50 dark:bg-gray-900 -mt-5">
         <div className="container">
           <CategoryFilters
             selectedCategory={selectedCategory}

@@ -18,7 +18,7 @@ const projectLocations: ProjectLocation[] = [
     name: "Claveria",
     region: "Northern Luzon",
     type: "residential",
-    projects: 6,
+    projects: 2,
     icon: Home,
   },
   {
@@ -26,7 +26,7 @@ const projectLocations: ProjectLocation[] = [
     name: "Tuguegarao",
     region: "Northern Luzon",
     type: "commercial",
-    projects: 8,
+    projects: 3,
     icon: Building,
   },
   {
@@ -34,7 +34,7 @@ const projectLocations: ProjectLocation[] = [
     name: "Manila",
     region: "Northern Luzon",
     type: "commercial",
-    projects: 25,
+    projects: 5,
     icon: Building,
   },
   {
@@ -51,7 +51,7 @@ const projectLocations: ProjectLocation[] = [
     name: "Cebu",
     region: "Central Visayas",
     type: "commercial",
-    projects: 12,
+    projects: 4,
     icon: Building,
   },
   {
@@ -59,7 +59,7 @@ const projectLocations: ProjectLocation[] = [
     name: "Bohol",
     region: "Central Visayas",
     type: "residential",
-    projects: 5,
+    projects: 6,
     icon: Home,
   },
   {
@@ -84,7 +84,7 @@ const projectLocations: ProjectLocation[] = [
     name: "Cagayan de Oro",
     region: "Mindanao",
     type: "industrial",
-    projects: 10,
+    projects: 12,
     icon: Factory,
   },
   {
@@ -124,7 +124,7 @@ const projectLocations: ProjectLocation[] = [
     name: "Zamboanga",
     region: "Mindanao",
     type: "industrial",
-    projects: 9,
+    projects: 4,
     icon: Factory,
   },
   {
@@ -135,10 +135,46 @@ const projectLocations: ProjectLocation[] = [
     projects: 15,
     icon: Building,
   },
+  {
+    id: 16,
+    name: "Dinagat Island",
+    region: "Mindanao",
+    type: "residential",
+    projects: 4,
+    icon: Home,
+  },
+];
+
+// City marker positions (percentage-based for responsive positioning)
+interface CityMarker {
+  city: string;
+  top: string;
+  left: string;
+  type: "residential" | "commercial" | "industrial";
+}
+
+const cityMarkers: CityMarker[] = [
+  // Northern Luzon - Positioned next to circles on the map, not covering text
+  { city: "Claveria", top: "12%", left: "58%", type: "residential" }, // Green circle - upper right
+  { city: "Tuguegarao", top: "20%", left: "54%", type: "commercial" }, // Blue circle - below Claveria
+
+  // Visayas - Positioned next to circles on the left side
+  { city: "Cebu", top: "38%", left: "35%", type: "commercial" }, // Blue circle - left side
+  { city: "Bohol", top: "51%", left: "35%", type: "residential" }, // Orange circle - left side below Cebu
+
+  // Mindanao - Positioned next to circles, avoiding text labels
+  { city: "Dinagat Island", top: "63%", left: "72%", type: "residential" }, // Green circle - positioned beside circle and label
+  { city: "Cagayan de Oro", top: "73%", left: "60%", type: "industrial" }, // Orange circle - center
+  { city: "Iligan", top: "76%", left: "50%", type: "industrial" }, // Orange circle - left center
+  { city: "Agusan", top: "77%", left: "80%", type: "residential" }, // Green circle - right side
+  { city: "Bukidnon", top: "83%", left: "72%", type: "residential" }, // Orange circle - positioned beside BUKIDNON text
+  { city: "Zamboanga", top: "85%", left: "40%", type: "industrial" }, // Green circle - positioned beside circle on left side
+  { city: "General Santos", top: "92%", left: "65%", type: "commercial" }, // Gray circle - bottom center
 ];
 
 const PhilippinesMapSection: React.FC = () => {
   const navigate = useNavigate();
+  const [hoveredCity, setHoveredCity] = useState<string | null>(null);
 
   const projectTypeColors = {
     residential: "text-emerald-500",
@@ -172,13 +208,10 @@ const PhilippinesMapSection: React.FC = () => {
   const totalCities = new Set(projectLocations.map((loc) => loc.name)).size;
   const totalRegions = new Set(projectLocations.map((loc) => loc.region)).size;
 
-  const regionalProjectCounts = projectLocations.reduce(
-    (acc, loc) => {
-      acc[loc.region] = (acc[loc.region] || 0) + loc.projects;
-      return acc;
-    },
-    {} as Record<string, number>
-  );
+  const regionalProjectCounts = projectLocations.reduce((acc, loc) => {
+    acc[loc.region] = (acc[loc.region] || 0) + loc.projects;
+    return acc;
+  }, {} as Record<string, number>);
 
   return (
     <section className="relative py-16 md:py-24 bg-gradient-to-br from-blue-50 via-white to-green-50 overflow-hidden">
@@ -295,16 +328,71 @@ const PhilippinesMapSection: React.FC = () => {
           <div className="flex justify-center order-1 lg:order-2 relative">
             <div className="relative w-full max-w-lg">
               <div className="relative p-8 bg-white rounded-3xl shadow-2xl border border-gray-200">
-                <img
-                  src="https://camcoprefabricatedstructures.com/wp-content/uploads/2024/08/5-32741-1-1024x1024.png"
-                  alt="Philippines Project Locations Map"
-                  className="w-full h-auto rounded-2xl"
-                  onError={(e) => {
-                    // Fallback if image doesn't load
-                    e.currentTarget.src =
-                      'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500"%3E%3Crect fill="%23E5E7EB" width="400" height="500"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" fill="%236B7280" font-size="18" font-family="sans-serif"%3EMap Image Placeholder%3C/text%3E%3Ctext x="50%25" y="55%25" text-anchor="middle" fill="%239CA3AF" font-size="12" font-family="sans-serif"%3EReplace with your map image%3C/text%3E%3C/svg%3E';
-                  }}
-                />
+                <div className="relative">
+                  <img
+                    src="https://camcoprefabricatedstructures.com/wp-content/uploads/2024/08/5-32741-1-1024x1024.png"
+                    alt="Philippines Project Locations Map"
+                    className="w-full h-auto rounded-2xl"
+                    onError={(e) => {
+                      // Fallback if image doesn't load
+                      e.currentTarget.src =
+                        'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500"%3E%3Crect fill="%23E5E7EB" width="400" height="500"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" fill="%236B7280" font-size="18" font-family="sans-serif"%3EMap Image Placeholder%3C/text%3E%3Ctext x="50%25" y="55%25" text-anchor="middle" fill="%239CA3AF" font-size="12" font-family="sans-serif"%3EReplace with your map image%3C/text%3E%3C/svg%3E';
+                    }}
+                  />
+
+                  {/* Interactive City Markers */}
+                  {cityMarkers.map((marker) => {
+                    const cityData = projectLocations.find(
+                      (loc) => loc.name === marker.city
+                    );
+                    return (
+                      <button
+                        key={marker.city}
+                        onClick={() => navigate("/projects")}
+                        onMouseEnter={() => setHoveredCity(marker.city)}
+                        onMouseLeave={() => setHoveredCity(null)}
+                        className="absolute transform -translate-x-1/2 -translate-y-1/2 group cursor-pointer z-10"
+                        style={{ top: marker.top, left: marker.left }}
+                        aria-label={`View projects in ${marker.city}`}
+                      >
+                        {/* Pulsing Ring Animation */}
+                        <div
+                          className={`absolute inset-0 rounded-full ${getProjectTypeBgColorClass(
+                            marker.type
+                          )} opacity-30 animate-ping`}
+                        ></div>
+
+                        {/* Main Marker Circle */}
+                        <div
+                          className={`relative w-6 h-6 rounded-full ${getProjectTypeBgColorClass(
+                            marker.type
+                          )} border-2 border-white shadow-lg transform transition-all duration-300 group-hover:scale-150 group-hover:shadow-2xl`}
+                        >
+                          {/* Inner Dot */}
+                          <div className="absolute inset-0 m-auto w-2 h-2 bg-white rounded-full"></div>
+                        </div>
+
+                        {/* Tooltip on Hover */}
+                        {hoveredCity === marker.city && (
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs font-semibold rounded-lg shadow-xl whitespace-nowrap z-20 animate-fade-in">
+                            <div className="text-center">
+                              <div className="font-bold">{marker.city}</div>
+                              {cityData && (
+                                <div className="text-gray-300 text-xs">
+                                  {cityData.projects} projects
+                                </div>
+                              )}
+                            </div>
+                            {/* Tooltip Arrow */}
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-px">
+                              <div className="border-4 border-transparent border-t-gray-900"></div>
+                            </div>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
 
                 {/* Legend */}
                 <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
@@ -342,12 +430,27 @@ const PhilippinesMapSection: React.FC = () => {
           66% { transform: translate(-20px, 20px) scale(0.9); }
         }
 
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(5px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+          }
+        }
+
         .animate-blob {
           animation: blob 7s infinite;
         }
 
         .animation-delay-2000 {
           animation-delay: 2s;
+        }
+
+        .animate-fade-in {
+          animation: fade-in 0.2s ease-out;
         }
       `}</style>
     </section>
