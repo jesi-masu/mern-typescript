@@ -34,15 +34,20 @@ export const getUserOrders: RequestHandler = async (req, res) => {
 };
 
 export const createOrder: RequestHandler = async (req, res) => {
+  // ✏️ 1. Start a Mongoose session for a transaction
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const {
-      products,
+      products, // This is the array of items, e.g., [{ productId: "xyz", quantity: 2 }]
       customerInfo,
       paymentInfo,
       contractInfo,
       totalAmount,
       locationImages,
     } = req.body;
+
     if (
       !products ||
       !Array.isArray(products) ||
@@ -57,38 +62,79 @@ export const createOrder: RequestHandler = async (req, res) => {
         .json({ message: "Please provide all required order fields." });
       return;
     }
+
     const userId = req.user?._id; // Customer ID
     if (!userId) {
       res.status(401).json({ message: "User not authenticated." });
       return;
     }
-    const productIds = products.map((p: any) => p.productId);
-    const foundProducts = await Product.find({ _id: { $in: productIds } });
-    if (foundProducts.length !== productIds.length) {
-      res.status(404).json({ message: "One or more products not found." });
-      return;
+
+    // ✏️ 2. Check stock and prepare product updates
+    const productSavePromises = [];
+    for (const item of products) {
+      // Find the product within the session
+      const product = await Product.findById(item.productId).session(session);
+
+      if (!product) {
+        // Abort if any product is not found
+        throw new Error(`Product with ID ${item.productId} not found.`);
+      }
+
+      // Check if stock is sufficient
+      if (product.stock < item.quantity) {
+        throw new Error(
+          `Not enough stock for ${product.productName}. Only ${product.stock} available, but ${item.quantity} were requested.`
+        );
+      }
+
+      // Decrement stock and add the save promise to our array
+      product.stock -= item.quantity;
+      productSavePromises.push(product.save({ session })); // Pass the session
     }
-    const newOrder: IOrder = await Order.create({
-      userId,
-      products,
-      customerInfo,
-      paymentInfo,
-      contractInfo,
-      totalAmount,
-      locationImages,
-      source: "live",
-    });
-    // --- Create Activity Log for Order Creation ---
+
+    // ✏️ 3. Execute all product stock updates
+    // If any of these fail, the transaction will be aborted
+    await Promise.all(productSavePromises);
+
+    // ✏️ 4. Create the new order (pass the session)
+    // We use create with an array and session option
+    const [newOrder] = await Order.create(
+      [
+        {
+          userId,
+          products,
+          customerInfo,
+          paymentInfo,
+          contractInfo,
+          totalAmount,
+          locationImages,
+          source: "live",
+        },
+      ],
+      { session } // Pass the session
+    );
+
+    if (!newOrder) {
+      // This should be caught by the try/catch, but good to be safe
+      throw new Error("Order creation failed.");
+    }
+
+    // --- Create Activity Log (pass session) ---
     try {
-      await ActivityLog.create({
-        userId: userId, // ID of the customer who placed the order
-        userName: `${customerInfo.firstName} ${customerInfo.lastName}`, // Customer's name
-        action: `Order Created`,
-        details: `Order #${newOrder._id
-          .toString()
-          .slice(-6)} placed. Total: ₱${totalAmount.toLocaleString()}`,
-        category: "orders",
-      });
+      await ActivityLog.create(
+        [
+          {
+            userId: userId,
+            userName: `${customerInfo.firstName} ${customerInfo.lastName}`,
+            action: `Order Created`,
+            details: `Order #${newOrder._id
+              .toString()
+              .slice(-6)} placed. Total: ₱${totalAmount.toLocaleString()}`,
+            category: "orders",
+          },
+        ],
+        { session } // ✏️ Pass the session
+      );
       console.log(`Activity log created for new order ${newOrder._id}`);
     } catch (logError) {
       console.error(
@@ -97,11 +143,15 @@ export const createOrder: RequestHandler = async (req, res) => {
       );
     }
     // --- End Activity Log ---
-    // --- Notification Logic ---
+
+    // --- Notification Logic (pass session) ---
     try {
       const staffUsers = await User.find({
         role: { $in: ["admin", "personnel"] },
-      }).select("_id");
+      })
+        .select("_id")
+        .session(session); // ✏️ Pass the session to reads
+
       if (staffUsers.length > 0) {
         const staffNotificationMessage = `New order #${newOrder._id
           .toString()
@@ -109,34 +159,51 @@ export const createOrder: RequestHandler = async (req, res) => {
           customerInfo.lastName
         }.`;
         const staffNotificationType = "new_order_admin";
-        const staffNotificationPromises = staffUsers.map((staff) =>
-          Notification.create({
-            userId: staff._id,
-            orderId: newOrder._id,
-            message: staffNotificationMessage,
-            type: staffNotificationType,
-          })
-        );
-        await Promise.all(staffNotificationPromises);
+
+        // Prepare docs for bulk create
+        const staffNotifications = staffUsers.map((staff) => ({
+          userId: staff._id,
+          orderId: newOrder._id,
+          message: staffNotificationMessage,
+          type: staffNotificationType,
+        }));
+        await Notification.create(staffNotifications, { session }); // ✏️ Pass session to bulk create
       }
+
       const clientNotificationMessage = `Your order #${newOrder._id
         .toString()
         .slice(-6)} has been successfully placed.`;
       const clientNotificationType = "order_placed_confirmation";
-      await Notification.create({
-        userId: userId,
-        orderId: newOrder._id,
-        message: clientNotificationMessage,
-        type: clientNotificationType,
-      });
+      await Notification.create(
+        [
+          {
+            userId: userId,
+            orderId: newOrder._id,
+            message: clientNotificationMessage,
+            type: clientNotificationType,
+          },
+        ],
+        { session } // ✏️ Pass the session
+      );
     } catch (notificationError) {
       console.error("Failed to create notifications:", notificationError);
     }
     // --- End Notification Logic ---
+
+    // ✏️ 5. Commit the transaction if everything succeeded
+    await session.commitTransaction();
     res.status(201).json(newOrder);
   } catch (error: any) {
+    // ✏️ 6. If any step failed, abort the entire transaction
+    await session.abortTransaction();
     console.error("Error creating order:", error.message);
-    res.status(500).json({ message: "Server error while creating order." });
+    // Return the specific stock error message if we threw it
+    res
+      .status(400) // Use 400 for client errors like "out of stock"
+      .json({ message: error.message || "Server error while creating order." });
+  } finally {
+    // ✏️ 7. Always end the session
+    session.endSession();
   }
 };
 

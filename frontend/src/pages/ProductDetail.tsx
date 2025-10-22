@@ -1,10 +1,10 @@
-// frontend/src/pages/ProductDetail.tsx
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge"; // ✏️ 1. IMPORT BADGE
 import { Truck, Package, Box, Rotate3D } from "lucide-react";
 import {
   Dialog,
@@ -53,6 +53,7 @@ const ProductDetail = () => {
   }, [id]);
 
   if (loading) {
+    // ... (no change)
     return (
       <Layout>
         <div className="container py-12 text-center">
@@ -64,6 +65,7 @@ const ProductDetail = () => {
   }
 
   if (error) {
+    // ... (no change)
     return (
       <Layout>
         <div className="container py-12 text-center">
@@ -76,6 +78,7 @@ const ProductDetail = () => {
   }
 
   if (!product) {
+    // ... (no change)
     return (
       <Layout>
         <div className="container py-12 text-center">
@@ -89,8 +92,14 @@ const ProductDetail = () => {
     );
   }
 
+  // ✏️ 2. DEFINE STOCK LOGIC
+  const isOutOfStock = product.stock <= 0;
+
   // --- START: MODIFICATION ---
   const handleBuyNow = () => {
+    // ✏️ 3. ADD A GUARD FOR SAFETY
+    if (isOutOfStock) return;
+
     // 1. Create a single-item cart in the format the checkout page expects.
     const itemToCheckout = {
       id: product._id,
@@ -121,7 +130,18 @@ const ProductDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Product Images */}
           <div>
-            <div className="bg-gray-100 rounded-lg overflow-hidden mb-4 h-80 md:h-96">
+            {/* ✏️ 4. ADD 'relative' CLASS TO THIS CONTAINER */}
+            <div className="relative bg-gray-100 rounded-lg overflow-hidden mb-4 h-80 md:h-96">
+              {/* ✏️ 5. ADD THE "OUT OF STOCK" BADGE */}
+              {isOutOfStock && (
+                <Badge
+                  variant="destructive"
+                  className="absolute top-4 left-4 z-10"
+                >
+                  Out of Stock
+                </Badge>
+              )}
+
               <img
                 src={
                   product.images && product.images.length > 0
@@ -172,6 +192,7 @@ const ProductDetail = () => {
                 product.productShortDescription}
             </p>
             <div className="grid grid-cols-3 gap-4 mb-6">
+              {/* ... (Info Cards - no change) ... */}
               <Card className="bg-prefab-50">
                 <CardContent className="p-4 flex flex-col items-center text-center">
                   <Box className="h-8 w-8 text-prefab-600 mb-2" />
@@ -198,13 +219,17 @@ const ProductDetail = () => {
               </Card>
             </div>
             <div className="flex space-x-4 mt-6">
+              {/* ✏️ 6. UPDATE THE "BUY NOW" BUTTON */}
               <Button
                 className="w-full bg-prefab-600 hover:bg-prefab-700 text-white"
                 onClick={handleBuyNow}
+                disabled={isOutOfStock}
               >
-                Buy Now
+                {isOutOfStock ? "Out of Stock" : "Buy Now"}
               </Button>
+
               <Dialog>
+                {/* ... (3D Model Dialog - no change) ... */}
                 <DialogTrigger asChild>
                   <Button variant="outline" className="w-full">
                     <Rotate3D className="mr-2 h-4 w-4" />
@@ -244,6 +269,7 @@ const ProductDetail = () => {
 
         {/* Product Details Tabs */}
         <div className="mt-12">
+          {/* ... (All Tabs content - no change) ... */}
           <Tabs defaultValue="features">
             <TabsList className="w-full justify-start border-b mb-0 rounded-none">
               <TabsTrigger value="features">Features</TabsTrigger>

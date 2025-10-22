@@ -48,9 +48,22 @@ export const ProductGrid: React.FC<ProductViewProps> = ({
                 <span className="font-bold text-lg">
                   ₱{product.productPrice.toLocaleString()}
                 </span>
-                <span className="text-sm text-gray-500">
-                  {product.squareFeet} sq ft
-                </span>
+                <div className="flex items-center gap-2">
+                  {/* ✏️ ADDED WRAPPER */}
+                  <span className="text-sm text-gray-500">
+                    {product.squareFeet} sq ft
+                  </span>
+                  {/* ✏️ ADD THIS BADGE */}
+                  <span
+                    className={`text-sm font-medium px-2 py-0.5 rounded-full ${
+                      product.stock > 0
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {product.stock} in stock
+                  </span>
+                </div>
               </div>
             </div>
             <div className="pt-4 mt-auto space-y-2">

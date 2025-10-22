@@ -1,5 +1,4 @@
 // frontend/src/types/product.ts
-
 // Define the interface for the 'specifications' object
 export interface ProductSpecifications {
   dimensions: string;
@@ -20,6 +19,7 @@ export interface Product {
   productPrice: number;
   category: string;
   squareFeet: number;
+  stock: number;
   image?: string;
   images?: string[]; // Matches backend (array of strings)
   productLongDescription?: string;

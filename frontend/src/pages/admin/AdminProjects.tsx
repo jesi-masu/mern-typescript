@@ -13,7 +13,7 @@ import {
 import { toast } from "sonner";
 import { Project, ProjectStatus, ProjectCategory } from "@/types"; // Assuming types are defined
 import ProjectTable from "@/components/admin/ProjectTable";
-import { Plus, Filter, Search, Package } from "lucide-react";
+import { Plus, Filter, Search, Package, Briefcase } from "lucide-react";
 
 const AdminProjects = () => {
   const navigate = useNavigate();
@@ -89,6 +89,11 @@ const AdminProjects = () => {
     ...new Set(projects.map((p) => p.projectStatus)),
   ] as ProjectStatus[];
 
+  const totalModules = projects.reduce(
+    (acc, project) => acc + (project.modules || 0),
+    0
+  );
+
   const isInitialEmptyState =
     !searchQuery &&
     statusFilter === "all" &&
@@ -103,14 +108,35 @@ const AdminProjects = () => {
             Projects Management
           </h1>
           <p className="text-gray-600 mt-1">
-            Manage all your prefab construction projects from a centralized
-            dashboard.
+            Manage all your prefab construction projects.
           </p>
         </div>
-        <Button onClick={handleAddProject}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add New Project
-        </Button>
+
+        <div className="flex items-center gap-4">
+          {/* Total Modules Card */}
+          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
+            <Package className="h-6 w-6 text-indigo-600" />
+            <span className="text-xl font-semibold text-gray-800">
+              {totalModules}
+            </span>
+            <span className="text-gray-500">Total Modules</span>
+          </div>
+
+          {/* Total Projects Card */}
+          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
+            <Briefcase className="h-6 w-6 text-indigo-600" />
+            <span className="text-xl font-semibold text-gray-800">
+              {projects.length}
+            </span>
+            <span className="text-gray-500">Total Projects</span>
+          </div>
+
+          {/* Add Project Button (moved outside) */}
+          <Button onClick={handleAddProject}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add New Project
+          </Button>
+        </div>
       </div>
 
       <hr className="border-t border-gray-200" />

@@ -36,6 +36,7 @@ export const ProductTable: React.FC<ProductViewProps> = ({
             <TableHead>Category</TableHead>
             <TableHead>Price</TableHead>
             <TableHead>Size (sq ft)</TableHead>
+            <TableHead>Stock</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -55,6 +56,7 @@ export const ProductTable: React.FC<ProductViewProps> = ({
               <TableCell>{product.category}</TableCell>
               <TableCell>₱{product.productPrice.toLocaleString()}</TableCell>
               <TableCell>{product.squareFeet}</TableCell>
+              <TableCell>{product.stock}</TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-2">
                   <Button

@@ -8,6 +8,7 @@ export interface IProduct extends Document {
   productPrice: number;
   category: string;
   squareFeet: number;
+  stock: number; //
   image?: string;
   productLongDescription?: string;
   productShortDescription?: string; // Newly added
@@ -49,6 +50,12 @@ const productSchema: Schema = new Schema(
     squareFeet: {
       type: Number,
       required: true,
+    },
+    stock: {
+      type: Number,
+      required: true,
+      default: 0,
+      min: 0,
     },
     image: {
       type: String,

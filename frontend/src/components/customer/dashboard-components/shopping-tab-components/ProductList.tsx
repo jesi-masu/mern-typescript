@@ -36,8 +36,11 @@ const ProductCard: React.FC<{
   formatPrice,
 }) => {
   const navigate = useNavigate();
+  // ✏️ 1. ADD LOGIC FOR STOCK
+  const isOutOfStock = product.stock <= 0;
 
   const getCategoryIcon = (category: string) => {
+    // ... (no change)
     switch (category) {
       case "Residential":
         return <Home className="h-4 w-4" />;
@@ -49,8 +52,8 @@ const ProductCard: React.FC<{
         return <Building2 className="h-4 w-4" />; // Fallback
     }
   };
-
   const getCategoryColor = (category: string) => {
+    // ... (no change)
     switch (category) {
       case "Residential":
         return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300";
@@ -62,7 +65,6 @@ const ProductCard: React.FC<{
         return "bg-gray-100 text-gray-800 dark:bg-gray-700/30 dark:text-gray-300";
     }
   };
-
   return (
     <Card className="overflow-hidden h-full flex flex-col hover:shadow-lg transition-shadow duration-300">
       <div className="h-48 overflow-hidden relative group">
@@ -81,7 +83,14 @@ const ProductCard: React.FC<{
           </Button>
         </div>
 
-        {/* --- [MOVED] Category Badge is now positioned over the image --- */}
+        {/* ✏️ 2. ADD THE "OUT OF STOCK" BADGE */}
+        {isOutOfStock && (
+          <Badge variant="destructive" className="absolute top-3 left-3 z-10">
+            Out of Stock
+          </Badge>
+        )}
+
+        {/* --- Category Badge (no change) --- */}
         <Badge
           variant="outline"
           className={`absolute top-3 right-3 z-10 flex items-center gap-1.5 ${getCategoryColor(
@@ -93,6 +102,7 @@ const ProductCard: React.FC<{
         </Badge>
       </div>
       <CardHeader className="pb-2">
+        {/* ... (rest of CardHeader is unchanged) ... */}
         <div className="flex justify-between items-start">
           <CardTitle className="text-lg">{product.productName}</CardTitle>
           <div className="text-right flex-shrink-0 pl-2">
@@ -108,6 +118,7 @@ const ProductCard: React.FC<{
         </div>
       </CardHeader>
       <CardContent className="py-2 flex-grow">
+        {/* ... (rest of CardContent is unchanged) ... */}
         <p className="text-gray-600 text-sm line-clamp-3">
           {product.productShortDescription || "No description available"}
         </p>
@@ -122,7 +133,13 @@ const ProductCard: React.FC<{
             <Eye className="h-4 w-4" />
             View
           </Button>
-          {quantityInCart > 0 ? (
+
+          {/* ✏️ 3. UPDATE CART BUTTON LOGIC */}
+          {isOutOfStock ? (
+            <Button disabled className="flex items-center gap-2">
+              Out of Stock
+            </Button>
+          ) : quantityInCart > 0 ? (
             <div className="flex items-center justify-center gap-1">
               <Button
                 variant="outline"
@@ -144,6 +161,8 @@ const ProductCard: React.FC<{
                   onUpdateQuantity(product._id, quantityInCart + 1)
                 }
                 className="h-9 w-9"
+                // Disable '+' if cart quantity meets or exceeds stock
+                disabled={quantityInCart >= product.stock}
               >
                 <Plus className="h-4 w-4" />
               </Button>
@@ -152,6 +171,7 @@ const ProductCard: React.FC<{
             <Button
               className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
               onClick={() => onAddToCart(product)}
+              // This button is only shown if stock > 0, so no disable needed here
             >
               <ShoppingCart className="h-4 w-4" />
               Add to Cart
@@ -163,21 +183,19 @@ const ProductCard: React.FC<{
   );
 };
 
-// --- Main ProductList Component ---
+// --- Main ProductList Component (no change) ---
 interface ProductListProps {
   products: Product[];
   onAddToCart: (product: Product) => void;
   getCartQuantity: (productId: string) => number;
   onUpdateQuantity: (productId: string, quantity: number) => void;
 }
-
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat("en-PH", {
     style: "currency",
     currency: "PHP",
   }).format(price);
 };
-
 export const ProductList: React.FC<ProductListProps> = ({
   products,
   onAddToCart,
@@ -185,6 +203,7 @@ export const ProductList: React.FC<ProductListProps> = ({
   onUpdateQuantity,
 }) => {
   if (products.length === 0) {
+    // ... (no change)
     return (
       <div className="text-center py-12 col-span-full">
         <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -197,7 +216,6 @@ export const ProductList: React.FC<ProductListProps> = ({
       </div>
     );
   }
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {products.map((product) => (

@@ -42,6 +42,7 @@ const productSchema = z.object({
   productPrice: z.coerce.number().min(0, "Price must be a positive number"),
   category: z.string().min(1, "Category is required"),
   squareFeet: z.coerce.number().min(1, "Square feet must be at least 1"),
+  stock: z.coerce.number().min(0, "Stock can't be negative").default(0),
   productShortDescription: z.string().min(10, "A short tagline is required"),
   productLongDescription: z.string().optional(),
   leadTime: z.string().optional(),
@@ -424,6 +425,23 @@ const ProductFormPage = () => {
                           <FormLabel>Square Feet</FormLabel>
                           <FormControl>
                             <Input type="number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="stock"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Stock Available</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              placeholder="e.g., 10"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

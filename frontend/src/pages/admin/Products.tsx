@@ -90,6 +90,8 @@ const Products: React.FC = () => {
     ...Array.from(new Set(products.map((product) => product.category))),
   ];
 
+  const totalStock = products.reduce((acc, product) => acc + product.stock, 0);
+
   if (loading) {
     return (
       <div className="container py-12 text-center">
@@ -111,7 +113,7 @@ const Products: React.FC = () => {
 
   return (
     <div className="space-y-6 p-4 md:p-4 bg-gray-50 min-h-screen">
-      <ProductHeader productCount={products.length} />
+      <ProductHeader productCount={products.length} totalStock={totalStock} />
       <hr className="border-t border-gray-200" />
 
       {/* ✨ 2. Fixed <ProductFilterBar /> props */}

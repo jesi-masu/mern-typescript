@@ -1,8 +1,7 @@
 // frontend/src/components/shop/ProductCard.tsx
-
 import { useNavigate } from "react-router-dom";
 import { ShoppingCart, Eye } from "lucide-react";
-import { motion } from "framer-motion"; // Import motion
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge"; // ✏️ 1. IMPORT BADGE
 import { toast } from "@/components/ui/sonner";
 import { formatPrice } from "@/lib/formatters";
 import { useCart } from "@/context/CartContext";
@@ -24,16 +24,18 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
 
+  // ✏️ 2. ADD LOGIC FOR STOCK
+  const isOutOfStock = product.stock <= 0;
+
   const handleBuyNow = (productId: string) => {
     navigate(`/product/${productId}`);
     toast("Redirecting to product detail page");
   };
-
   const handleViewDetails = (productId: string) => {
     navigate(`/product/${productId}`);
   };
-
   const handleAddToCart = () => {
+    if (isOutOfStock) return; // Should be disabled, but good to double-check
     addToCart({
       id: product._id,
       name: product.productName,
@@ -42,24 +44,21 @@ const ProductCard = ({ product }: ProductCardProps) => {
     });
     toast.success("Product added to cart");
   };
-
   // Define the animation variants for the card
   const cardVariants = {
     hidden: { opacity: 0, scale: 0.9, y: 20 },
     visible: { opacity: 1, scale: 1, y: 0 },
     exit: { opacity: 0, scale: 0.9, y: -20 },
   };
-
   return (
-    // Wrap the Card in a motion.div to apply animations
     <motion.div
       variants={cardVariants}
       initial="hidden"
       animate="visible"
       exit="exit"
       transition={{ duration: 0.3, ease: "easeInOut" }}
-      layout // This prop is crucial for the smooth repositioning
-      className="h-full" // Ensure the motion div takes up full height
+      layout
+      className="h-full"
     >
       <Card className="overflow-hidden h-full flex flex-col hover:shadow-lg transition-shadow duration-300">
         <div className="h-48 overflow-hidden relative group">
@@ -68,17 +67,27 @@ const ProductCard = ({ product }: ProductCardProps) => {
             alt={product.productName}
             className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500"
           />
+
+          {/* ✏️ 3. ADD THE "OUT OF STOCK" BADGE */}
+          {isOutOfStock && (
+            <Badge variant="destructive" className="absolute top-3 left-3 z-10">
+              Out of Stock
+            </Badge>
+          )}
+
           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             <Button
               variant="default"
               className="bg-prefab-600 hover:bg-prefab-700 text-white"
               onClick={() => handleBuyNow(product._id)}
+              disabled={isOutOfStock} // ✏️ 4. DISABLE BUTTON
             >
-              Buy Now
+              {isOutOfStock ? "Out of Stock" : "Buy Now"}
             </Button>
           </div>
         </div>
         <CardHeader className="pb-2">
+          {/* ... (rest of CardHeader is unchanged) ... */}
           <div className="flex justify-between items-start">
             <CardTitle className="text-lg">{product.productName}</CardTitle>
             <span className="text-prefab-600 text-lg font-semibold">
@@ -93,6 +102,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           </div>
         </CardHeader>
         <CardContent className="py-2 flex-grow">
+          {/* ... (rest of CardContent is unchanged) ... */}
           <p className="text-gray-600 text-sm line-clamp-3">
             {product.productShortDescription ||
               product.productLongDescription ||
@@ -112,9 +122,16 @@ const ProductCard = ({ product }: ProductCardProps) => {
             <Button
               className="bg-prefab-600 hover:bg-prefab-700 text-white flex items-center gap-2"
               onClick={handleAddToCart}
+              disabled={isOutOfStock} // ✏️ 5. DISABLE BUTTON
             >
-              <ShoppingCart className="h-4 w-4" />
-              Add to Cart
+              {isOutOfStock ? (
+                "Out of Stock"
+              ) : (
+                <>
+                  <ShoppingCart className="h-4 w-4" />
+                  Add to Cart
+                </>
+              )}
             </Button>
           </div>
         </CardFooter>
@@ -122,5 +139,4 @@ const ProductCard = ({ product }: ProductCardProps) => {
     </motion.div>
   );
 };
-
 export default ProductCard;

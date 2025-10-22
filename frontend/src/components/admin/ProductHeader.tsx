@@ -1,15 +1,17 @@
 //frontend/src/components/admin/ProductHeader
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Package } from "lucide-react";
+import { Plus, Package, Boxes } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface ProductHeaderProps {
   productCount: number;
+  totalStock: number;
 }
 
 export const ProductHeader: React.FC<ProductHeaderProps> = ({
   productCount,
+  totalStock,
 }) => {
   const navigate = useNavigate();
 
@@ -25,6 +27,14 @@ export const ProductHeader: React.FC<ProductHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
+          <Boxes className="h-6 w-6 text-indigo-600" /> {/* Changed icon */}
+          <span className="text-xl font-semibold text-gray-800">
+            {totalStock} {/* Use totalStock prop */}
+          </span>
+          <span className="text-gray-500">Total Stocks</span>
+        </div>
+
         <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
           <Package className="h-6 w-6 text-indigo-600" />
           <span className="text-xl font-semibold text-gray-800">
