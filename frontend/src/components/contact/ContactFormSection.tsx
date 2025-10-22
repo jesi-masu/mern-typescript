@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast"; // Corrected path
+import { useToast } from "@/components/ui/use-toast";
+
+// --- (Helper functions for limit are all correct) ---
+const SUBMISSION_LIMIT = 5;
+const COOLDOWN_PERIOD = 24 * 60 * 60 * 1000; // 24 hours
+const STORAGE_KEY = "contactFormLimit";
+type SubmissionData = {
+  count: number;
+  resetAt?: number;
+};
+const getSubmissionData = (): SubmissionData => {
+  const data = localStorage.getItem(STORAGE_KEY);
+  if (!data) {
+    return { count: 0 };
+  }
+  const parsed: SubmissionData = JSON.parse(data);
+  if (parsed.resetAt && Date.now() > parsed.resetAt) {
+    localStorage.removeItem(STORAGE_KEY);
+    return { count: 0 };
+  }
+  return parsed;
+};
+const incrementSubmissionCount = (): SubmissionData => {
+  const currentData = getSubmissionData();
+  const newCount = currentData.count + 1;
+  const newData: SubmissionData = {
+    count: newCount,
+  };
+  if (newCount >= SUBMISSION_LIMIT) {
+    newData.resetAt = Date.now() + COOLDOWN_PERIOD;
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
+  return newData;
+};
+// --- (End of helper functions) ---
 
 export const ContactFormSection: React.FC = () => {
   const [name, setName] = useState("");
@@ -19,9 +53,29 @@ export const ContactFormSection: React.FC = () => {
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const [submissionData, setSubmissionData] = useState<SubmissionData>({
+    count: 0,
+  });
+  const isLimitReached = submissionData.count >= SUBMISSION_LIMIT;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    setSubmissionData(getSubmissionData());
+  }, []);
+
+  // ✏️ --- THIS FUNCTION IS NOW CORRECTED ---
+  const handleSubmit = async (e: React.FormEvent) => {
+    // 1. Make async
     e.preventDefault();
+
+    if (isLimitReached) {
+      toast({
+        title: "Limit Reached",
+        description:
+          "You have reached the submission limit. Please try again in 24 hours.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!subject) {
       toast({
         title: "Subject Required",
@@ -32,36 +86,48 @@ export const ContactFormSection: React.FC = () => {
     }
     setIsSubmitting(true);
 
-    const contactMessage = {
-      id: Date.now().toString(),
-      name,
-      email,
-      subject,
-      message,
-      timestamp: new Date().toISOString(),
-      status: "unread" as const,
-      type: "contact_form" as const,
-    };
+    // 2. REPLACE localStorage logic with fetch
+    try {
+      const response = await fetch("http://localhost:4000/api/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        // 3. Send the state variables as JSON
+        body: JSON.stringify({ name, email, subject, message }),
+      });
 
-    const existingMessages = JSON.parse(
-      localStorage.getItem("contactMessages") || "[]"
-    );
-    existingMessages.push(contactMessage);
-    localStorage.setItem("contactMessages", JSON.stringify(existingMessages));
+      if (!response.ok) {
+        throw new Error("Failed to send message. Please try again.");
+      }
 
-    setTimeout(() => {
-      setIsSubmitting(false);
+      // 4. Handle success
       toast({
         title: "Message Sent",
         description: "Thank you for your message. We'll get back to you soon.",
-        duration: 5000,
       });
+
+      // 5. Increment limit on success
+      const newSubData = incrementSubmissionCount();
+      setSubmissionData(newSubData);
+
+      // 6. Reset form
       setName("");
       setEmail("");
       setSubject("");
       setMessage("");
-    }, 1500);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "An unknown error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      // 7. Always stop submitting
+      setIsSubmitting(false);
+    }
   };
+  // ✏️ --- END OF CORRECTED FUNCTION ---
 
   return (
     <div>
@@ -71,6 +137,7 @@ export const ContactFormSection: React.FC = () => {
       <Card className="bg-white shadow-lg border-0">
         <CardContent className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* ... (Your form JSX is all correct) ... */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label
@@ -147,7 +214,7 @@ export const ContactFormSection: React.FC = () => {
             <Button
               type="submit"
               className="bg-gradient-to-r from-prefab-600 to-blue-600 hover:from-prefab-700 hover:to-blue-700 text-white w-full md:w-auto px-8 py-3 h-12 font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isLimitReached}
             >
               {isSubmitting ? (
                 <div className="flex items-center">
@@ -158,6 +225,12 @@ export const ContactFormSection: React.FC = () => {
                 "Send Message"
               )}
             </Button>
+            {isLimitReached && (
+              <p className="text-sm text-red-600 text-center font-medium">
+                You have reached the submission limit. Please try again in 24
+                hours.
+              </p>
+            )}
           </form>
         </CardContent>
       </Card>

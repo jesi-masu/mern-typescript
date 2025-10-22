@@ -14,6 +14,7 @@ import reportsRoutes from "./routes/reportsRoutes";
 import importRoutes from "./routes/importRoutes";
 import activityLogRoutes from "./routes/activityLogRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
+import messageRoutes from "./routes/messageRoutes";
 
 dotenv.config();
 
@@ -38,6 +39,7 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/import", importRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/messages", messageRoutes);
 
 app.use((req, res, next) => {
   res.status(404).json({ message: "API route not found" });
