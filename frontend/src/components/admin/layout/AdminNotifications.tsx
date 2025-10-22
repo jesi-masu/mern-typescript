@@ -4,12 +4,13 @@ import {
   Bell,
   CheckCircle,
   Clock,
-  FileText, // Added FileText
+  FileText,
   Truck,
   Loader2,
   CheckCheck,
   ListOrdered,
   UserPlus,
+  MessageSquare, // Added icon for messages
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,20 +30,24 @@ import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 
+// Interface defining the structure of a notification object
 interface AdminNotification {
   _id: string;
-  userId: string;
-  orderId?: string;
+  userId: string; // The admin/personnel this is assigned to
+  orderId?: string; // Optional order ID
   message: string;
-  type: string;
+  type: string; // Type determines icon and click behavior
   createdAt: string;
   readStatus: boolean;
 }
 
+// --- API Functions ---
+
+// Fetches notifications for the logged-in user
 const fetchNotifications = async (
   token: string | null
 ): Promise<AdminNotification[]> => {
-  if (!token) return [];
+  if (!token) return []; // Don't fetch if not logged in
   const response = await fetch(
     `${import.meta.env.VITE_BACKEND_URL}/api/notifications`,
     {
@@ -53,6 +58,7 @@ const fetchNotifications = async (
   return response.json();
 };
 
+// Marks a single notification as read
 const markAsReadAPI = async ({
   notificationId,
   token,
@@ -74,6 +80,7 @@ const markAsReadAPI = async ({
   return response.json();
 };
 
+// Marks all unread notifications as read
 const markAllAsReadAPI = async (
   token: string | null
 ): Promise<{ message: string; modifiedCount: number }> => {
@@ -89,6 +96,9 @@ const markAllAsReadAPI = async (
   return response.json();
 };
 
+// --- Helper Function ---
+
+// Formats the date string into a relative time (e.g., "5m ago", "yesterday")
 const formatRelativeTime = (dateString: string): string => {
   const date = new Date(dateString);
   const now = new Date();
@@ -105,31 +115,38 @@ const formatRelativeTime = (dateString: string): string => {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 };
 
+// --- React Component ---
+
 export const AdminNotifications: React.FC = () => {
+  // Hooks for auth, navigation, caching, toasts, and popover state
   const { user, token, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
 
+  // Fetch notifications using React Query
   const {
-    data: notifications = [],
+    data: notifications = [], // Default to empty array
     isLoading,
     error,
   } = useQuery<AdminNotification[]>({
-    queryKey: ["adminNotifications", user?._id],
+    queryKey: ["adminNotifications", user?._id], // Cache key includes user ID
     queryFn: () => fetchNotifications(token),
+    // Only run if authenticated, user exists, and role is admin/personnel
     enabled:
       isAuthenticated &&
       !!user?._id &&
       (user.role === "admin" || user.role === "personnel"),
-    refetchInterval: 60000,
-    staleTime: 30000,
+    refetchInterval: 60000, // Refetch every 60 seconds
+    staleTime: 30000, // Consider data fresh for 30 seconds
   });
 
+  // Mutation to mark a single notification as read
   const markAsReadMutation = useMutation({
     mutationFn: markAsReadAPI,
     onSuccess: (updatedNotification) => {
+      // Update the cached data immediately (optimistic update)
       queryClient.setQueryData<AdminNotification[]>(
         ["adminNotifications", user?._id],
         (oldData) =>
@@ -137,16 +154,20 @@ export const AdminNotifications: React.FC = () => {
             n._id === updatedNotification._id ? { ...n, readStatus: true } : n
           ) ?? []
       );
+      // Navigate based on the notification type after marking as read
       if (
         updatedNotification.type.includes("order") ||
-        updatedNotification.type === "payment_uploaded" || // Added this
+        updatedNotification.type === "payment_uploaded" ||
         updatedNotification.orderId
       ) {
-        navigate(`/admin/orders`);
-        setIsOpen(false);
+        navigate(`/admin/orders`); // Go to orders page
+      } else if (updatedNotification.type === "new_contact_message") {
+        navigate(`/admin/messages`); // Go to messages page
       }
+      setIsOpen(false); // Close the popover after navigation
     },
     onError: (err) => {
+      // Show error toast if marking as read fails
       toast({
         title: "Error",
         description:
@@ -156,16 +177,20 @@ export const AdminNotifications: React.FC = () => {
     },
   });
 
+  // Mutation to mark all notifications as read
   const markAllAsReadMutation = useMutation({
     mutationFn: () => markAllAsReadAPI(token),
     onSuccess: (data) => {
+      // Show success message
       toast({ description: data.message });
+      // Update the cache immediately (optimistic update)
       queryClient.setQueryData<AdminNotification[]>(
         ["adminNotifications", user?._id],
         (oldData) => oldData?.map((n) => ({ ...n, readStatus: true })) ?? []
       );
     },
     onError: (err) => {
+      // Show error toast if marking all fails
       toast({
         title: "Error",
         description: (err as Error).message || "Could not mark all as read.",
@@ -174,27 +199,42 @@ export const AdminNotifications: React.FC = () => {
     },
   });
 
+  // Calculate the count of unread notifications
   const unreadNotifications = notifications.filter((n) => !n.readStatus).length;
 
+  // --- Event Handlers ---
+
+  // Handles clicking on a single notification item
   const handleNotificationClick = (notification: AdminNotification) => {
-    setIsOpen(false);
+    setIsOpen(false); // Close popover
     if (!notification.readStatus) {
+      // If unread, trigger the mutation (which handles navigation on success)
       markAsReadMutation.mutate({ notificationId: notification._id, token });
-    } else if (
-      notification.type.includes("order") ||
-      notification.type === "payment_uploaded" || // Added this
-      notification.orderId
-    ) {
-      navigate(`/admin/orders`);
+    } else {
+      // If already read, navigate directly
+      if (
+        notification.type.includes("order") ||
+        notification.type === "payment_uploaded" ||
+        notification.orderId
+      ) {
+        navigate(`/admin/orders`);
+      } else if (notification.type === "new_contact_message") {
+        navigate(`/admin/messages`);
+      }
+      // Add more direct navigation rules here if needed
     }
   };
 
+  // Handles clicking the "Mark all as read" button
   const handleMarkAllRead = () => {
-    if (unreadNotifications > 0) {
+    if (unreadNotifications > 0 && !markAllAsReadMutation.isPending) {
       markAllAsReadMutation.mutate();
     }
   };
 
+  // --- UI Helper Functions ---
+
+  // Returns the appropriate icon based on notification type
   const getNotificationIcon = (type: AdminNotification["type"]) => {
     switch (type) {
       case "new_order_admin":
@@ -205,14 +245,18 @@ export const AdminNotifications: React.FC = () => {
         return <Clock className="h-4 w-4 text-blue-500 flex-shrink-0" />;
       case "payment_confirmed":
         return <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />;
-      // Added case for payment_uploaded
       case "payment_uploaded":
         return <FileText className="h-4 w-4 text-teal-500 flex-shrink-0" />;
+      case "new_contact_message": // Added case
+        return (
+          <MessageSquare className="h-4 w-4 text-cyan-500 flex-shrink-0" />
+        );
       default:
         return <Bell className="h-4 w-4 text-gray-500 flex-shrink-0" />;
     }
   };
 
+  // Returns the appropriate border color based on notification type
   const getNotificationColor = (type: AdminNotification["type"]) => {
     switch (type) {
       case "new_order_admin":
@@ -221,14 +265,18 @@ export const AdminNotifications: React.FC = () => {
         return "border-blue-300";
       case "payment_confirmed":
         return "border-green-300";
-      // Added case for payment_uploaded
       case "payment_uploaded":
         return "border-teal-300";
+      case "new_contact_message":
+        return "border-cyan-300"; // Added case
       default:
         return "border-gray-300";
     }
   };
 
+  // --- Render Logic ---
+
+  // Don't render if not authenticated or not admin/personnel
   if (
     !isAuthenticated ||
     !user ||
@@ -242,6 +290,7 @@ export const AdminNotifications: React.FC = () => {
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative rounded-full">
           <Bell className="h-5 w-5" />
+          {/* Display badge only if there are unread notifications */}
           {unreadNotifications > 0 && (
             <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs rounded-full">
               {unreadNotifications > 9 ? "9+" : unreadNotifications}
@@ -265,20 +314,24 @@ export const AdminNotifications: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0 max-h-96 overflow-y-auto">
+            {/* Loading State */}
             {isLoading ? (
               <div className="flex justify-center items-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin" />
+                <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
               </div>
-            ) : error ? (
+            ) : /* Error State */
+            error ? (
               <div className="text-center py-8 px-4 text-red-600 text-sm">
                 Failed to load notifications.
               </div>
-            ) : notifications.length === 0 ? (
+            ) : /* Empty State */
+            notifications.length === 0 ? (
               <div className="text-center py-10 text-gray-500">
                 <Bell className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                <p className="text-sm">No new notifications</p>
+                <p className="text-sm">No notifications yet</p>
               </div>
             ) : (
+              /* Notification List */
               <div className="divide-y divide-gray-100">
                 {notifications.map((notification) => (
                   <div
@@ -303,6 +356,7 @@ export const AdminNotifications: React.FC = () => {
                           >
                             {notification.message}
                           </p>
+                          {/* Unread indicator dot */}
                           {!notification.readStatus && (
                             <div
                               title="Unread"
@@ -320,6 +374,7 @@ export const AdminNotifications: React.FC = () => {
               </div>
             )}
           </CardContent>
+          {/* Footer with "Mark all as read" button */}
           {notifications.length > 0 && unreadNotifications > 0 && (
             <CardFooter className="p-2 border-t">
               <Button
@@ -343,4 +398,5 @@ export const AdminNotifications: React.FC = () => {
     </Popover>
   );
 };
-export default AdminNotifications;
+
+export default AdminNotifications; // Make sure component is exported
