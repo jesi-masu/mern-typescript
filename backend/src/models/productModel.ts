@@ -28,6 +28,7 @@ export interface IProduct extends Document {
     plumbing: string;
   };
   inclusion?: string[]; // Newly added: Array of strings
+  exclusion?: string[];
   leadTime?: string; // Newly added
   createdAt: Date;
   updatedAt: Date;
@@ -101,7 +102,11 @@ const productSchema: Schema = new Schema(
       _id: false,
     },
     inclusion: {
-      // Newly added
+      type: [String], // Array of strings
+      required: false,
+    },
+    exclusion: {
+      // <-- ADD THIS BLOCK
       type: [String], // Array of strings
       required: false,
     },

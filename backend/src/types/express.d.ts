@@ -52,6 +52,7 @@ export interface ProductRequestBody {
   features?: string[];
   specifications?: ProductSpecifications;
   inclusion?: string[];
+  exclusion?: string[];
   leadTime?: string;
 }
 

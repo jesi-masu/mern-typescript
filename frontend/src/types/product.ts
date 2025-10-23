@@ -28,6 +28,7 @@ export interface Product {
   features?: string[]; // Matches backend
   specifications?: ProductSpecifications; // Matches backend, using the nested interface
   inclusion?: string[]; // Matches backend
+  exclusion?: string[];
   leadTime?: string; // Matches backend
   createdAt: string; // Dates often come as strings from API
   updatedAt: string; // Dates often come as strings from API

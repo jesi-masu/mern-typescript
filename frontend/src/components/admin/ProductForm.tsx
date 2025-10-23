@@ -66,6 +66,7 @@ const ProductFormPage = () => {
   // States for dynamic arrays remain the same
   const [features, setFeatures] = useState<string[]>([]);
   const [inclusions, setInclusions] = useState<string[]>([]);
+  const [exclusions, setExclusions] = useState<string[]>([]);
   const [images, setImages] = useState<string[]>([]);
   const [specifications, setSpecifications] = useState<ProductSpecifications>({
     dimensions: "",
@@ -105,6 +106,7 @@ const ProductFormPage = () => {
           form.reset(data);
           setFeatures(data.features || []);
           setInclusions(data.inclusion || []);
+          setExclusions(data.exclusion || []);
           setImages(data.images || []);
 
           const predefinedKeys = [
@@ -152,6 +154,7 @@ const ProductFormPage = () => {
       ...data,
       features,
       inclusion: inclusions,
+      exclusion: exclusions,
       images,
       specifications: { ...specifications, ...dynamicSpecs },
     };
@@ -317,6 +320,13 @@ const ProductFormPage = () => {
                       placeholder="Add an inclusion (e.g., 'Kitchen Cabinetry')"
                       items={inclusions}
                       setItems={setInclusions}
+                    />
+
+                    <DynamicListInput
+                      title="What's Not Included (Exclusions)"
+                      placeholder="Add an exclusion (e.g., 'Foundation Work')"
+                      items={exclusions}
+                      setItems={setExclusions}
                     />
                   </CardContent>
                 </Card>

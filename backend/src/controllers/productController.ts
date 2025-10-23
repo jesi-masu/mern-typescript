@@ -66,6 +66,7 @@ export const createProduct = async (
     features,
     specifications,
     inclusion,
+    exclusion,
     leadTime,
   } = req.body;
 
@@ -97,6 +98,7 @@ export const createProduct = async (
       features,
       specifications,
       inclusion,
+      exclusion,
       leadTime,
     });
 

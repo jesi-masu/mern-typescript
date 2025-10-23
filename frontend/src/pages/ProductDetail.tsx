@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge"; // ✏️ 1. IMPORT BADGE
-import { Truck, Package, Box, Rotate3D } from "lucide-react";
+import { Truck, Package, Box, Rotate3D, Check, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -274,7 +274,9 @@ const ProductDetail = () => {
             <TabsList className="w-full justify-start border-b mb-0 rounded-none">
               <TabsTrigger value="features">Features</TabsTrigger>
               <TabsTrigger value="specifications">Specifications</TabsTrigger>
-              <TabsTrigger value="inclusion">What's Included</TabsTrigger>
+              <TabsTrigger value="inclusion">
+                Inclusions & Exclusions
+              </TabsTrigger>
               <TabsTrigger value="quote">Quotation</TabsTrigger>
             </TabsList>
 
@@ -317,22 +319,50 @@ const ProductDetail = () => {
             </TabsContent>
 
             <TabsContent value="inclusion" className="pt-6 px-1">
-              <h3 className="text-xl font-medium mb-4">What's Included</h3>
-              {product.inclusion && product.inclusion.length > 0 ? (
-                <ul className="list-disc ml-6 space-y-2">
-                  {product.inclusion.map((item, index) => (
-                    <li key={index} className="text-gray-700">
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-gray-600">
-                  No inclusions listed for this product.
-                </p>
-              )}
-            </TabsContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                {/* Column 1: What's Included */}
+                <div>
+                  <h3 className="text-xl font-medium mb-4">What's Included</h3>
+                  {product.inclusion && product.inclusion.length > 0 ? (
+                    <ul className="space-y-3">
+                      {product.inclusion.map((item, index) => (
+                        <li key={index} className="flex items-start gap-3">
+                          <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-1" />
+                          <span className="text-gray-700">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-gray-600">
+                      No inclusions listed for this product.
+                    </p>
+                  )}
+                </div>
 
+                {/* Column 2: What's Not Included */}
+                <div>
+                  <h3 className="text-xl font-medium mb-4">
+                    What's Not Included
+                  </h3>
+                  {/* @ts-ignore - for the exclusion field */}
+                  {product.exclusion && product.exclusion.length > 0 ? (
+                    <ul className="space-y-3">
+                      {/* @ts-ignore */}
+                      {product.exclusion.map((item, index) => (
+                        <li key={index} className="flex items-start gap-3">
+                          <X className="h-5 w-5 text-red-600 flex-shrink-0 mt-1" />
+                          <span className="text-gray-700">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-gray-600">
+                      No exclusions listed for this product.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
             <TabsContent value="quote" className="pt-6 px-1">
               <h3 className="text-xl font-medium mb-4">Quotation Breakdown</h3>
               <div className="bg-gray-50 rounded-lg p-6 border mb-6">

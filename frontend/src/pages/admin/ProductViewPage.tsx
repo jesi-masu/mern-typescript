@@ -5,7 +5,7 @@ import { Product } from "@/types/product";
 import { fetchProductById } from "@/services/productService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Edit, Check, Copy } from "lucide-react";
+import { ArrowLeft, Edit, Check, Copy, X } from "lucide-react";
 
 const getSketchfabEmbedUrl = (url?: string): string | null => {
   if (!url || !url.includes("sketchfab.com")) return null;
@@ -163,6 +163,25 @@ const ProductViewPage: React.FC = () => {
                   {product.inclusion.map((item, index) => (
                     <li key={index} className="flex items-center gap-2">
                       <Check className="h-4 w-4 text-green-600" />
+                      <span className="text-muted-foreground">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+
+          {product.exclusion && product.exclusion.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>What's Not Included</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
+                  {/* @ts-ignore */}
+                  {product.exclusion.map((item, index) => (
+                    <li key={index} className="flex items-center gap-2">
+                      <X className="h-4 w-4 text-red-600" />
                       <span className="text-muted-foreground">{item}</span>
                     </li>
                   ))}
