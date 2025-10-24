@@ -1,7 +1,7 @@
-// src/components/tracking/OrderDetailsSidebar.tsx
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Phone, Mail, User, Landmark } from "lucide-react";
+// Assuming 'OrderDetail' is the correct interface from your types file that has the 'products' array
 import { OrderDetail } from "../../types/order";
 import { Separator } from "../ui/separator";
 
@@ -9,12 +9,16 @@ interface OrderDetailsSidebarProps {
   order: OrderDetail;
 }
 
+// --- START: MODIFICATION (1/2) ---
+// Updated to use the '₱' symbol for consistency
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat("en-PH", {
     style: "currency",
     currency: "PHP",
+    currencyDisplay: "symbol",
   }).format(price);
 };
+// --- END: MODIFICATION (1/2) ---
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -25,6 +29,7 @@ const formatDate = (dateString: string) => {
 };
 
 const formatFullAddress = (
+  // Assuming 'OrderDetail' is the correct type
   address: OrderDetail["customerInfo"]["deliveryAddress"]
 ) => {
   if (!address) return "Address not available";
@@ -51,7 +56,6 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
           <CardTitle>Products in this Order</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* --- MODIFICATION START: Replaced React.Fragment with a div --- */}
           <div className="space-y-4">
             {order.products.map((item, index) => (
               <div key={item.productId._id}>
@@ -64,10 +68,26 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
                     alt={item.productId.productName}
                     className="w-20 h-20 object-cover rounded flex-shrink-0"
                   />
-                  <div>
-                    <h3 className="font-medium">
+                  {/* --- START: MODIFICATION (2/2) --- */}
+                  {/* Added min-w-0 to allow truncation to work */}
+                  <div className="min-w-0">
+                    <h3
+                      className="font-medium truncate"
+                      title={item.productId.productName}
+                    >
                       {item.productId.productName}
                     </h3>
+
+                    {/* Added the short description */}
+                    {item.productId.productShortDescription && (
+                      <p
+                        className="text-sm text-gray-600 truncate"
+                        title={item.productId.productShortDescription}
+                      >
+                        {item.productId.productShortDescription}
+                      </p>
+                    )}
+
                     <p className="text-sm text-gray-600">
                       Quantity: {item.quantity}
                     </p>
@@ -75,6 +95,7 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
                       {formatPrice(item.productId.productPrice)} each
                     </p>
                   </div>
+                  {/* --- END: MODIFICATION (2/2) --- */}
                 </div>
                 {/* Add a separator between items, but not after the last one */}
                 {index < order.products.length - 1 && (
@@ -83,7 +104,6 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
               </div>
             ))}
           </div>
-          {/* --- MODIFICATION END --- */}
         </CardContent>
       </Card>
 
