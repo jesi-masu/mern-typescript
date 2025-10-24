@@ -277,6 +277,9 @@ const ProductDetail = () => {
               <TabsTrigger value="inclusion">
                 Inclusions & Exclusions
               </TabsTrigger>
+              {product.productParts && product.productParts.length > 0 && (
+                <TabsTrigger value="parts">Product Parts</TabsTrigger>
+              )}
               <TabsTrigger value="quote">Quotation</TabsTrigger>
             </TabsList>
 
@@ -363,6 +366,41 @@ const ProductDetail = () => {
                 </div>
               </div>
             </TabsContent>
+            {product.productParts && product.productParts.length > 0 && (
+              <TabsContent value="parts" className="pt-6 px-1">
+                <h3 className="text-xl font-medium mb-4">
+                  Product Parts Breakdown
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+                  {/* @ts-ignore */}
+                  {product.productParts.map((part, index) => (
+                    <div key={index} className="flex items-start gap-4">
+                      <img
+                        src={part.image}
+                        alt={part.name}
+                        className="h-16 w-16 rounded-md object-cover flex-shrink-0"
+                      />
+                      <div>
+                        <h4 className="font-semibold">{part.name}</h4>
+                        {part.description && (
+                          <p className="text-sm text-gray-500 mt-1">
+                            {part.description}
+                          </p>
+                        )}
+                        <div className="flex justify-between items-center text-sm text-gray-600 mt-2">
+                          <span>Quantity: x{part.quantity}</span>
+                          {part.price && (
+                            <span className="font-medium text-gray-800">
+                              {formatPrice(part.price)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+            )}
             <TabsContent value="quote" className="pt-6 px-1">
               <h3 className="text-xl font-medium mb-4">Quotation Breakdown</h3>
               <div className="bg-gray-50 rounded-lg p-6 border mb-6">

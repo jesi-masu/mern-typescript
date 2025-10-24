@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, X, Plus } from "lucide-react";
-import { Product, ProductSpecifications } from "@/types/product";
+import { Product, ProductSpecifications, IProductPart } from "@/types/product";
 import { categories } from "@/data/products";
 import {
   Form,
@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -34,7 +33,9 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import DynamicListInput from "@/components/common/DynamicListInput";
-import { useAuth } from "@/context/AuthContext"; // ✅ 1. IMPORT THE CORRECT AUTH HOOK
+import { useAuth } from "@/context/AuthContext";
+import ProductSpecificationsForm from "./ProductSpecificationsForm";
+import ProductPartsForm from "./ProductPartsForm";
 
 // Zod schema remains the same
 const productSchema = z.object({
@@ -59,15 +60,17 @@ type ProductFormData = z.infer<typeof productSchema>;
 const ProductFormPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { token, isLoading: isAuthLoading } = useAuth(); // ✅ 2. GET TOKEN AND LOADING STATE FROM THE CORRECT HOOK
+  const { token, isLoading: isAuthLoading } = useAuth();
   const isEditing = !!id;
   const [isDataLoading, setIsDataLoading] = useState(isEditing);
 
-  // States for dynamic arrays remain the same
+  // States for dynamic arrays
   const [features, setFeatures] = useState<string[]>([]);
   const [inclusions, setInclusions] = useState<string[]>([]);
   const [exclusions, setExclusions] = useState<string[]>([]);
   const [images, setImages] = useState<string[]>([]);
+
+  // States for specifications
   const [specifications, setSpecifications] = useState<ProductSpecifications>({
     dimensions: "",
     height: "",
@@ -82,13 +85,29 @@ const ProductFormPage = () => {
   const [newDynamicSpecKey, setNewDynamicSpecKey] = useState("");
   const [newDynamicSpecValue, setNewDynamicSpecValue] = useState("");
 
+  // State for Product Parts
+  const [productParts, setProductParts] = useState<IProductPart[]>([]);
+  const [newPart, setNewPart] = useState<IProductPart>({
+    name: "",
+    quantity: 1,
+    image: "",
+    price: undefined,
+    description: "",
+  });
+
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
+    // --- 1. FILLED IN DEFAULT VALUES ---
     defaultValues: {
       productName: "",
       productPrice: 0,
       category: "",
       squareFeet: 0,
+      stock: 0,
+      productShortDescription: "",
+      productLongDescription: "",
+      leadTime: "",
+      threeDModelUrl: "",
       image: "",
     },
   });
@@ -97,18 +116,19 @@ const ProductFormPage = () => {
     if (isEditing) {
       const fetchProduct = async () => {
         try {
-          // The GET route is public, so no auth header is needed here
           const response = await fetch(
             `http://localhost:4000/api/products/${id}`
           );
           if (!response.ok) throw new Error("Product not found");
           const data: Product = await response.json();
-          form.reset(data);
+          form.reset(data); // This will populate the form with fetched data
           setFeatures(data.features || []);
           setInclusions(data.inclusion || []);
           setExclusions(data.exclusion || []);
           setImages(data.images || []);
+          setProductParts(data.productParts || []);
 
+          // Specifications logic
           const predefinedKeys = [
             "dimensions",
             "height",
@@ -144,7 +164,6 @@ const ProductFormPage = () => {
   }, [id, isEditing, navigate, form]);
 
   const handleFormSubmit = async (data: ProductFormData) => {
-    // ✅ 3. USE THE TOKEN FROM useAuth()
     if (!token) {
       toast.error("Authentication session expired. Please log in again.");
       return;
@@ -156,6 +175,7 @@ const ProductFormPage = () => {
       inclusion: inclusions,
       exclusion: exclusions,
       images,
+      productParts: productParts,
       specifications: { ...specifications, ...dynamicSpecs },
     };
 
@@ -169,7 +189,7 @@ const ProductFormPage = () => {
         method,
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // ✅ 4. INCLUDE THE CORRECT TOKEN
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(finalPayload),
       });
@@ -192,6 +212,7 @@ const ProductFormPage = () => {
     }
   };
 
+  // --- Specification Helper Functions ---
   const handleAddDynamicSpec = () => {
     if (newDynamicSpecKey.trim() && newDynamicSpecValue.trim()) {
       setDynamicSpecs((prev) => ({
@@ -208,7 +229,27 @@ const ProductFormPage = () => {
     setDynamicSpecs(rest);
   };
 
-  // ✅ 5. WAIT FOR BOTH AUTH AND DATA TO FINISH LOADING
+  // --- Product Part Helper Functions ---
+  const handleAddPart = () => {
+    if (!newPart.name || !newPart.image || newPart.quantity < 1) {
+      toast.error("Part name, image, and valid quantity are required.");
+      return;
+    }
+    setProductParts([...productParts, { ...newPart }]);
+    setNewPart({
+      name: "",
+      quantity: 1,
+      image: "",
+      price: undefined,
+      description: "",
+    });
+  };
+
+  const handleRemovePart = (indexToRemove: number) => {
+    setProductParts(productParts.filter((_, index) => index !== indexToRemove));
+  };
+
+  // --- Loading State Check ---
   if (isAuthLoading || (isEditing && isDataLoading)) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -217,7 +258,7 @@ const ProductFormPage = () => {
     );
   }
 
-  // The rest of the JSX is unchanged...
+  // --- Main Return ---
   return (
     <div className="container mx-auto p-4">
       <div className="max-w-7xl mx-auto">
@@ -240,6 +281,7 @@ const ProductFormPage = () => {
           <form onSubmit={form.handleSubmit(handleFormSubmit)}>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-8">
+                {/* --- 2. FILLED IN Product Story Card --- */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Product Story</CardTitle>
@@ -300,6 +342,7 @@ const ProductFormPage = () => {
                   </CardContent>
                 </Card>
 
+                {/* --- Features & Inclusions Card --- */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Features & Inclusions</CardTitle>
@@ -321,7 +364,6 @@ const ProductFormPage = () => {
                       items={inclusions}
                       setItems={setInclusions}
                     />
-
                     <DynamicListInput
                       title="What's Not Included (Exclusions)"
                       placeholder="Add an exclusion (e.g., 'Foundation Work')"
@@ -331,6 +373,7 @@ const ProductFormPage = () => {
                   </CardContent>
                 </Card>
 
+                {/* --- 3. FILLED IN Media Card --- */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Media</CardTitle>
@@ -379,9 +422,19 @@ const ProductFormPage = () => {
                     />
                   </CardContent>
                 </Card>
+
+                {/* --- Product Parts Component --- */}
+                <ProductPartsForm
+                  productParts={productParts}
+                  newPart={newPart}
+                  setNewPart={setNewPart}
+                  onAddPart={handleAddPart}
+                  onRemovePart={handleRemovePart}
+                />
               </div>
 
               <div className="lg:col-span-1 space-y-8">
+                {/* --- 4. FILLED IN Pricing & Details Card --- */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Pricing & Details</CardTitle>
@@ -412,7 +465,7 @@ const ProductFormPage = () => {
                           >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue />
+                                <SelectValue placeholder="Select a category" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -473,6 +526,7 @@ const ProductFormPage = () => {
                   </CardContent>
                 </Card>
 
+                {/* --- Specifications Component --- */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Specifications</CardTitle>
@@ -481,67 +535,22 @@ const ProductFormPage = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {Object.keys(specifications).map((key) => (
-                      <div key={key}>
-                        <FormLabel className="capitalize">{key}</FormLabel>
-                        <Input
-                          value={(specifications as any)[key] || ""}
-                          onChange={(e) =>
-                            setSpecifications((prev) => ({
-                              ...prev,
-                              [key]: e.target.value,
-                            }))
-                          }
-                          className="mt-2"
-                        />
-                      </div>
-                    ))}
-                    <div className="pt-4 border-t">
-                      <FormLabel>Add Custom Specification</FormLabel>
-                      <div className="flex gap-2 mt-2">
-                        <Input
-                          placeholder="Spec Name (e.g., 'Warranty')"
-                          value={newDynamicSpecKey}
-                          onChange={(e) => setNewDynamicSpecKey(e.target.value)}
-                        />
-                        <Input
-                          placeholder="Spec Value (e.g., '5 Years')"
-                          value={newDynamicSpecValue}
-                          onChange={(e) =>
-                            setNewDynamicSpecValue(e.target.value)
-                          }
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={handleAddDynamicSpec}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {Object.entries(dynamicSpecs).map(([key, value]) => (
-                          <Badge
-                            key={key}
-                            variant="secondary"
-                            className="flex items-center gap-2 pr-1"
-                          >
-                            <strong>{key}:</strong> {value}
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveDynamicSpec(key)}
-                              className="rounded-full hover:bg-muted-foreground/20 p-1"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
+                    <ProductSpecificationsForm
+                      specifications={specifications}
+                      setSpecifications={setSpecifications}
+                      dynamicSpecs={dynamicSpecs}
+                      setDynamicSpecs={setDynamicSpecs}
+                      newDynamicSpecKey={newDynamicSpecKey}
+                      setNewDynamicSpecKey={setNewDynamicSpecKey}
+                      newDynamicSpecValue={newDynamicSpecValue}
+                      setNewDynamicSpecValue={setNewDynamicSpecValue}
+                      onAddDynamicSpec={handleAddDynamicSpec}
+                      onRemoveDynamicSpec={handleRemoveDynamicSpec}
+                    />
                   </CardContent>
                 </Card>
 
+                {/* --- Actions Card --- */}
                 <Card className="sticky top-24">
                   <CardHeader>
                     <CardTitle>Actions</CardTitle>

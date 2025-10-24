@@ -6,6 +6,7 @@ import { fetchProductById } from "@/services/productService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Edit, Check, Copy, X } from "lucide-react";
+import { formatPrice } from "@/lib/formatters";
 
 const getSketchfabEmbedUrl = (url?: string): string | null => {
   if (!url || !url.includes("sketchfab.com")) return null;
@@ -186,6 +187,45 @@ const ProductViewPage: React.FC = () => {
                     </li>
                   ))}
                 </ul>
+              </CardContent>
+            </Card>
+          )}
+          {product.productParts && product.productParts.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Product Parts</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {product.productParts.map((part, index) => (
+                    <div
+                      key={index}
+                      className="flex items-start gap-4 p-3 border rounded-lg"
+                    >
+                      <img
+                        src={part.image}
+                        alt={part.name}
+                        className="h-16 w-16 rounded object-cover flex-shrink-0"
+                      />
+                      <div className="flex-1">
+                        <p className="font-semibold">{part.name}</p>
+                        {part.description && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {part.description}
+                          </p>
+                        )}
+                        <p className="text-sm font-medium text-gray-700 mt-2">
+                          Quantity: {part.quantity}
+                          {part.price && (
+                            <span className="ml-4">
+                              Price: {formatPrice(part.price)}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           )}

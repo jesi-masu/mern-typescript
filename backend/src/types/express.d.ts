@@ -1,8 +1,10 @@
-import { Request } from "express";
+// backend/src/types/express.ts
 
+import { Request } from "express";
 // ===================================
 //          PROJECT TYPES
 // ===================================
+// ... (ProjectRequestBody remains the same)
 export interface ProjectRequestBody {
   projectTitle: string;
   shortDescription: string;
@@ -39,6 +41,14 @@ export interface ProductSpecifications {
   plumbing: string;
 }
 
+export interface IProductPart {
+  name: string;
+  quantity: number;
+  price?: number;
+  image: string;
+  description?: string; // <-- ADD THIS
+}
+
 export interface ProductRequestBody {
   productName: string;
   productPrice: number;
@@ -53,19 +63,20 @@ export interface ProductRequestBody {
   specifications?: ProductSpecifications;
   inclusion?: string[];
   exclusion?: string[];
+  productParts?: IProductPart[]; // <-- 2. ADD THIS LINE
   leadTime?: string;
 }
 
 // ===================================
 //           AUTH TYPES
 // ===================================
+// ... (AuthRegisterBody, AuthLoginBody, etc. remain the same)
 export interface AuthRegisterBody {
   firstName: string;
   lastName: string;
   email: string;
   phoneNumber: string;
   password: string;
-  // Make address optional if it's not required for admin/personnel
   address?: {
     street: string;
     barangaySubdivision: string;
@@ -76,19 +87,14 @@ export interface AuthRegisterBody {
     country: string;
   };
   role?: "client" | "personnel" | "admin";
-  // ✅ ADDED THESE OPTIONAL FIELDS
   position?: string;
   department?: string;
   status?: "active" | "on_leave" | "inactive";
 }
-
 export interface AuthLoginBody {
   email: string;
   password: string;
 }
-
-// Consider if AuthRequestBody should also include the new fields if it's used elsewhere
-// If AuthRequestBody is purely for registration, this is fine.
 export type AuthRequestBody = AuthRegisterBody;
 
 // ===================================
@@ -104,14 +110,3 @@ declare global {
     }
   }
 }
-
-// Make sure IUser is imported if you use it directly in Omit (or define types here)
-// Example assuming IUser fields were used for Omit:
-// export interface AuthRegisterBody extends Omit<IUser, 'password' | 'role' | 'createdAt' | 'updatedAt' | 'comparePassword' | '_id' | 'address'> {
-//   password?: string;
-//   role?: "client" | "personnel" | "admin";
-//   address?: { /* ... address fields ... */ }; // Need to redefine address if IUser makes it required
-//   position?: string;
-//   department?: string;
-//   status?: "active" | "on_leave" | "inactive";
-// }
