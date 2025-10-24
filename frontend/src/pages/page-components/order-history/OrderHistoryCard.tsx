@@ -1,4 +1,3 @@
-// src/pages/page-components/order-history/OrderHistoryCard.tsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
@@ -7,11 +6,11 @@ import { Button } from "@/components/ui/button";
 import {
   Eye,
   Package,
-  Hash,
   CalendarDays,
   ClipboardList,
   CreditCard,
   ChevronDown,
+  Hash, // Receipt icon removed
 } from "lucide-react";
 import { Order, PaymentStatus } from "@/types/order";
 import {
@@ -28,6 +27,7 @@ interface OrderHistoryCardProps {
 const getStatusClasses = (
   status: Order["orderStatus"] | PaymentStatus
 ): string => {
+  // ... (no change in this function)
   const baseClasses = "font-semibold border-transparent text-xs px-2.5 py-1";
   switch (status) {
     case "Pending":
@@ -54,12 +54,16 @@ const getStatusClasses = (
   }
 };
 
+// --- START: MODIFICATION (1/3) ---
+// Added currencyDisplay: "symbol" to show '₱'
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat("en-PH", {
     style: "currency",
     currency: "PHP",
+    currencyDisplay: "symbol",
   }).format(price);
 };
+// --- END: MODIFICATION (1/3) ---
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -84,71 +88,86 @@ export const OrderHistoryCard: React.FC<OrderHistoryCardProps> = ({
 
   return (
     <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white">
+      {/* --- Card Header (Made smaller) --- */}
+      {/* --- START: MODIFICATION (2/3) --- */}
+      <div className="bg-gray-50 p-2 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <div className="flex items-center gap-1.5">
+            <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-sm font-medium text-gray-700">
+              {formatDate(order.createdAt)}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Hash className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-xs text-gray-500">
+              Order #{order._id.slice(-6)}
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 self-end sm:self-center">
+          {/* Receipt icon removed */}
+          <span className="text-sm text-muted-foreground">Total:</span>
+          <span className="text-lg font-bold text-blue-600">
+            {formatPrice(order.totalAmount)}
+          </span>
+        </div>
+      </div>
+      {/* --- END: MODIFICATION (2/3) --- */}
+
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <div className="p-4 flex flex-col sm:flex-row justify-between items-start gap-4">
-          <div className="flex items-start gap-4 flex-1">
+        {/* --- Main Body (Made smaller) --- */}
+        <div className="p-3 flex flex-col sm:flex-row justify-between items-start gap-3">
+          {/* Left Side: Product Info */}
+          <div className="flex items-start gap-3 flex-1">
             <img
               src={
                 displayProduct.image ||
                 "https://placehold.co/150x150/E2E8F0/4A5568?text=No+Image"
               }
               alt={displayProduct.productName}
-              className="w-24 h-24 object-cover rounded-lg border"
+              className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border" // Reduced size
             />
-            <div className="space-y-3">
-              <div>
-                <p className="font-semibold text-gray-900 leading-tight">
-                  {displayProduct.productName}
-                  {order.products.length > 1 && (
-                    <span className="text-sm text-gray-500 font-normal ml-2">
-                      (+{order.products.length - 1} more)
-                    </span>
-                  )}
+            <div className="space-y-1">
+              <p className="font-semibold text-gray-900 leading-tight">
+                {displayProduct.productName}
+                {order.products.length > 1 && (
+                  <span className="text-sm text-gray-500 font-normal ml-2">
+                    (+{order.products.length - 1} more)
+                  </span>
+                )}
+              </p>
+              {displayProduct.productShortDescription && (
+                <p
+                  className="text-sm text-muted-foreground truncate"
+                  title={displayProduct.productShortDescription}
+                >
+                  {displayProduct.productShortDescription}
                 </p>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 text-sm text-muted-foreground mt-1">
-                  <span className="flex items-center gap-1.5">
-                    <span>Order ID: #{order._id.slice(-6)}</span>
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <CalendarDays className="h-3.5 w-3.5" />
-                    <span>{formatDate(order.createdAt)}</span>
-                  </span>
-                </div>
-              </div>
-              <div className="flex flex-col items-start gap-2">
-                <div className="flex items-center gap-2">
-                  <ClipboardList className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-muted-foreground w-14">
-                    Order:
-                  </span>
-                  <Badge className={getStatusClasses(order.orderStatus)}>
-                    {order.orderStatus}
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-muted-foreground w-14">
-                    Payment:
-                  </span>
-                  <Badge className={getStatusClasses(currentPaymentStatus)}>
-                    {currentPaymentStatus}
-                  </Badge>
-                </div>
-              </div>
+              )}
             </div>
           </div>
-          <div className="text-right self-start sm:self-center">
-            <p className="text-sm text-muted-foreground">Total Price</p>
-            <p className="text-xl font-bold text-blue-600">
-              {formatPrice(order.totalAmount)}
-            </p>
+
+          {/* Right Side: Status Info */}
+          <div className="flex flex-row sm:flex-col items-start sm:items-end gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-2">
+              <ClipboardList className="h-3.5 w-3.5 text-muted-foreground" />
+              <Badge className={getStatusClasses(order.orderStatus)}>
+                {order.orderStatus}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
+              <Badge className={getStatusClasses(currentPaymentStatus)}>
+                {currentPaymentStatus}
+              </Badge>
+            </div>
           </div>
         </div>
 
-        {/* --- START: MODIFICATION --- */}
-        {/* This entire block will only render if there are multiple products */}
+        {/* --- Collapsible Product List (Made smaller) --- */}
         {order.products.length > 1 && (
-          <CollapsibleContent className="px-4 pb-4 space-y-4">
+          <CollapsibleContent className="px-3 pb-3 space-y-3">
             <Separator />
             <h4 className="text-sm font-semibold text-gray-800">
               All Products in This Order
@@ -164,12 +183,20 @@ export const OrderHistoryCard: React.FC<OrderHistoryCardProps> = ({
                     "https://placehold.co/100x100/E2E8F0/4A5568?text=N/A"
                   }
                   alt={item.productId.productName}
-                  className="w-12 h-12 object-cover rounded border"
+                  className="w-10 h-10 object-cover rounded border" // Reduced size
                 />
-                <div className="flex-grow">
-                  <p className="font-medium text-gray-700">
+                <div className="flex-grow min-w-0">
+                  <p className="font-medium text-gray-700 truncate">
                     {item.productId.productName}
                   </p>
+                  {item.productId.productShortDescription && (
+                    <p
+                      className="text-xs text-muted-foreground truncate"
+                      title={item.productId.productShortDescription}
+                    >
+                      {item.productId.productShortDescription}
+                    </p>
+                  )}
                   <p className="text-xs text-muted-foreground">
                     Qty: {item.quantity}
                   </p>
@@ -181,15 +208,18 @@ export const OrderHistoryCard: React.FC<OrderHistoryCardProps> = ({
             ))}
           </CollapsibleContent>
         )}
-        {/* --- END: MODIFICATION --- */}
 
-        <div className="bg-gray-50 px-4 py-2 flex justify-between items-center gap-2 border-t">
-          {/* --- START: MODIFICATION --- */}
-          {/* This trigger button replaces the empty space when there are multiple products */}
-          <div>
+        {/* --- Footer Actions (Made smaller) --- */}
+        {/* --- START: MODIFICATION (3/3) --- */}
+        <div className="bg-gray-50 px-3 py-2 flex justify-between items-center gap-2 border-t">
+          <div className="flex items-center gap-2">
             {order.products.length > 1 && (
               <CollapsibleTrigger asChild>
-                <Button variant="link" size="sm" className="text-blue-600">
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="text-blue-600 px-0 sm:px-3"
+                >
                   {isOpen ? "Show Less" : "View All Items"}
                   <ChevronDown
                     className={`h-4 w-4 ml-1 transition-transform ${
@@ -199,9 +229,6 @@ export const OrderHistoryCard: React.FC<OrderHistoryCardProps> = ({
                 </Button>
               </CollapsibleTrigger>
             )}
-          </div>
-          {/* --- END: MODIFICATION --- */}
-          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="sm"
@@ -211,16 +238,17 @@ export const OrderHistoryCard: React.FC<OrderHistoryCardProps> = ({
               <Package className="h-4 w-4 mr-2" />
               View Product
             </Button>
-            <Button
-              size="sm"
-              onClick={() => navigate(`/order-tracking/${order._id}`)}
-              className="bg-blue-600 text-white hover:bg-blue-700"
-            >
-              <Eye className="h-4 w-4 mr-2" />
-              Track Order
-            </Button>
           </div>
+          <Button
+            size="sm"
+            onClick={() => navigate(`/order-tracking/${order._id}`)}
+            className="bg-blue-600 text-white hover:bg-blue-700"
+          >
+            <Eye className="h-4 w-4 mr-2" />
+            Track Order
+          </Button>
         </div>
+        {/* --- END: MODIFICATION (3/3) --- */}
       </Collapsible>
     </Card>
   );

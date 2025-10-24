@@ -227,7 +227,10 @@ export const updateOrderLogic = async (
 // --- Get Orders Logic ---
 export const getUserOrdersLogic = async (userId: string) => {
   return await Order.find({ userId })
-    .populate("products.productId", "productName image productPrice")
+    .populate(
+      "products.productId",
+      "productName image productPrice productShortDescription"
+    )
     .sort({ createdAt: -1 });
 };
 

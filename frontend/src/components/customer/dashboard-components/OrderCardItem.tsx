@@ -1,10 +1,9 @@
-// src/components/customer/dashboard-components/OrderCardItem.tsx
-
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eye, ChevronDown } from "lucide-react";
+// --- THIS IMPORT WILL NOW WORK ---
 import { Order, PaymentStatus } from "@/types/order";
 import { useNavigate } from "react-router-dom";
 import {
@@ -15,10 +14,11 @@ import {
 import { Separator } from "@/components/ui/separator";
 
 interface OrderCardItemProps {
-  order: Order;
+  order: Order; // Use the correct 'Order' type
 }
 
 const getStatusClasses = (
+  // Use the correct 'Order' type
   status: Order["orderStatus"] | PaymentStatus
 ): string => {
   const baseClasses = "font-semibold border-transparent text-xs px-2 py-0.5";
@@ -66,6 +66,7 @@ export const OrderCardItem: React.FC<OrderCardItemProps> = ({ order }) => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = React.useState(false);
 
+  // --- THIS LOGIC IS NOW CORRECT ---
   const displayProduct = order.products?.[0]?.productId;
   const currentPaymentStatus = order.paymentInfo?.paymentStatus || "Pending";
 
@@ -95,6 +96,17 @@ export const OrderCardItem: React.FC<OrderCardItemProps> = ({ order }) => {
               >
                 {displayProduct.productName}
               </p>
+
+              {/* Your requested short description */}
+              {displayProduct.productShortDescription && (
+                <p
+                  className="text-xs text-muted-foreground truncate"
+                  title={displayProduct.productShortDescription}
+                >
+                  {displayProduct.productShortDescription}
+                </p>
+              )}
+
               <p className="text-sm text-muted-foreground">
                 Order #{order._id.slice(-6)} • {formatDate(order.createdAt)}
               </p>
@@ -134,6 +146,7 @@ export const OrderCardItem: React.FC<OrderCardItemProps> = ({ order }) => {
           </div>
         </div>
 
+        {/* --- THIS COLLAPSIBLE SECTION WILL NOW WORK --- */}
         {order.products.length > 1 && (
           <>
             <CollapsibleContent className="px-4 pb-4 space-y-3">
@@ -141,8 +154,7 @@ export const OrderCardItem: React.FC<OrderCardItemProps> = ({ order }) => {
               <h4 className="text-sm font-semibold text-gray-800">
                 All Products in This Order
               </h4>
-              {/* --- START: MODIFICATION (1/2) --- */}
-              {/* Added price to the list of products */}
+
               {order.products.map((item) => (
                 <div
                   key={item.productId._id}
@@ -156,10 +168,18 @@ export const OrderCardItem: React.FC<OrderCardItemProps> = ({ order }) => {
                     alt={item.productId.productName}
                     className="w-10 h-10 object-cover rounded border"
                   />
-                  <div className="flex-grow">
+                  <div className="flex-grow min-w-0">
                     <p className="font-medium text-gray-700 truncate">
                       {item.productId.productName}
                     </p>
+
+                    {/* Short description for other items */}
+                    {item.productId.productShortDescription && (
+                      <p className="text-xs text-muted-foreground truncate">
+                        {item.productId.productShortDescription}
+                      </p>
+                    )}
+
                     <p className="text-xs text-muted-foreground">
                       Qty: {item.quantity}
                     </p>
@@ -169,13 +189,10 @@ export const OrderCardItem: React.FC<OrderCardItemProps> = ({ order }) => {
                   </div>
                 </div>
               ))}
-              {/* --- END: MODIFICATION (1/2) --- */}
             </CollapsibleContent>
 
             <div className="bg-gray-50 p-2 border-t text-center">
               <CollapsibleTrigger asChild>
-                {/* --- START: MODIFICATION (2/2) --- */}
-                {/* Made the button smaller by adjusting padding and text size */}
                 <Button
                   variant="ghost"
                   className="w-full text-blue-600 h-auto py-1.5 text-xs"
@@ -189,7 +206,6 @@ export const OrderCardItem: React.FC<OrderCardItemProps> = ({ order }) => {
                     }`}
                   />
                 </Button>
-                {/* --- END: MODIFICATION (2/2) --- */}
               </CollapsibleTrigger>
             </div>
           </>
