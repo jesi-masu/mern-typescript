@@ -30,7 +30,6 @@ export const createOrderLogic = async (
     totalAmount,
     locationImages,
   } = orderData;
-
   // Validation
   if (
     !products ||
@@ -44,10 +43,8 @@ export const createOrderLogic = async (
     // Throw an error that the controller will catch
     throw new Error("Please provide all required order fields.");
   }
-
   const session = await mongoose.startSession();
   session.startTransaction();
-
   try {
     // 1. Check stock and prepare product updates
     const productSavePromises = [];
@@ -64,10 +61,8 @@ export const createOrderLogic = async (
       product.stock -= item.quantity;
       productSavePromises.push(product.save({ session }));
     }
-
     // 2. Execute all product stock updates
     await Promise.all(productSavePromises);
-
     // 3. Create the new order
     const [newOrder] = await Order.create(
       [
@@ -84,39 +79,38 @@ export const createOrderLogic = async (
       ],
       { session }
     );
-
     if (!newOrder) {
       throw new Error("Order creation failed.");
     }
 
     // 4. Create Activity Log (still inside transaction)
-    try {
-      await ActivityLog.create(
-        [
-          {
-            userId: userId,
-            userName: `${customerInfo.firstName} ${customerInfo.lastName}`,
-            action: `Order Created`,
-            details: `Order #${newOrder._id
-              .toString()
-              .slice(-6)} placed. Total: ₱${totalAmount.toLocaleString()}`,
-            category: "orders",
-          },
-        ],
-        { session }
-      );
-    } catch (logError) {
-      console.error("Failed to create activity log for order:", logError);
-      // Don't abort the transaction for a logging failure
-    }
+    //
+    //  --- CHANGE ---
+    //  REMOVED the try...catch block here.
+    //  If logging fails, the main catch block will abort the transaction.
+    //
+    await ActivityLog.create(
+      [
+        {
+          userId: userId,
+          userName: `${customerInfo.firstName} ${customerInfo.lastName}`,
+          action: `Order Created`,
+          details: `Order #${newOrder._id
+            .toString()
+            .slice(-6)} placed. Total: ₱${totalAmount.toLocaleString()}`,
+          category: "orders",
+        },
+      ],
+      { session }
+    );
 
     // 5. Create Notifications (still inside transaction)
-    try {
-      await _createOrderNotifications(newOrder, customerInfo, session);
-    } catch (notificationError) {
-      console.error("Failed to create notifications:", notificationError);
-      // Don't abort the transaction for a notification failure
-    }
+    //
+    //  --- CHANGE ---
+    //  REMOVED the try...catch block here.
+    //  If notification creation fails, the main catch block will abort the transaction.
+    //
+    await _createOrderNotifications(newOrder, customerInfo, session);
 
     // 6. Commit
     await session.commitTransaction();
