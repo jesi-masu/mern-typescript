@@ -56,10 +56,14 @@ export interface Order {
     phone: string;
   };
   deliveryAddress: {
+    firstName: string; // <-- ADD THIS
+    lastName: string; // <-- ADD THIS
+    phone: string;
     street: string;
     city: string;
     province: string;
     zipCode: string;
+    landmark?: string;
   };
   paymentInfo: PaymentInfo; // It's a nested object
   totalAmount: number;
