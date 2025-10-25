@@ -1,439 +1,434 @@
-import React from 'react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Download, FileText, Check, X } from "lucide-react";
-import { toast } from 'sonner';
+// src/components/contract/FormalContractDocument.tsx
 
-interface ContractItem {
-  qty: number;
-  unit: string;
-  items: string; // New field for items
-  description: string;
-  image: string;
-  unitPrice: number;
-  amount: number;
-}
+import React from "react";
+import { Order, IProductPart, OrderProduct } from "@/types"; // Make sure your types are correctly imported
+import { formatPrice } from "@/lib/formatters"; // Assuming you have this formatter
+
+// --- UPDATED LOGO PATH ---
+import Logo2 from "@/assets/logo2.png"; // Use the new logo path
 
 interface FormalContractDocumentProps {
-  contract: {
-    id: string;
-    orderId: string;
-    customerName: string;
-    customerEmail: string;
-    productName: string;
-    contractValue: number;
-    createdAt: string;
-    deliveryAddress?: string;
-  };
+  order: Order; // Use the main Order type
 }
 
+const formatDate = (dateString: string | null | undefined): string => {
+  // Ensure return type is string
+  if (!dateString) return "N/A";
+  // Use en-US for consistency, adjust locale if needed (e.g., 'en-PH')
+  return new Date(dateString).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
+
+// Helper to format the full address string, ensuring all parts exist
+const formatFullDeliveryAddress = (
+  address: Order["customerInfo"]["deliveryAddress"] | undefined
+): string => {
+  // Ensure return type is string
+  if (!address) return "N/A";
+  return [
+    address.street,
+    address.subdivision,
+    address.cityMunicipality,
+    address.province,
+    address.postalCode,
+    address.country, // Added country
+  ]
+    .filter(Boolean)
+    .join(", "); // Filter out null/empty strings
+};
+
 const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
-  contract
+  order,
 }) => {
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-PH', {
-      style: 'currency',
-      currency: 'PHP',
-      maximumFractionDigits: 2
-    }).format(price);
+  const quoteNumber = `RB-2024-${order._id.slice(-6)}`;
+
+  // Static Data (Replace or fetch if dynamic)
+  const notes = [
+    "1.) Price is EXCLUSIVE of VAT",
+    "2.) Deliveries within the city proper of Cagayan de Oro is free of charge",
+    "3.) In case of installation on site, buyer must provide accommodation and meals for installers",
+    "4.) This Quotation is valid until 3 months from the date issue above",
+  ];
+  const projectInclusions = [
+    "Free shipping within 500 miles", // Example
+    "Foundation preparation guide",
+    "All necessary permits documentation",
+    "Installation manual 5-year structural warranty",
+  ];
+  const projectExclusions = [
+    "Land Preparation",
+    "Electrical Wirings",
+    "Masonry Works (Pedestal/Slabs)",
+  ];
+  const paymentTerms = [
+    "50% Down Payment",
+    "40% Before Delivery",
+    "10% Upon Completion",
+  ];
+  const bankDetails = {
+    bank: "BDO",
+    accountNumber: "09635-801-5757", // Example Account Number
+    accountName: "Camco Mega Sales Corp",
   };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-PH', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
-  const quoteNumber = `RB-2024-${contract.orderId}`;
-  const currentDate = formatDate(contract.createdAt);
-
-  // Generate contract items based on the product with Items column
-  const contractItems: ContractItem[] = [{
-    qty: 1,
-    unit: 'unit',
-    items: 'Container House Kit',
-    description: 'Container House\nDimension: L5.95m x W3m x H2.8m\nInclusion: 1 Door, 2 Windows, Floor (uses Cement Board Flooring), and Wall uses PVC Insulated walls',
-    image: 'Container House',
-    unitPrice: 165000,
-    amount: 165000
-  }, {
-    qty: 1,
-    unit: 'unit',
-    items: 'Duplex Container Kit',
-    description: 'Duplex Container House\nDimension: L11.95m x W3m x H2.8m w/ 2 Doors & 4 Windows, Floor uses Cement Board Flooring, and Wall uses Sandwich Panel Board',
-    image: 'Duplex Container',
-    unitPrice: 350000,
-    amount: 350000
-  }, {
-    qty: 1,
-    unit: 'unit',
-    items: 'Roofing Materials',
-    description: 'Extra Roofing\nRoof Deck Roofing (Embossed Roof)',
-    image: 'Roofing',
-    unitPrice: 45000,
-    amount: 45000
-  }, {
-    qty: 1,
-    unit: 'unit',
-    items: 'Roof Deck Kit',
-    description: 'Roof Deck\nDimension: L5.95 x W3m 1 with railings and Roofing',
-    image: 'Roof Deck',
-    unitPrice: 60000,
-    amount: 60000
-  }, {
-    qty: 1,
-    unit: 'unit',
-    items: 'Stair Kit',
-    description: 'Stairs\nInclusion: 1 side railings',
-    image: 'Stairs',
-    unitPrice: 30000,
-    amount: 30000
-  }, {
-    qty: 1,
-    unit: 'unit',
-    items: 'Partition Materials',
-    description: 'Partition\nSandwich panel',
-    image: 'Partition',
-    unitPrice: 0,
-    amount: 0
-  }, {
-    qty: 1,
-    unit: 'lot',
-    items: 'Delivery Service',
-    description: 'Delivery\nFREE DELIVERY',
-    image: 'Delivery',
-    unitPrice: 0,
-    amount: 0
-  }];
-
-  const selectedItem = contractItems[0];
-  const subtotal = selectedItem.amount;
-  const discount = 100000;
-  const total = subtotal - discount;
-
-  const handleDownloadPDF = () => {
-    const printContent = document.getElementById('formal-contract-content');
-    if (printContent) {
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(`
-          <html>
-            <head>
-              <title>Contract ${quoteNumber}</title>
-              <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                .header { background: #1e40af; color: white; padding: 20px; text-align: center; margin-bottom: 20px; }
-                .company-name { font-size: 24px; font-weight: bold; }
-                .company-subtitle { font-size: 16px; margin: 5px 0; }
-                .contact-info { font-size: 12px; }
-                .quote-info { text-align: right; margin-bottom: 20px; }
-                table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-                th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-                th { background: #f0f8ff; font-weight: bold; }
-                .text-right { text-align: right; }
-                .text-center { text-align: center; }
-                .payment-terms { background: #f8f9fa; padding: 15px; margin: 20px 0; }
-                .total-section { margin-top: 20px; }
-                .signature-section { margin-top: 40px; }
-                .page-break { page-break-before: always; }
-                .inclusion-box { background: #e8f5e8; border-left: 4px solid #22c55e; padding: 15px; margin: 10px 0; }
-                .exclusion-box { background: #fef3e8; border-left: 4px solid #f59e0b; padding: 15px; margin: 10px 0; }
-                .notes-section { margin: 20px 0; }
-                .agreement-section { margin: 30px 0; font-style: italic; }
-                .signature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 30px 0; }
-                .signature-box { border: 2px dashed #6b7280; padding: 20px; text-align: center; }
-                .conforme-box { border: 2px dashed #6b7280; padding: 20px; margin: 20px 0; }
-                @media print {
-                  body { margin: 0; }
-                  .no-print { display: none; }
-                }
-              </style>
-            </head>
-            <body>
-              ${printContent.innerHTML}
-            </body>
-          </html>
-        `);
-        printWindow.document.close();
-        printWindow.print();
-        toast.success('Contract document prepared for download');
-      }
-    }
-  };
+  const preparedBy = { name: "Sales and Marketing", phone: "0997-951-7188" };
+  const approvedBy = { name: "General Manager", phone: "0905-794-6233" };
 
   return (
-    <div className="max-w-4xl mx-auto bg-white">
-      <div id="formal-contract-content" className="p-8">
-        {/* Page 1 - Header */}
-        <div className="bg-blue-700 text-white p-6 text-center mb-6">
-          <h1 className="text-2xl font-bold">CAMCO MEGA SALES CORP.</h1>
-          <p className="text-lg font-semibold mt-2">PREFAB CONTAINER AND CAMHOUSE</p>
-          <div className="text-sm mt-3">
-            <p>0997-951-7188 | camco.prefab3@gmail.com</p>
-            <p>Masterson Ave., Upper Balulang, Cagayan de Oro City</p>
-          </div>
+    // Approximating 0.5 inch margin with p-3 (12px). Use style={{ padding: '12.7mm' }} for exactness if needed.
+    // Use box-border to include padding in the element's total width/height.
+    <div
+      id="formal-contract-content"
+      className="p-3 bg-white text-black text-xs font-sans w-[210mm] min-h-[297mm] mx-auto box-border leading-normal"
+    >
+      {/* 1. Header Section */}
+      <div className="flex justify-between items-start mb-6">
+        {/* Logo container */}
+        <div className="w-24 h-16 flex items-center justify-center text-xs text-gray-500">
+          {Logo2 ? (
+            <img
+              src={Logo2}
+              alt="Company Logo"
+              className="max-w-full max-h-full object-contain"
+            />
+          ) : (
+            "Logo here"
+          )}
         </div>
-
-        {/* Quote Information */}
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-blue-700 italic">Quotation</h2>
-          </div>
-          <div className="text-right">
-            <p><strong>Quote #:</strong> {quoteNumber}</p>
-            <p><strong>Date:</strong> {currentDate}</p>
-          </div>
-        </div>
-
-        {/* Customer Information */}
-        <div className="mb-6">
-          <div className="grid grid-cols-1 gap-2 text-sm">
-            <p><strong>Name:</strong> {contract.customerName}</p>
-            <p><strong>Address:</strong> {contract.deliveryAddress || 'Customer Address'}</p>
-            <p><strong>Contact Num:</strong> Contact Number</p>
-            <p><strong>Email add:</strong> {contract.customerEmail}</p>
-          </div>
-          <div className="mt-4">
-            <p><strong>To our valued client:</strong></p>
-            <p>We are pleased to present and offer you the following products and services:</p>
-          </div>
-        </div>
-
-        {/* Itemized Quotation Table */}
-        <div className="mb-6">
-          <h3 className="text-lg font-bold text-blue-700 mb-3">Itemized Quotation</h3>
-          <Table className="border">
-            <TableHeader>
-              <TableRow className="bg-blue-100">
-                <TableHead className="border text-center font-bold">QTY</TableHead>
-                <TableHead className="border text-center font-bold">UNIT</TableHead>
-                <TableHead className="border text-center font-bold">ITEMS</TableHead>
-                <TableHead className="border text-center font-bold">DESCRIPTION</TableHead>
-                <TableHead className="border text-center font-bold">IMAGE</TableHead>
-                <TableHead className="border text-center font-bold">UNIT PRICE</TableHead>
-                <TableHead className="border text-center font-bold">AMOUNT</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow>
-                <TableCell className="border text-center">{selectedItem.qty}</TableCell>
-                <TableCell className="border text-center">{selectedItem.unit}</TableCell>
-                <TableCell className="border text-center font-medium">{selectedItem.items}</TableCell>
-                <TableCell className="border text-sm whitespace-pre-line">{selectedItem.description}</TableCell>
-                <TableCell className="border text-center">
-                  <div className="w-16 h-12 bg-gray-100 border rounded flex items-center justify-center text-xs mx-auto">
-                    {selectedItem.image}
-                  </div>
-                </TableCell>
-                <TableCell className="border text-right font-semibold">
-                  {formatPrice(selectedItem.unitPrice)}
-                </TableCell>
-                <TableCell className="border text-right font-semibold">
-                  {formatPrice(selectedItem.amount)}
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* Payment Terms and Total */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div>
-            <Card>
-              <CardHeader className="bg-blue-700 text-white py-2">
-                <CardTitle className="text-sm">Payment Terms</CardTitle>
-              </CardHeader>
-              <CardContent className="py-3 text-sm">
-                <p>50% Down Payment</p>
-                <p>40% Before Delivery</p>
-                <p>10% Upon Completion</p>
-              </CardContent>
-            </Card>
-            
-            <Card className="mt-4">
-              <CardHeader className="bg-blue-700 text-white py-2">
-                <CardTitle className="text-sm">Bank Details</CardTitle>
-              </CardHeader>
-              <CardContent className="py-3 text-sm">
-                <p><strong>BDO:</strong> 00635-801-5757</p>
-                <p>Camco Mega Sales Corp</p>
-              </CardContent>
-            </Card>
-          </div>
-          
-          <div className="text-right">
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span><strong>Subtotal:</strong></span>
-                <span className="font-bold">{formatPrice(subtotal)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span><strong>Discount:</strong></span>
-                <span className="font-bold text-green-600">{formatPrice(discount)}</span>
-              </div>
-              <Separator className="my-2" />
-              <div className="flex justify-between text-lg">
-                <span><strong>Total:</strong></span>
-                <span className="font-bold text-blue-700">{formatPrice(total)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="border-t pt-6 mt-8">
-          <div className="text-center">
-            <p className="font-bold mb-4"></p>
-          </div>
-        </div>
-
-        {/* Page 2 - Notes and Details */}
-        <div className="page-break"></div>
-        
-        {/* Notes Section */}
-        <div className="notes-section">
-          <h2 className="text-2xl font-bold text-blue-700 mb-4 border-b-2 border-blue-700 pb-2">Notes</h2>
-          <ul className="space-y-3 text-sm">
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span>Price is <strong className="text-blue-700">EXCLUSIVE</strong> of VAT</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span>Deliveries within the city proper of Cagayan de Oro is free of charge</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span>In case of installation on site, buyer must provide accommodation and meals for installers</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-2">•</span>
-              <span>This Quotation is valid until 3 months from the date issued above</span>
-            </li>
-          </ul>
-        </div>
-
-        {/* Project Details Section */}
-        <div className="mt-8">
-          <h2 className="text-2xl font-bold text-blue-700 mb-4 border-b-2 border-blue-700 pb-2">Project Details</h2>
-          <div className="mb-4">
-            <p className="text-blue-600 font-semibold">Project Location: Uptown Masterson Drive (Seaoil)</p>
-          </div>
-          <div className="mb-6">
-            <p className="text-blue-600 font-semibold mb-2">Project Notes:</p>
-          </div>
-
-          {/* Inclusion/Exclusion Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            {/* Inclusion Box */}
-            <div className="inclusion-box">
-              <div className="flex items-center mb-3">
-                <Check className="h-5 w-5 text-green-600 mr-2" />
-                <h3 className="text-green-700 font-bold text-lg">INCLUSION</h3>
-              </div>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Supply and Delivery of Materials</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Installation of Container House</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Roofing for Roof Deck</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Roof Deck and Stairs</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Partition with Door (Ground floor from storage to display unit)</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Exclusion Box */}
-            <div className="exclusion-box">
-              <div className="flex items-center mb-3">
-                <X className="h-5 w-5 text-orange-600 mr-2" />
-                <h3 className="text-orange-700 font-bold text-lg">EXCLUSION</h3>
-              </div>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Land Preparation</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Masonry Works (Pedestal/Slab)</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Electrical Wiring</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {/* Agreement Section */}
-        <div className="agreement-section">
-          <h2 className="text-2xl font-bold text-blue-700 mb-4 border-b-2 border-blue-700 pb-2">Agreement</h2>
-          <p className="text-sm mb-6 italic">
-            I, the undersigned, hereby agree to proceed with this project in accordance with all requirements and specifics by signing this quotation.
+        <div className="text-center">
+          <h1 className="text-xl font-bold text-blue-800">
+            CAMCO MEGA SALES CORP.
+          </h1>
+          <p className="font-semibold text-blue-700">
+            PREFAB CONTAINER AND CAMHOUSE
           </p>
-
-          {/* Company Representatives */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-            <div className="signature-box">
-              <p className="font-semibold text-center mb-4">Prepared by:</p>
-              <div className="border-b-2 border-gray-400 h-16 mb-4"></div>
-              <div className="text-center">
-                <p className="font-bold text-blue-600">Rolan Bagares</p>
-                <p className="text-sm">Sales and Marketing Manager</p>
-                <p className="text-sm">0997-951-7188</p>
-              </div>
-            </div>
-
-            <div className="signature-box">
-              <p className="font-semibold text-center mb-4">Approved by:</p>
-              <div className="border-b-2 border-gray-400 h-16 mb-4"></div>
-              <div className="text-center">
-                <p className="font-bold text-blue-600">Stephanie Claire Edillo</p>
-                <p className="text-sm">General Manager</p>
-                <p className="text-sm">0905-794-6233</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Customer Signature */}
-          <div className="conforme-box">
-            <p className="font-bold text-blue-700 mb-4">CONFORME:</p>
-            <div className="border-b-2 border-gray-400 h-20 mb-4"></div>
-            <p className="text-sm font-semibold">Signature above Printed Name</p>
-            <p className="text-sm mt-4">Date: ___/___/2025</p>
-          </div>
+          <p className="text-xs">0997-951-7188 | camco.prefab3@gmail.com</p>
+          <p className="text-xs">
+            Masterson Ave., Upper Balulang, Cagayan de Oro City
+          </p>
         </div>
-
-        {/* Final Thank You */}
-        <div className="bg-blue-700 text-white text-center py-6 mt-8">
-          <h2 className="text-2xl font-bold">THANK YOU FOR YOUR BUSINESS!</h2>
+        <div className="text-right">
+          <h2 className="text-lg font-bold">Quotation</h2>
+          <p className="text-xs">
+            <strong>Quote #:</strong> {quoteNumber}
+          </p>
+          <p className="text-xs">
+            <strong>Date:</strong> {formatDate(order.createdAt)}
+          </p>
         </div>
       </div>
 
-      {/* Action Buttons - Hidden in print */}
-      <div className="flex gap-4 justify-center p-6 no-print">
-        <Button onClick={handleDownloadPDF} className="flex items-center gap-2 bg-blue-700 hover:bg-blue-800">
-          <Download className="h-4 w-4" />
-          Download as PDF
-        </Button>
+      {/* 2. Client Details Section */}
+      <div className="mb-4 text-xs">
+        {/* Accessing nested delivery address safely */}
+        <p>
+          <strong>Name:</strong>{" "}
+          {order.customerInfo?.deliveryAddress?.firstName ?? "N/A"}{" "}
+          {order.customerInfo?.deliveryAddress?.lastName ?? ""}
+        </p>
+        <p>
+          <strong>Phone Number:</strong>{" "}
+          {order.customerInfo?.deliveryAddress?.phone ?? "N/A"}
+        </p>
+        <p>
+          <strong>Delivery Location:</strong>{" "}
+          {formatFullDeliveryAddress(order.customerInfo?.deliveryAddress)}
+        </p>
+        <p>
+          <strong>Landmark/Notes:</strong>{" "}
+          {order.customerInfo?.deliveryAddress?.additionalAddressLine || "N/A"}
+        </p>
       </div>
+      <p className="mb-4 text-xs">To our valued client,</p>
+      <p className="mb-4 text-xs">
+        We are pleased to present and offer you the following products and
+        services
+      </p>
+
+      {/* 3. Ordered Products & Parts Table */}
+      <div className="mb-4">
+        {/* Increased table cell padding: p-2 */}
+        <table className="w-full border-collapse border border-black text-xs">
+          <thead>
+            <tr className="bg-blue-200 text-black font-bold text-center">
+              <th className="border border-black p-2">Qty</th>
+              <th className="border border-black p-2">Unit</th>
+              <th className="border border-black p-2">Items</th>
+              <th className="border border-black p-2">Description</th>
+              <th className="border border-black p-2">Images</th>
+              <th className="border border-black p-2">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {order.products.map((item: OrderProduct, productIndex: number) => {
+              const product = item.productId;
+              const productParts = product?.productParts ?? [];
+              const productAmount =
+                (product?.productPrice ?? 0) * item.quantity;
+
+              return (
+                <React.Fragment key={`product-${productIndex}`}>
+                  {/* Product Row */}
+                  <tr className="bg-gray-100 text-black font-semibold">
+                    <td
+                      colSpan={6}
+                      className="border border-black p-1 text-center"
+                    >
+                      Ordered Product #{productIndex + 1}
+                    </td>
+                  </tr>
+                  <tr className="align-top">
+                    <td className="border border-black p-2 text-center">
+                      {item.quantity}
+                    </td>
+                    <td className="border border-black p-2 text-center">
+                      unit
+                    </td>
+                    <td className="border border-black p-2">
+                      {product?.productName ?? "N/A"}
+                    </td>
+                    <td className="border border-black p-2">
+                      {product?.productShortDescription ?? "N/A"}
+                    </td>
+                    <td className="border border-black p-2 text-center">
+                      <img
+                        src={product?.image || "https://placehold.co/60x40"}
+                        alt={product?.productName ?? "Product"}
+                        className="w-16 h-10 object-cover mx-auto"
+                      />
+                    </td>
+                    <td className="border border-black p-2 text-right font-semibold">
+                      {formatPrice(productAmount)}
+                    </td>
+                  </tr>
+
+                  {/* Parts Rows */}
+                  {productParts.length > 0 && (
+                    <>
+                      <tr className="bg-gray-100 text-black font-semibold">
+                        <td
+                          colSpan={6}
+                          className="border border-black p-1 text-center italic text-gray-700"
+                        >
+                          Product Parts for {product?.productName ?? ""}
+                        </td>
+                      </tr>
+                      {productParts.map(
+                        (part: IProductPart, partIndex: number) => (
+                          <tr
+                            key={`part-${productIndex}-${partIndex}`}
+                            className="align-top"
+                          >
+                            <td className="border border-black p-2 text-center">
+                              {part.quantity}
+                            </td>
+                            <td className="border border-black p-2 text-center">
+                              unit
+                            </td>
+                            <td className="border border-black p-2">
+                              {part.name}
+                            </td>
+                            <td className="border border-black p-2">
+                              {part.description ?? "N/A"}
+                            </td>
+                            <td className="border border-black p-2 text-center">
+                              <img
+                                src={part.image || "https://placehold.co/60x40"}
+                                alt={part.name}
+                                className="w-16 h-10 object-cover mx-auto"
+                              />
+                            </td>
+                            <td className="border border-black p-2 text-right font-semibold">
+                              NaN
+                            </td>
+                          </tr>
+                        )
+                      )}
+                    </>
+                  )}
+                </React.Fragment>
+              );
+            })}
+
+            {/* Financial Summary */}
+            <tr>
+              <td
+                colSpan={5}
+                className="text-right font-semibold p-2 border-t border-black"
+              >
+                Subtotal
+              </td>
+              <td className="text-right font-semibold p-2 border-t border-black">
+                {formatPrice(order.totalAmount)}
+              </td>
+            </tr>
+            <tr>
+              <td
+                colSpan={5}
+                className="text-right font-semibold p-2 border-t border-black"
+              >
+                Discount
+              </td>
+              <td className="text-right font-semibold p-2 border-t border-black">
+                {formatPrice(0)}
+              </td>
+            </tr>
+            <tr>
+              <td
+                colSpan={5}
+                className="text-right font-bold p-2 border-t-2 border-black"
+              >
+                Total
+              </td>
+              <td className="text-right font-bold p-2 border-t-2 border-black">
+                {formatPrice(order.totalAmount)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* 6. Payment Terms & Bank Details */}
+      <div className="flex justify-between items-start mb-6 text-xs">
+        <div className="w-[48%]">
+          <div className="bg-blue-200 text-center font-bold p-1 border border-black">
+            Payment Terms
+          </div>
+          {paymentTerms.map((term, i) => (
+            <div
+              key={i}
+              className="p-1 border-l border-r border-b border-black"
+            >
+              {term}
+            </div>
+          ))}
+        </div>
+        <div className="w-[48%]">
+          <div className="bg-blue-200 text-center font-bold p-1 border border-black">
+            Bank Details
+          </div>
+          <div className="p-1 border-l border-r border-b border-black">
+            <p>
+              <strong>{bankDetails.bank}</strong>
+            </p>{" "}
+            <p>{bankDetails.accountNumber}</p> <p>{bankDetails.accountName}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Page Break 1 */}
+      <div
+        className="page-break"
+        style={{ pageBreakBefore: "always", visibility: "hidden", height: "0" }}
+      ></div>
+
+      {/* 7. Notes */}
+      <div className="mb-4 border border-black text-xs">
+        <div className="bg-blue-200 text-center font-bold p-1 border-b border-black">
+          Notes
+        </div>
+        <div className="p-2 space-y-1 leading-normal">
+          {notes.map((note, i) => (
+            <p key={i}>{note}</p>
+          ))}
+        </div>
+      </div>
+
+      {/* 8. Project Details */}
+      <div className="mb-6 border border-black text-xs">
+        <div className="bg-blue-200 text-center font-bold p-1 border-b border-black">
+          Project Details
+        </div>
+        <div className="grid grid-cols-2">
+          <div className="p-2 border-r border-black leading-normal">
+            {" "}
+            <p className="font-semibold mb-1">Inclusion:</p>{" "}
+            <ul className="list-disc list-inside space-y-0.5">
+              {" "}
+              {projectInclusions.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}{" "}
+            </ul>{" "}
+          </div>
+          <div className="p-2 leading-normal">
+            {" "}
+            <p className="font-semibold mb-1">Exclusion:</p>{" "}
+            <ul className="list-disc list-inside space-y-0.5">
+              {" "}
+              {projectExclusions.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}{" "}
+            </ul>{" "}
+          </div>
+        </div>
+        {order.products[0]?.productId?.image && (
+          <div className="border-t border-black p-2">
+            <p className="font-semibold text-center mb-1">Product Image</p>
+            <img
+              src={order.products[0].productId.image}
+              alt="Product"
+              className="w-40 h-auto object-cover mx-auto border border-gray-300"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Page Break 2 */}
+      <div
+        className="page-break"
+        style={{ pageBreakBefore: "always", visibility: "hidden", height: "0" }}
+      ></div>
+
+      {/* 9. Closing & Signatures */}
+      <div className="text-xs space-y-4 mb-10 leading-normal">
+        <p>We are looking forward to hear from you soon.</p>
+        <p>
+          If you have any questions concerning with this quotation, please
+          contact Rolan Bagares at 0997-951-7188 or e-mail us at
+          camco.prefab3@gmail.com
+        </p>
+      </div>
+      <div className="flex justify-between items-start text-xs mb-10">
+        <div>
+          {" "}
+          <p>Prepared by:</p> <br />
+          <br />
+          <br /> <p className="border-t border-black pt-1">
+            {preparedBy.name}
+          </p>{" "}
+          <p>{preparedBy.phone}</p>{" "}
+        </div>
+        <div>
+          {" "}
+          <p>Approved by:</p> <br />
+          <br />
+          <br /> <p className="border-t border-black pt-1">
+            {approvedBy.name}
+          </p>{" "}
+          <p>{approvedBy.phone}</p>{" "}
+        </div>
+      </div>
+      <div>
+        <p className="font-bold text-xs">CONFORME:</p>
+        <p className="text-xs mb-6 leading-normal">
+          I, the undersigned, hereby agree to proceed with this project in
+          accordance with all requirements and specifics by signing this
+          quotation.
+        </p>
+        <br />
+        <br />
+        <br />
+        <p className="border-t border-black pt-1 text-xs">
+          Signature above Printed Name
+        </p>
+        <br />
+        <p className="text-xs">Date: _________________________</p>
+      </div>
+      <p className="text-center font-bold text-xs mt-10">
+        THANK YOU FOR YOUR BUSINESS!
+      </p>
     </div>
   );
 };
