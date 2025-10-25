@@ -1,5 +1,32 @@
-// --- TYPE DEFINITIONS FOR A DETAILED ORDER ---
+// frontend/src/types/order.ts
+// (This is the complete, final file)
 
+// 1. Define the DeliveryAddress (matches backend model)
+export interface DeliveryAddress {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  street: string;
+  subdivision: string;
+  cityMunicipality: string;
+  province: string;
+  postalCode: string;
+  country: string;
+  additionalAddressLine?: string;
+}
+
+// 2. Define the CustomerInfo (matches backend model)
+export interface OrderCustomerInfo {
+  firstName: string; // Billing First Name
+  lastName: string; // Billing Last Name
+  email: string;
+  phoneNumber: string; // Billing Phone
+
+  // This is the correct nested structure
+  deliveryAddress: DeliveryAddress;
+}
+
+// (These are your existing definitions, they are correct)
 export type PaymentStatus =
   | "Pending"
   | "50% Complete Paid"
@@ -15,25 +42,23 @@ export type OrderStatus =
   | "Completed"
   | "Cancelled";
 
-// Interface for the populated Product data
 export interface Product {
   _id: string;
   productName: string;
   productPrice: number;
   squareFeet: number;
   image?: string;
-  productShortDescription?: string; // We added this field
+  productShortDescription?: string;
 }
 
-// Interface for the 'products' array in the order
 export interface OrderProduct {
-  productId: Product; // The populated product details
+  productId: Product;
   quantity: number;
   _id: string;
 }
 
-// Interface for the nested paymentInfo object
-export interface PaymentInfo {
+// This is the 'paymentInfo' object on a fetched Order
+export interface OrderPaymentInfo {
   paymentStatus: PaymentStatus;
   paymentMethod: string;
   paymentReceipts?: {
@@ -41,31 +66,22 @@ export interface PaymentInfo {
     pre_delivery?: string[];
     final?: string[];
   };
+  paymentMode: "cash" | "bank" | "cheque" | "gcash";
+  paymentTiming: "now" | "later";
+  installmentStage?: "initial" | "pre_delivery" | "final";
 }
 
-// This is the main Order type your component should use
+// 3. This is the main, correct Order interface
 export interface Order {
   _id: string;
-  userId: string; // Or a populated User interface
+  userId: string;
   orderStatus: OrderStatus;
-  products: OrderProduct[]; // It's an array of products
-  customerInfo: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-  };
-  deliveryAddress: {
-    firstName: string; // <-- ADD THIS
-    lastName: string; // <-- ADD THIS
-    phone: string;
-    street: string;
-    city: string;
-    province: string;
-    zipCode: string;
-    landmark?: string;
-  };
-  paymentInfo: PaymentInfo; // It's a nested object
+  products: OrderProduct[];
+
+  // This is the correct object matching your backend
+  customerInfo: OrderCustomerInfo;
+
+  paymentInfo: OrderPaymentInfo; // Use the specific OrderPaymentInfo
   totalAmount: number;
   createdAt: string;
   updatedAt: string;

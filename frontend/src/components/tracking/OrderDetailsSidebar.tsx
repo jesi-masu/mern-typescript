@@ -1,7 +1,10 @@
+// frontend/src/components/tracking/OrderDetailsSidebar.tsx
+// (This is the complete, final file)
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Phone, Mail, User, Landmark } from "lucide-react";
-import { Order } from "../../types/order";
+import { Order } from "../../types/order"; // This imports the correct, new Order type
 import { Separator } from "../ui/separator";
 
 interface OrderDetailsSidebarProps {
@@ -24,9 +27,18 @@ const formatDate = (dateString: string) => {
   });
 };
 
-const formatFullAddress = (address: Order["deliveryAddress"]) => {
+// Updated to use the correct fields
+const formatFullAddress = (
+  address: Order["customerInfo"]["deliveryAddress"]
+) => {
   if (!address) return "Address not available";
-  return [address.street, address.city, address.province, address.zipCode]
+  return [
+    address.street,
+    address.subdivision,
+    address.cityMunicipality,
+    address.province,
+    address.postalCode,
+  ]
     .filter(Boolean)
     .join(", ");
 };
@@ -34,11 +46,9 @@ const formatFullAddress = (address: Order["deliveryAddress"]) => {
 export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
   order,
 }) => {
-  // --- START: MODIFICATION ---
-  // We get account info (for email) and delivery info (for everything else)
-  const customer = order.customerInfo;
-  const address = order.deliveryAddress;
-  // --- END: MODIFICATION ---
+  // Read from the correct nested locations
+  const customer = order.customerInfo; // This is the billing/account info
+  const address = order.customerInfo.deliveryAddress; // This is the recipient/delivery info
 
   return (
     <div className="space-y-6">
@@ -47,7 +57,7 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
           <CardTitle>Products in this Order</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* ... (Product list section is unchanged) ... */}
+          {/* (Product list is correct) */}
           <div className="space-y-4">
             {order.products.map((item, index) => (
               <div key={item.productId._id}>
@@ -97,31 +107,29 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
           <CardTitle>Customer & Delivery</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
-          {/* --- START: MODIFICATION --- */}
-          {/* Now pulls name and phone from 'address' (deliveryAddress) */}
+          {/* Recipient's info (from 'address' object) */}
           {address && (
             <>
               <div className="flex items-start gap-3">
                 <User className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
                 <span className="font-medium">
-                  {/* Recipient's Name */}
                   {address.firstName} {address.lastName}
                 </span>
               </div>
               <div className="flex items-start gap-3">
                 <Phone className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                <span>{address.phone}</span> {/* Recipient's Phone */}
+                <span>{address.phone}</span>
               </div>
             </>
           )}
-          {/* Email is still pulled from the main customer account */}
+          {/* Account email (from 'customer' object) */}
           {customer && (
             <div className="flex items-start gap-3">
               <Mail className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
-              <span>{customer.email}</span> {/* Account Email */}
+              <span>{customer.email}</span>
             </div>
           )}
-          {/* Address section is now separated by a border */}
+          {/* Delivery address details (from 'address' object) */}
           {address && (
             <div className="space-y-3 pt-3 border-t">
               <div className="flex items-start gap-3">
@@ -130,16 +138,17 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
               </div>
               <div className="flex items-start gap-3">
                 <Landmark className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                <span>{address.landmark || "No landmark provided"}</span>
+                <span>
+                  {address.additionalAddressLine || "No landmark provided"}
+                </span>
               </div>
             </div>
           )}
-          {/* --- END: MODIFICATION --- */}
         </CardContent>
       </Card>
 
       <Card>
-        {/* ... (Order Summary card is unchanged) ... */}
+        {/* (Order Summary is correct) */}
         <CardHeader>
           <CardTitle>Order Summary</CardTitle>
         </CardHeader>
@@ -158,7 +167,7 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
       </Card>
 
       <Card>
-        {/* ... (Need Help? card is unchanged) ... */}
+        {/* (Need Help? is correct) */}
         <CardHeader>
           <CardTitle>Need Help?</CardTitle>
         </CardHeader>

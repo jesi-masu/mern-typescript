@@ -1,5 +1,3 @@
-// backend/src/controllers/importController.ts
-
 import { Request, Response, RequestHandler } from "express";
 import fs from "fs";
 import csv from "csv-parser";
@@ -7,7 +5,7 @@ import mongoose from "mongoose";
 import Order, { IOrder } from "../models/orderModel";
 import User from "../models/userModel";
 import Product from "../models/productModel";
-import { logActivity } from "../services/logService"; // <-- ADD THIS LINE
+import { logActivity } from "../services/logService";
 
 const processCsv = (filePath: string): Promise<any[]> => {
   return new Promise((resolve, reject) => {
@@ -43,7 +41,6 @@ export const validateHistoricalOrders: RequestHandler = async (req, res) => {
     const existingProducts = await Product.find({
       _id: { $in: allProductIds },
     }).select("_id");
-    // ✅ FIX: Added '(p as any)' to assert the type and allow access to ._id
     const existingProductIds = new Set(
       existingProducts.map((p) => (p as any)._id.toString())
     );
@@ -147,12 +144,19 @@ export const importHistoricalOrders: RequestHandler = async (req, res) => {
           email: "N/A",
           phoneNumber: "N/A",
           deliveryAddress: {
+            // --- START: MODIFIED ---
+            // Added fields to match the new schema
+            firstName: "N/A",
+            lastName: "N/A",
+            phone: "N/A",
             street: "N/A",
-            barangaySubdivision: "N/A", // Corrected field name
-            cityMunicipality: "N/A", // Corrected field name
+            subdivision: "N/A", // Changed from barangaySubdivision
+            cityMunicipality: "N/A",
             province: "N/A",
             postalCode: "N/A",
             country: "N/A",
+            additionalAddressLine: "N/A",
+            // --- END: MODIFIED ---
           },
         },
         paymentInfo: {
@@ -171,7 +175,7 @@ export const importHistoricalOrders: RequestHandler = async (req, res) => {
     await session.commitTransaction();
 
     await logActivity(
-      req.user?._id, // The admin uploading
+      (req.user as any)?._id, // The admin uploading
       "Records Uploaded",
       `Successfully imported ${result.length} historical orders via CSV upload.`,
       "orders" // Categorized as "orders"
@@ -222,7 +226,7 @@ export const createManualHistoricalOrder: RequestHandler = async (req, res) => {
     }
     const historicalUserId = historicalUser._id as mongoose.Types.ObjectId;
 
-    const productIds = products.map((p: any) => p.productId); // Added 'any' type for temp fix
+    const productIds = products.map((p: any) => p.productId);
     const foundProducts = await Product.find({
       _id: { $in: productIds },
     }).select("_id");
@@ -247,12 +251,19 @@ export const createManualHistoricalOrder: RequestHandler = async (req, res) => {
         email: "N/A",
         phoneNumber: "N/A",
         deliveryAddress: {
+          // --- START: MODIFIED ---
+          // Added/Updated fields to match the new schema
+          firstName: "N/A",
+          lastName: "N/A",
+          phone: "N/A",
           street: "N/A",
-          barangaySubdivision: "N/A", // Corrected field name
-          city: "N/A", // Corrected field name
+          subdivision: "N/A", // Changed from barangaySubdivision
+          cityMunicipality: "N/A", // Changed from city
           province: "N/A",
           postalCode: "N/A",
           country: "N/A",
+          additionalAddressLine: "N/A",
+          // --- END: MODIFIED ---
         },
       },
       paymentInfo: paymentInfo || {
@@ -270,7 +281,7 @@ export const createManualHistoricalOrder: RequestHandler = async (req, res) => {
     await newOrder.save();
 
     await logActivity(
-      req.user?._id, // The admin creating the record
+      (req.user as any)?._id, // The admin creating the record
       "Record Created",
       `A manual historical order (ID: ${newOrder._id}) was created.`,
       "orders"

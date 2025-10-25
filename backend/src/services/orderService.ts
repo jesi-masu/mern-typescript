@@ -7,8 +7,6 @@ import Product from "../models/productModel";
 import Notification from "../models/notificationModel";
 import ActivityLog from "../models/activityLogModel";
 
-// Define a type for your authenticated user (you might already have this)
-// This makes the code much cleaner and safer
 type AuthenticatedUser = {
   _id: string;
   role: "client" | "admin" | "personnel";
@@ -20,7 +18,7 @@ type AuthenticatedUser = {
 export const createOrderLogic = async (
   orderData: any,
   userId: string,
-  customerName: string
+  customerName: string // Assuming you still pass this, though customerInfo might be better
 ) => {
   const {
     products,
@@ -30,6 +28,7 @@ export const createOrderLogic = async (
     totalAmount,
     locationImages,
   } = orderData;
+
   // Validation
   if (
     !products ||
@@ -40,13 +39,14 @@ export const createOrderLogic = async (
     !contractInfo ||
     !totalAmount
   ) {
-    // Throw an error that the controller will catch
     throw new Error("Please provide all required order fields.");
   }
+
   const session = await mongoose.startSession();
   session.startTransaction();
+
   try {
-    // 1. Check stock and prepare product updates
+    // 1. Stock Check & Update
     const productSavePromises = [];
     for (const item of products) {
       const product = await Product.findById(item.productId).session(session);
@@ -55,21 +55,21 @@ export const createOrderLogic = async (
       }
       if (product.stock < item.quantity) {
         throw new Error(
-          `Not enough stock for ${product.productName}. Only ${product.stock} available, but ${item.quantity} were requested.`
+          `Not enough stock for ${product.productName}. Only ${product.stock} available.`
         );
       }
       product.stock -= item.quantity;
       productSavePromises.push(product.save({ session }));
     }
-    // 2. Execute all product stock updates
     await Promise.all(productSavePromises);
-    // 3. Create the new order
+
+    // 2. Create Order
     const [newOrder] = await Order.create(
       [
         {
           userId,
           products,
-          customerInfo,
+          customerInfo, // Make sure this matches your orderModel
           paymentInfo,
           contractInfo,
           totalAmount,
@@ -83,12 +83,7 @@ export const createOrderLogic = async (
       throw new Error("Order creation failed.");
     }
 
-    // 4. Create Activity Log (still inside transaction)
-    //
-    //  --- CHANGE ---
-    //  REMOVED the try...catch block here.
-    //  If logging fails, the main catch block will abort the transaction.
-    //
+    // 3. Create Activity Log
     await ActivityLog.create(
       [
         {
@@ -101,26 +96,20 @@ export const createOrderLogic = async (
           category: "orders",
         },
       ],
-      { session }
+      // --- ADDED FIX ---
+      { session, ordered: true } // Add ordered: true
     );
 
-    // 5. Create Notifications (still inside transaction)
-    //
-    //  --- CHANGE ---
-    //  REMOVED the try...catch block here.
-    //  If notification creation fails, the main catch block will abort the transaction.
-    //
+    // 4. Create Notifications
     await _createOrderNotifications(newOrder, customerInfo, session);
 
-    // 6. Commit
+    // 5. Commit
     await session.commitTransaction();
     return newOrder;
   } catch (error: any) {
-    // 7. Abort
     await session.abortTransaction();
-    throw error; // Re-throw the error for the controller to handle
+    throw error; // Re-throw for the controller
   } finally {
-    // 8. End session
     session.endSession();
   }
 };
@@ -130,17 +119,17 @@ export const updateOrderLogic = async (
   orderId: string,
   updateBody: any,
   user: AuthenticatedUser,
-  userName: string // Pass the name from the helper
+  userName: string
 ) => {
   const { orderStatus, paymentStatus, paymentReceiptUrl, paymentStage } =
     updateBody;
 
-  const orderBeforeUpdate = await Order.findById(orderId).lean(); // Use .lean() for a plain object
+  const orderBeforeUpdate = await Order.findById(orderId).lean();
   if (!orderBeforeUpdate) {
     throw new Error("Order not found.");
   }
 
-  // --- Authorization Logic ---
+  // Authorization Logic
   if (user.role === "client") {
     if (orderBeforeUpdate.userId.toString() !== user._id) {
       throw new Error("Forbidden: You can only update your own orders.");
@@ -154,7 +143,7 @@ export const updateOrderLogic = async (
     $set?: { [key: string]: any };
     $push?: { [key: string]: any };
   } = {};
-  const fieldsToSet: { [key: string]: string } = {};
+  const fieldsToSet: { [key: string]: any } = {}; // Use 'any' for flexibility with nested paths
   let logDetails = "";
 
   // Admin-only fields
@@ -163,6 +152,7 @@ export const updateOrderLogic = async (
       fieldsToSet.orderStatus = orderStatus;
       logDetails += `Status changed from '${orderBeforeUpdate.orderStatus}' to '${orderStatus}'. `;
     }
+    // Correctly check nested paymentStatus
     if (
       paymentStatus &&
       paymentStatus !== orderBeforeUpdate.paymentInfo.paymentStatus
@@ -182,14 +172,17 @@ export const updateOrderLogic = async (
     }
     const updatePath = `paymentInfo.paymentReceipts.${paymentStage}`;
     const pushUpdate = { [updatePath]: paymentReceiptUrl };
-    updateData.$push = { ...updateData.$push, ...pushUpdate };
 
+    // Initialize paymentReceipts if it doesn't exist
+    if (!updateData.$set) updateData.$set = {};
     if (!orderBeforeUpdate.paymentInfo.paymentReceipts) {
-      updateData.$set = {
-        ...updateData.$set,
-        "paymentInfo.paymentReceipts": {},
-      };
+      updateData.$set["paymentInfo.paymentReceipts"] = {};
     }
+
+    // Use $push correctly
+    if (!updateData.$push) updateData.$push = {};
+    updateData.$push[updatePath] = { $each: [paymentReceiptUrl] }; // Use $each for pushing
+
     logDetails += `Receipt uploaded for ${paymentStage} stage. `;
   }
 
@@ -197,7 +190,7 @@ export const updateOrderLogic = async (
     throw new Error("No valid fields provided for update.");
   }
 
-  // --- Perform the Update ---
+  // Perform the Update
   const updatedOrder = await Order.findByIdAndUpdate(orderId, updateData, {
     new: true,
     runValidators: true,
@@ -207,8 +200,7 @@ export const updateOrderLogic = async (
     throw new Error("Order not found after update attempt.");
   }
 
-  // --- Side Effects (Non-transactional) ---
-  // We run these *after* the update is successful
+  // Side Effects (Non-transactional)
   if (logDetails.trim()) {
     _createUpdateActivityLog(user._id, userName, orderId, logDetails);
   }
@@ -217,6 +209,7 @@ export const updateOrderLogic = async (
     _createReceiptUploadNotification(updatedOrder, paymentStage);
   }
 
+  // Use the updated fieldsToSet for notification logic
   if (fieldsToSet.orderStatus || fieldsToSet["paymentInfo.paymentStatus"]) {
     _createStatusUpdateNotification(updatedOrder, fieldsToSet);
   }
@@ -255,14 +248,33 @@ export const getOrderByIdLogic = async (
   if (!order) {
     throw new Error("Order not found.");
   }
-  if (!order.userId || !(order.userId as any)._id) {
-    throw new Error("Order data is incomplete (missing user reference).");
+  // Check if userId exists and is populated before accessing _id
+  if (
+    !order.userId ||
+    typeof order.userId !== "object" ||
+    !("_id" in order.userId)
+  ) {
+    // Handle cases where userId might be just an ObjectId or not populated
+    // If it's just an ID, you might need another query or adjust authorization
+    // For now, let's assume it should be populated for this check:
+    console.warn(`Order ${orderId} has missing or unpopulated userId.`);
+    // If you MUST proceed, you might check order.userId.toString() if it's an ObjectId
+    // but the authorization check below will likely fail safely.
   }
 
-  // Authorization
-  const orderOwnerId = (order.userId as any)._id.toString();
-  if (user.role === "client" && orderOwnerId !== user._id) {
-    throw new Error("Forbidden: You are not authorized to view this order.");
+  // Authorization - Safely access _id only if userId is populated
+  if (
+    order.userId &&
+    typeof order.userId === "object" &&
+    "_id" in order.userId
+  ) {
+    const orderOwnerId = (order.userId as any)._id.toString();
+    if (user.role === "client" && orderOwnerId !== user._id) {
+      throw new Error("Forbidden: You are not authorized to view this order.");
+    }
+  } else if (user.role === "client") {
+    // If userId isn't populated and the user is a client, deny access
+    throw new Error("Forbidden: Cannot verify ownership for this order.");
   }
 
   return order;
@@ -270,7 +282,6 @@ export const getOrderByIdLogic = async (
 
 // --- Get All Uploads Logic ---
 export const getAllUploadsLogic = async () => {
-  // Define the interface here as it's only used by this service
   interface Upload {
     id: string;
     orderId: string;
@@ -286,10 +297,12 @@ export const getAllUploadsLogic = async () => {
     .sort({ createdAt: -1 })
     .select("customerInfo paymentInfo locationImages createdAt _id");
 
-  // Your existing logic is perfect, just return the result
   return orders.flatMap((order) => {
     const allUploads: Upload[] = [];
-    const customerName = `${order.customerInfo.firstName} ${order.customerInfo.lastName}`;
+    // Ensure customerInfo exists before accessing properties
+    const customerName = order.customerInfo
+      ? `${order.customerInfo.firstName} ${order.customerInfo.lastName}`
+      : "Unknown Customer";
 
     if (order.paymentInfo?.paymentReceipts) {
       const receipts = order.paymentInfo.paymentReceipts;
@@ -299,31 +312,37 @@ export const getAllUploadsLogic = async () => {
         ...(receipts.final || []),
       ];
       allReceiptUrls.forEach((url) => {
-        allUploads.push({
-          id: `${order._id}-${url}`,
-          orderId: order._id.toString(),
-          customerName,
-          type: "payment_receipt",
-          fileUrl: url,
-          fileName: url.split("/").pop()?.split("?")[0] || "receipt.jpg",
-          uploadDate: order.createdAt,
-          status: "pending", // You might want to get this from the order status
-        });
+        if (url) {
+          // Ensure URL is not null/undefined
+          allUploads.push({
+            id: `${order._id}-${url}`,
+            orderId: order._id.toString(),
+            customerName,
+            type: "payment_receipt",
+            fileUrl: url,
+            fileName: url.split("/").pop()?.split("?")[0] || "receipt.jpg",
+            uploadDate: order.createdAt,
+            status: order.orderStatus || "pending", // Use actual order status
+          });
+        }
       });
     }
 
     if (order.locationImages && order.locationImages.length > 0) {
       order.locationImages.forEach((url) => {
-        allUploads.push({
-          id: `${order._id}-${url}`,
-          orderId: order._id.toString(),
-          customerName,
-          type: "location_image",
-          fileUrl: url,
-          fileName: url.split("/").pop()?.split("?")[0] || "location.jpg",
-          uploadDate: order.createdAt,
-          status: "pending",
-        });
+        if (url) {
+          // Ensure URL is not null/undefined
+          allUploads.push({
+            id: `${order._id}-${url}`,
+            orderId: order._id.toString(),
+            customerName,
+            type: "location_image",
+            fileUrl: url,
+            fileName: url.split("/").pop()?.split("?")[0] || "location.jpg",
+            uploadDate: order.createdAt,
+            status: order.orderStatus || "pending", // Use actual order status
+          });
+        }
       });
     }
     return allUploads;
@@ -336,8 +355,8 @@ export const getAllUploadsLogic = async () => {
 
 // --- Helpers for `createOrderLogic` ---
 const _createOrderNotifications = async (
-  newOrder: any,
-  customerInfo: any,
+  newOrder: IOrder, // Use the actual type
+  customerInfo: IOrder["customerInfo"], // Use the actual type
   session: mongoose.ClientSession
 ) => {
   // Notify staff
@@ -345,7 +364,7 @@ const _createOrderNotifications = async (
     role: { $in: ["admin", "personnel"] },
   })
     .select("_id")
-    .session(session); // Pass session to reads
+    .session(session);
 
   if (staffUsers.length > 0) {
     const staffMessage = `New order #${newOrder._id
@@ -359,7 +378,8 @@ const _createOrderNotifications = async (
       message: staffMessage,
       type: "new_order_admin",
     }));
-    await Notification.create(staffNotifications, { session }); // Pass session to bulk create
+    // --- ADDED FIX ---
+    await Notification.create(staffNotifications, { session, ordered: true });
   }
 
   // Notify client
@@ -375,7 +395,8 @@ const _createOrderNotifications = async (
         type: "order_placed_confirmation",
       },
     ],
-    { session }
+    // --- ADDED FIX ---
+    { session, ordered: true }
   );
 };
 
@@ -400,7 +421,7 @@ const _createUpdateActivityLog = async (
 };
 
 const _createReceiptUploadNotification = async (
-  updatedOrder: any,
+  updatedOrder: IOrder, // Use the actual type
   paymentStage: string
 ) => {
   try {
@@ -416,7 +437,11 @@ const _createReceiptUploadNotification = async (
       stageLabel = "Pre-Delivery Payment (40%)";
     else if (paymentStage === "final") stageLabel = "Final Payment (10%)";
 
-    const customerName = `${updatedOrder.customerInfo.firstName} ${updatedOrder.customerInfo.lastName}`;
+    // Ensure customerInfo exists
+    const customerName = updatedOrder.customerInfo
+      ? `${updatedOrder.customerInfo.firstName} ${updatedOrder.customerInfo.lastName}`
+      : "Customer";
+
     const adminMessage = `Receipt for [${stageLabel}] uploaded for order #${updatedOrder._id
       .toString()
       .slice(-6)} by ${customerName}.`;
@@ -439,11 +464,11 @@ const _createReceiptUploadNotification = async (
 };
 
 const _createStatusUpdateNotification = async (
-  updatedOrder: any,
-  fieldsToSet: any
+  updatedOrder: IOrder, // Use the actual type
+  fieldsToSet: any // Can refine this type if needed
 ) => {
   let notificationMessage = "";
-  let notificationType = "general";
+  let notificationType = "general"; // Default type
 
   if (fieldsToSet.orderStatus) {
     notificationMessage = `Your order #${updatedOrder._id
@@ -454,7 +479,11 @@ const _createStatusUpdateNotification = async (
     notificationMessage = `Payment status for order #${updatedOrder._id
       .toString()
       .slice(-6)} updated to '${fieldsToSet["paymentInfo.paymentStatus"]}'.`;
-    notificationType = "payment_confirmed";
+    // Assign specific type based on payment status if needed, e.g., 'payment_confirmed'
+    notificationType = "payment_update"; // Example, adjust as needed
+    if (fieldsToSet["paymentInfo.paymentStatus"].includes("Paid")) {
+      notificationType = "payment_confirmed";
+    }
   }
 
   if (notificationMessage && updatedOrder.userId) {

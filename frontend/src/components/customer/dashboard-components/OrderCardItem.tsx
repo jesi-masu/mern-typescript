@@ -107,7 +107,7 @@ export const OrderCardItem: React.FC<OrderCardItemProps> = ({ order }) => {
                 </p>
               )}
 
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Order #{order._id.slice(-6)} • {formatDate(order.createdAt)}
               </p>
             </div>

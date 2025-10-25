@@ -1,3 +1,4 @@
+//frontend/src/components/checkout/steps/ContractStep.tsx
 import React, { useState } from "react";
 import { Button } from "../../ui/button";
 import { Checkbox } from "../../ui/checkbox";

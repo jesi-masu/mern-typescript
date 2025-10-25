@@ -1,11 +1,15 @@
+// frontend/src/components/checkout/steps/DeliveryAddressStep.tsx
+// (This is the complete, final file)
+
 import React from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin } from "lucide-react";
-import { PaymentInfo } from "@/types/checkout";
+import { MapPin, User, Phone } from "lucide-react";
+import { PaymentInfo } from "@/types/checkout"; // This imports the correct type
 
 interface DeliveryAddressStepProps {
+  // This type now correctly comes from PaymentInfo
   deliveryAddress: PaymentInfo["deliveryAddress"];
   onChange: (addressInfo: Partial<PaymentInfo["deliveryAddress"]>) => void;
 }
@@ -18,7 +22,6 @@ const DeliveryAddressStep: React.FC<DeliveryAddressStepProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    // This now correctly updates only the address part of the state
     onChange({
       ...deliveryAddress,
       [name]: value,
@@ -35,8 +38,58 @@ const DeliveryAddressStep: React.FC<DeliveryAddressStepProps> = ({
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <div className="bg-red-50 p-4 rounded-lg">
-            <h4 className="font-medium mb-2">Delivery Address Required</h4>
+          {/* --- START: ADDED RECIPIENT FIELDS --- */}
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-medium mb-2 flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Recipient Information
+            </h4>
+            <p className="text-sm text-gray-600">
+              Who will be receiving this order?
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="form-group">
+              <Label htmlFor="delivery-firstName">First Name *</Label>
+              <Input
+                id="delivery-firstName"
+                name="firstName" // Matches DeliveryAddress interface
+                type="text"
+                placeholder="e.g., Juan"
+                value={deliveryAddress?.firstName || ""}
+                onChange={handleAddressChange}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <Label htmlFor="delivery-lastName">Last Name *</Label>
+              <Input
+                id="delivery-lastName"
+                name="lastName" // Matches DeliveryAddress interface
+                type="text"
+                placeholder="e.g., Dela Cruz"
+                value={deliveryAddress?.lastName || ""}
+                onChange={handleAddressChange}
+                required
+              />
+            </div>
+          </div>
+          <div className="form-group">
+            <Label htmlFor="delivery-phone">Phone Number *</Label>
+            <Input
+              id="delivery-phone"
+              name="phone" // Matches DeliveryAddress interface
+              type="tel"
+              placeholder="e.g., 09171234567"
+              value={deliveryAddress?.phone || ""}
+              onChange={handleAddressChange}
+              required
+            />
+          </div>
+          {/* --- END: ADDED RECIPIENT FIELDS --- */}
+
+          <div className="bg-red-50 p-4 rounded-lg mt-6">
+            <h4 className="font-medium mb-2">Delivery Location</h4>
             <p className="text-sm text-gray-600">
               Please provide the exact delivery address.
             </p>
@@ -57,7 +110,7 @@ const DeliveryAddressStep: React.FC<DeliveryAddressStepProps> = ({
             <Label htmlFor="subdivision">Subdivision/Barangay *</Label>
             <Input
               id="subdivision"
-              name="subdivision"
+              name="subdivision" // This now matches the backend model
               type="text"
               placeholder="e.g., Greenland Subdivision, Poblacion"
               value={deliveryAddress?.subdivision || ""}
@@ -66,9 +119,7 @@ const DeliveryAddressStep: React.FC<DeliveryAddressStepProps> = ({
             />
           </div>
           <div className="form-group">
-            <Label htmlFor="additionalAddressLine">
-              Additional Address Line (Optional)
-            </Label>
+            <Label htmlFor="additionalAddressLine">Landmark (Optional)</Label>
             <Input
               id="additionalAddressLine"
               name="additionalAddressLine"
@@ -122,7 +173,7 @@ const DeliveryAddressStep: React.FC<DeliveryAddressStepProps> = ({
               id="country"
               name="country"
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={deliveryAddress?.country || ""}
+              value={deliveryAddress?.country || "Philippines"}
               onChange={handleAddressChange}
               required
             >
@@ -134,5 +185,4 @@ const DeliveryAddressStep: React.FC<DeliveryAddressStepProps> = ({
     </Card>
   );
 };
-
 export default DeliveryAddressStep;

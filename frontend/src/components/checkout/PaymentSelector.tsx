@@ -1,3 +1,4 @@
+//frontend/src/components/checkout/PaymentSelector.tsx
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";

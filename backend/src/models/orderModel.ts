@@ -1,5 +1,5 @@
+// backend/src/models/orderModel.ts
 import mongoose, { Document, Schema, Types } from "mongoose";
-import bcrypt from "bcryptjs"; // Assuming this is used elsewhere, keeping it.
 
 interface IOrderProduct {
   productId: Types.ObjectId;
@@ -15,15 +15,20 @@ export interface IOrder extends Document {
     firstName: string;
     lastName: string;
     email: string;
-    phoneNumber: string;
+    phoneNumber: string; // This is the BILLING phone
     deliveryAddress: {
+      // --- START: MODIFIED ---
+      firstName: string; // Recipient's First Name
+      lastName: string; // Recipient's Last Name
+      phone: string; // Recipient's Phone
       street: string;
-      barangaySubdivision: string;
+      subdivision: string; // Matched to frontend form
       additionalAddressLine?: string;
       cityMunicipality: string;
       province: string;
       postalCode: string;
       country: string;
+      // --- END: MODIFIED ---
     };
   };
   paymentInfo: {
@@ -56,8 +61,8 @@ export interface IOrder extends Document {
     | "Delivered"
     | "Completed"
     | "Cancelled";
-  createdAt: Date; // ✅ ADD THIS LINE
-  updatedAt: Date; // ✅ ADD THIS LINE
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const orderProductSchema: Schema = new Schema(
@@ -80,13 +85,18 @@ const orderSchema: Schema = new Schema(
         phoneNumber: { type: String, required: true },
         deliveryAddress: {
           type: {
+            // --- START: MODIFIED ---
+            firstName: { type: String, required: true },
+            lastName: { type: String, required: true },
+            phone: { type: String, required: true },
             street: { type: String, required: true },
-            subdivision: { type: String, required: true },
+            subdivision: { type: String, required: true }, // Changed from barangaySubdivision
             additionalAddressLine: { type: String, required: false },
             cityMunicipality: { type: String, required: true },
             province: { type: String, required: true },
             postalCode: { type: String, required: true },
             country: { type: String, required: true },
+            // --- END: MODIFIED ---
           },
           required: true,
         },

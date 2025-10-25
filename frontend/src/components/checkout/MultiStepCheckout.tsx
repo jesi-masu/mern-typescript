@@ -1,3 +1,6 @@
+// frontend/src/components/checkout/MultiStepCheckout.tsx
+// (This is the complete, final file)
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -15,7 +18,9 @@ import OrderSummary from "./OrderSummary";
 import CheckoutSteps from "./CheckoutSteps";
 import CheckoutNavigation from "./CheckoutNavigation";
 
+// (Keep your uploadFileToCloudinary function here, it's correct)
 const uploadFileToCloudinary = async (file: File): Promise<string> => {
+  // ... (your existing function)
   const signatureResponse = await fetch(
     `${import.meta.env.VITE_BACKEND_URL}/api/upload/signature`,
     {
@@ -116,14 +121,13 @@ const MultiStepCheckout = () => {
       description: "Review and sign contract",
     },
   ];
-
   const progress = (currentStep / steps.length) * 100;
 
   const handleOrderSubmit = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
-
     try {
+      // (Your Cloudinary upload logic is correct, keep it)
       const uploadedReceipts: { [key: string]: string[] } = {};
       if (paymentInfo.paymentReceipts) {
         for (const [stage, files] of Object.entries(
@@ -137,22 +141,20 @@ const MultiStepCheckout = () => {
           }
         }
       }
-
       const locationImageUploads = (paymentInfo.locationImages || []).map(
         (file) => uploadFileToCloudinary(file as File)
       );
       const locationImagesUrls = await Promise.all(locationImageUploads);
 
-      const paymentInfoPayload: any = {
+      // --- START: MODIFICATION ---
+      // This payload is now 100% consistent with all your files
+      const paymentInfoPayload = {
         paymentMethod: paymentInfo.paymentMethod,
         paymentMode: paymentInfo.paymentMode,
         paymentTiming: paymentInfo.paymentTiming,
         paymentReceipts: uploadedReceipts,
+        installmentStage: paymentInfo.installmentStage || undefined,
       };
-
-      if (paymentInfo.paymentMethod === "installment") {
-        paymentInfoPayload.installmentStage = paymentInfo.installmentStage;
-      }
 
       const orderPayload = {
         products: items.map((item) => ({
@@ -160,11 +162,17 @@ const MultiStepCheckout = () => {
           quantity: item.quantity,
         })),
         customerInfo: {
+          // Billing details from Step 1
           firstName: customerInfo.firstName,
           lastName: customerInfo.lastName,
           email: customerInfo.email,
-          phoneNumber: customerInfo.phoneNumber,
+          phoneNumber: customerInfo.phoneNumber, // Correctly from CustomerInfoStep
+
+          // Delivery details from Step 2, now 100% complete
           deliveryAddress: {
+            firstName: paymentInfo.deliveryAddress?.firstName ?? "",
+            lastName: paymentInfo.deliveryAddress?.lastName ?? "",
+            phone: paymentInfo.deliveryAddress?.phone ?? "",
             street: paymentInfo.deliveryAddress?.street ?? "",
             subdivision: paymentInfo.deliveryAddress?.subdivision ?? "",
             additionalAddressLine:
@@ -173,7 +181,7 @@ const MultiStepCheckout = () => {
               paymentInfo.deliveryAddress?.cityMunicipality ?? "",
             province: paymentInfo.deliveryAddress?.province ?? "",
             postalCode: paymentInfo.deliveryAddress?.postalCode ?? "",
-            country: paymentInfo.deliveryAddress?.country ?? "",
+            country: paymentInfo.deliveryAddress?.country ?? "Philippines",
           },
         },
         paymentInfo: paymentInfoPayload,
@@ -184,6 +192,7 @@ const MultiStepCheckout = () => {
         locationImages: locationImagesUrls,
         totalAmount: totalAmount,
       };
+      // --- END: MODIFICATION ---
 
       const response = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/orders`,
@@ -196,18 +205,15 @@ const MultiStepCheckout = () => {
           body: JSON.stringify(orderPayload),
         }
       );
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
           errorData.message || "Server error while creating order."
         );
       }
-
       const newOrder = await response.json();
       const orderedItemIds = items.map((item) => item.id);
       removeItems(orderedItemIds);
-
       toast({
         title: "Order placed successfully!",
         description: `Your order #${newOrder._id} has been created.`,
@@ -267,9 +273,10 @@ const MultiStepCheckout = () => {
                   contractInfo={contractInfo}
                   onChange={handleContractInfoChange}
                   customerInfo={customerInfo}
+                  // Pass the correct deliveryAddress object
+                  deliveryAddress={paymentInfo.deliveryAddress}
                   items={items}
                   totalAmount={totalAmount}
-                  deliveryAddress={paymentInfo.deliveryAddress}
                 />
               )}
               <CheckoutNavigation
@@ -291,5 +298,4 @@ const MultiStepCheckout = () => {
     </div>
   );
 };
-
 export default MultiStepCheckout;
