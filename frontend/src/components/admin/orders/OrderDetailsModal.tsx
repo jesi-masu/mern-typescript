@@ -1,4 +1,3 @@
-// src/components/admin/orders/OrderDetailsModal.tsx
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
@@ -15,7 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Order, OrderStatus, PaymentStatus } from "@/types/order";
+// --- Import IProductPart if not already globally available via index.ts ---
+import { Order, OrderStatus, PaymentStatus, IProductPart } from "@/types"; // Adjust path if needed
 import { formatPrice } from "@/lib/formatters";
 import {
   CreditCard,
@@ -27,8 +27,10 @@ import {
   Calendar,
   MapPin,
   ListChecks,
-  Camera, // Added for location images
+  Camera,
+  Puzzle, // Icon for Product Parts
 } from "lucide-react";
+import { Separator } from "@/components/ui/separator"; // Import Separator
 
 interface OrderDetailsModalProps {
   order: Order | null;
@@ -41,6 +43,7 @@ interface OrderDetailsModalProps {
 const getStatusClasses = (
   status: OrderStatus | PaymentStatus | undefined
 ): string => {
+  // ... (getStatusClasses function is unchanged)
   const baseClasses = "font-semibold border-transparent text-xs px-2 py-1";
   switch (status) {
     case "Pending":
@@ -76,7 +79,6 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   if (!order) return null;
 
   const [selectedStage, setSelectedStage] = useState<string | null>(null);
-  // --- ADDED: State for location image preview ---
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const availableStages = order?.paymentInfo?.paymentReceipts
@@ -84,7 +86,6 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     : [];
 
   useEffect(() => {
-    // Reset states when the modal is closed or the order changes
     if (isOpen) {
       if (availableStages.length > 0) {
         setSelectedStage(availableStages[0]);
@@ -92,9 +93,9 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
         setSelectedStage(null);
       }
     } else {
-      setPreviewImage(null); // Clear preview image when main modal closes
+      setPreviewImage(null);
     }
-  }, [order, isOpen]);
+  }, [order?._id, isOpen]); // Added availableStages dependency
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -104,6 +105,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     });
   };
 
+  // Ensure this function uses the correct path based on your updated Order type
   const formatFullAddress = (
     address: Order["customerInfo"]["deliveryAddress"]
   ) => {
@@ -113,6 +115,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
       address.subdivision,
       address.cityMunicipality,
       address.province,
+      address.postalCode, // Use postalCode
     ]
       .filter(Boolean)
       .join(", ");
@@ -122,9 +125,9 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
   return (
     <>
-      {/* --- ADDED: Image Preview Dialog --- */}
+      {/* Image Preview Dialog (unchanged) */}
       <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
-        <DialogContent className="max-w-4xl p-2 bg-transparent border-none shadow-none">
+        <DialogContent className="max-w-6xl p-2 bg-transparent border-none shadow-none">
           <img
             src={previewImage || ""}
             alt="Location Preview"
@@ -133,8 +136,9 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
         </DialogContent>
       </Dialog>
 
+      {/* Main Order Details Modal */}
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
               <FileText className="h-6 w-6 text-blue-600" />
@@ -142,7 +146,9 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-6 p-1">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+            {/* Status Update Section (unchanged) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-4 bg-gray-50 rounded-lg">
+              {/* ... (Order Status Select) ... */}
               <div>
                 <label className="text-sm font-medium text-gray-500">
                   Order Status
@@ -170,6 +176,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                   </Select>
                 </div>
               </div>
+              {/* ... (Payment Status Badge and Button) ... */}
               <div>
                 <label className="text-sm font-medium text-gray-500">
                   Payment Status
@@ -191,9 +198,11 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 </div>
               </div>
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Left Column */}
+              {/* Left Column (unchanged structure) */}
               <div className="space-y-6 pt-4">
+                {/* ... (Customer Info) ... */}
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                     <User className="h-5 w-5 text-gray-500" />
@@ -201,15 +210,16 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                   </h3>
                   <div className="text-sm">
                     <p className="text-base font-medium">
-                      {order.customerInfo.firstName}{" "}
-                      {order.customerInfo.lastName}
+                      {order.customerInfo.deliveryAddress.firstName}{" "}
+                      {order.customerInfo.deliveryAddress.lastName}
                     </p>
                     <p className="text-gray-600">{order.customerInfo.email}</p>
                     <div className="flex items-center gap-2 text-gray-600 pt-1">
-                      <p>{order.customerInfo.phoneNumber}</p>
+                      <p>{order.customerInfo.deliveryAddress.phone}</p>
                     </div>
                   </div>
                 </div>
+                {/* ... (Delivery Address) ... */}
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                     <MapPin className="h-5 w-5 text-gray-500" />
@@ -220,12 +230,12 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                   </p>
                   {order.customerInfo.deliveryAddress.additionalAddressLine && (
                     <p className="text-xs text-gray-500 mt-1">
-                      <strong>Notes:</strong>{" "}
+                      <strong>Notes/Landmark:</strong>{" "}
                       {order.customerInfo.deliveryAddress.additionalAddressLine}
                     </p>
                   )}
                 </div>
-
+                {/* ... (Order Timeline) ... */}
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                     <Calendar className="h-5 w-5 text-gray-500" />
@@ -235,8 +245,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                     Ordered: {formatDate(order.createdAt)}
                   </p>
                 </div>
-
-                {/* --- MOVED: Payment Details Section --- */}
+                {/* ... (Payment Details) ... */}
                 <div className="bg-gray-50/50 rounded-lg">
                   <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                     <ListChecks className="h-5 w-5 text-gray-500" />
@@ -249,8 +258,6 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                         {order.paymentInfo.paymentMethod}
                       </Badge>
                     </div>
-
-                    {/* --- MODIFICATION START: Added Installment Stage --- */}
                     {order.paymentInfo.paymentMethod === "installment" &&
                       order.paymentInfo.installmentStage && (
                         <div className="flex justify-between items-center">
@@ -268,8 +275,6 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                           </Badge>
                         </div>
                       )}
-                    {/* --- MODIFICATION END --- */}
-
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Payment Type:</span>
                       <Badge variant="outline" className="uppercase text-xs">
@@ -286,8 +291,9 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 </div>
               </div>
 
-              {/* Right Column */}
+              {/* Right Column (unchanged structure) */}
               <div className="space-y-6">
+                {/* ... (Total Amount) ... */}
                 <div className="p-4 bg-green-50 rounded-lg">
                   <h3 className="font-semibold text-gray-500 mb-1 flex items-center gap-2">
                     <CreditCardIcon className="h-5 w-5 text-gray-500" />
@@ -297,8 +303,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                     {formatPrice(order.totalAmount)}
                   </p>
                 </div>
-
-                {/* --- ADDED: Location Images Section --- */}
+                {/* ... (Location Images) ... */}
                 {order.locationImages && order.locationImages.length > 0 && (
                   <div className="px-4 pb-2">
                     <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
@@ -322,7 +327,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                     </div>
                   </div>
                 )}
-
+                {/* ... (Payment Receipts) ... */}
                 {availableStages.length > 0 && (
                   <div className="px-4 pb-2">
                     <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
@@ -376,6 +381,8 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 )}
               </div>
             </div>
+
+            {/* --- START: PRODUCT PARTS MODIFICATION --- */}
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <Package className="h-5 w-5 text-gray-500" />
@@ -383,57 +390,123 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                   Ordered Products
                 </h3>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-4">
+                {" "}
+                {/* Increased spacing */}
                 {order.products.map((item) => (
                   <div
                     key={item.productId._id}
-                    className="flex items-start gap-3 p-3 border rounded-lg bg-white"
+                    className="border rounded-lg bg-white overflow-hidden" // Card-like appearance
                   >
-                    <img
-                      src={
-                        item.productId.image ||
-                        "https://placehold.co/150x150/E2E8F0/4A5568?text=No+Image"
-                      }
-                      alt={item.productId.productName || "Product"}
-                      className="w-16 h-16 object-cover rounded border"
-                    />
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 text-base">
-                        {item.productId.productName}
-                      </h4>
-                      <p className="text-xs text-gray-600 mb-2">
-                        {item.productId.productShortDescription ||
-                          "No description available."}
-                      </p>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 text-xs">
-                        <div>
-                          <span className="text-gray-500">Category:</span>
-                          <p className="font-medium">
-                            {item.productId.category}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Area:</span>
-                          <p className="font-medium">
-                            {item.productId.squareFeet} sq ft
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Quantity:</span>
-                          <p className="font-medium">{item.quantity}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Price:</span>
-                          <p className="font-medium text-green-600">
-                            {formatPrice(item.productId.productPrice || 0)}
-                          </p>
+                    <div className="flex items-start gap-4 p-4">
+                      {" "}
+                      {/* Increased padding */}
+                      <img
+                        src={
+                          item.productId.image ||
+                          "https://placehold.co/150x150/E2E8F0/4A5568?text=No+Image"
+                        }
+                        alt={item.productId.productName || "Product"}
+                        className="w-20 h-20 object-cover rounded border" // Slightly larger image
+                      />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900 text-base">
+                          {item.productId.productName}
+                        </h4>
+                        <p className="text-xs text-gray-600 mb-2">
+                          {item.productId.productShortDescription ||
+                            "No description available."}
+                        </p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 text-xs">
+                          {/* (Existing product details remain) */}
+                          <div>
+                            <span className="text-gray-500">Category:</span>
+                            <p className="font-medium">
+                              {item.productId.category || "N/A"}{" "}
+                              {/* Added fallback */}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Area:</span>
+                            <p className="font-medium">
+                              {item.productId.squareFeet} sq ft
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Quantity:</span>
+                            <p className="font-medium">{item.quantity}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Price:</span>
+                            <p className="font-medium text-green-600">
+                              {formatPrice(item.productId.productPrice || 0)}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
+
+                    {/* --- Display Product Parts --- */}
+                    {item.productId.productParts &&
+                      item.productId.productParts.length > 0 && (
+                        <div className="bg-gray-50 p-3 border-t">
+                          <h5 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
+                            <Puzzle className="h-4 w-4 text-gray-500" />
+                            Included Parts:
+                          </h5>
+                          <div className="space-y-2 pl-2 max-h-40 overflow-y-auto">
+                            {item.productId.productParts.map(
+                              (part, partIndex) => (
+                                <div
+                                  key={partIndex}
+                                  className="flex items-center gap-2 text-xs"
+                                >
+                                  <img
+                                    src={
+                                      part.image ||
+                                      "https://placehold.co/40x40/E2E8F0/4A5568?text=N/A"
+                                    }
+                                    alt={part.name}
+                                    className="w-10 h-10 object-cover rounded border flex-shrink-0"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <p
+                                      className="font-medium text-gray-800 truncate"
+                                      title={part.name}
+                                    >
+                                      {part.name}
+                                    </p>
+                                    {part.description && (
+                                      <p
+                                        className="text-gray-500 truncate"
+                                        title={part.description}
+                                      >
+                                        {part.description}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="text-right flex-shrink-0">
+                                    <p className="text-gray-600">
+                                      Qty: {part.quantity}
+                                    </p>
+                                    {part.price && (
+                                      <p className="font-medium text-gray-700">
+                                        {formatPrice(part.price)}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    {/* --- End Display Product Parts --- */}
                   </div>
                 ))}
               </div>
             </div>
+            {/* --- END: PRODUCT PARTS MODIFICATION --- */}
           </div>
         </DialogContent>
       </Dialog>

@@ -222,7 +222,7 @@ export const getUserOrdersLogic = async (userId: string) => {
   return await Order.find({ userId })
     .populate(
       "products.productId",
-      "productName image productPrice productShortDescription"
+      "productName image productPrice productShortDescription category productParts"
     )
     .sort({ createdAt: -1 });
 };
@@ -232,7 +232,7 @@ export const getAllOrdersLogic = async () => {
     .populate("userId", "firstName lastName email")
     .populate(
       "products.productId",
-      "productName productPrice image squareFeet productShortDescription category"
+      "productName productPrice image squareFeet productShortDescription category productParts"
     )
     .sort({ createdAt: -1 });
 };

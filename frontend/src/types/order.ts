@@ -1,4 +1,5 @@
 // frontend/src/types/order.ts
+import { IProductPart } from "./product";
 // (This is the complete, final file)
 
 // 1. Define the DeliveryAddress (matches backend model)
@@ -49,6 +50,8 @@ export interface Product {
   squareFeet: number;
   image?: string;
   productShortDescription?: string;
+  category?: string; // Add category if you populate it
+  productParts?: IProductPart[]; // <-- Make sure this is included
 }
 
 export interface OrderProduct {
