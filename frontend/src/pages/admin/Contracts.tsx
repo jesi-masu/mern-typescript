@@ -24,6 +24,7 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import ReactDOM from "react-dom/client";
 import { formatPrice } from "@/lib/formatters";
+import ContractCardView from "./contracts/ContractCardView";
 
 // Import the new child components
 import ContractStats from "./contracts/ContractStats";
@@ -65,12 +66,15 @@ const fetchOrders = async (token: string | null): Promise<Order[]> => {
   return orders;
 };
 
+type ViewMode = "table" | "card"; // Define the view mode type
+
 const Contracts = () => {
   const { token } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedContract, setSelectedContract] = useState<Order | null>(null);
   const [isFormalDocumentOpen, setIsFormalDocumentOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("card"); // Add view mode state
 
   const {
     data: ordersData = [],
@@ -401,8 +405,10 @@ const Contracts = () => {
 
   // --- New, Cleaner Render Block ---
 
+  // --- Updated Render Block ---
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4  bg-gray-50">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Contract Management</h1>
@@ -411,6 +417,7 @@ const Contracts = () => {
           </p>
         </div>
       </div>
+      <hr className="border-t border-gray-200" />
 
       <ContractStats stats={stats} />
 
@@ -419,18 +426,34 @@ const Contracts = () => {
         setSearchTerm={setSearchTerm}
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
+        viewMode={viewMode} // Pass state down
+        onViewModeChange={setViewMode} // Pass handler down
       />
 
-      <ContractTable
-        filteredContracts={filteredContracts}
-        formatDate={formatDate}
-        formatCurrency={formatCurrency}
-        getStatusIcon={getStatusIcon}
-        getStatusColor={getStatusColor}
-        handleViewContract={handleViewContract}
-        handleGenerateFormalDocument={handleGenerateFormalDocument}
-        handleDownloadPDF={handleDownloadPDF}
-      />
+      {/* --- CONDITIONAL VIEW RENDER --- */}
+      {viewMode === "table" ? (
+        <ContractTable
+          filteredContracts={filteredContracts}
+          formatDate={formatDate}
+          formatCurrency={formatCurrency}
+          getStatusIcon={getStatusIcon}
+          getStatusColor={getStatusColor}
+          handleViewContract={handleViewContract}
+          handleGenerateFormalDocument={handleGenerateFormalDocument}
+          handleDownloadPDF={handleDownloadPDF}
+        />
+      ) : (
+        <ContractCardView
+          filteredContracts={filteredContracts}
+          formatDate={formatDate}
+          formatCurrency={formatCurrency}
+          getStatusIcon={getStatusIcon}
+          getStatusColor={getStatusColor}
+          handleViewContract={handleViewContract}
+          handleGenerateFormalDocument={handleGenerateFormalDocument}
+          handleDownloadPDF={handleDownloadPDF}
+        />
+      )}
 
       <Dialog
         open={isFormalDocumentOpen}
