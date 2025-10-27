@@ -1,3 +1,4 @@
+// frontend/src/pages/admin/contracts/ContractStats.tsx
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { FileText, CheckCircle, Clock, XCircle } from "lucide-react";

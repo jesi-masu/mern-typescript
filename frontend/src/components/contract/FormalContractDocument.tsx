@@ -101,7 +101,7 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
   return (
     <div
       id="formal-contract-content"
-      className="p-3 bg-white text-black text-xs font-sans w-[210mm] min-h-[297mm] mx-auto box-border leading-normal"
+      className="p-3 bg-white text-black text-xs font-sans w-[8.5in] min-h-[13in] mx-auto box-border leading-normal"
     >
       {/* ====================================================== */}
       {/* CONTENT FOR PAGE 1                    */}
@@ -312,9 +312,29 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
       </div>
       {/* End of Page 1 Content */}
       {/* ====================================================== */}
-      {/* CONTENT FOR PAGE 2                    */}
+      {/* THIS IS OUR NEW PAGE BREAK MARKER                   */}
       {/* ====================================================== */}
-      <div style={{ pageBreakBefore: "always" }} className="pt-10">
+      <div className="pdf-page-break"></div>
+      {/* ====================================================== */}
+      {/* CONTENT FOR PAGE 2                     */}
+      {/* ====================================================== */}
+      {/* We moved className="pt-10" to this div */}
+      <br />
+      <br />
+      <br />
+      <br />
+      <br />
+      <br />
+      <div>
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
         {/* --- 5. Notes --- */}
         <div className="mb-4 border border-black text-xs">
           <div className="bg-blue-400 text-center font-bold px-1 pt-1 pb-2  border-b border-black">
@@ -359,7 +379,7 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
                 // crossOrigin="anonymous"
                 src={order.products[0].productId.image}
                 alt="Product"
-                className="w-40 h-auto object-cover mx-auto border border-gray-300"
+                className="w-40 h-auto max-h-48 object-cover mx-auto border border-gray-300"
               />
             </div>
           )}

@@ -1,3 +1,4 @@
+//frontend/src/pages/admin/Contracts.tsx
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -226,23 +227,28 @@ const Contracts = () => {
       tempContainer.style.position = "absolute";
       tempContainer.style.left = "-9999px";
       tempContainer.style.top = "-9999px";
-      tempContainer.style.width = "210mm";
+      tempContainer.style.width = "8.5in";
       tempContainer.style.background = "white";
       tempContainer.style.padding = "0";
       tempContainer.style.boxSizing = "border-box";
       tempContainer.style.margin = "0";
 
       const style = document.createElement("style");
+      // --- UPDATE THE INJECTED STYLES ---
       style.textContent = `
-              @media print { .page-break { page-break-before: always !important; } }
-              #formal-contract-content { background-color: white !important; color: black !important; line-height: 1.4 !important; }
-              #formal-contract-content table { border-collapse: collapse !important; width: 100% !important; border: 1px solid black !important; margin-bottom: 0.75rem !important; }
-              #formal-contract-content th, #formal-contract-content td { border: 1px solid black !important; padding: 5px 7px !important; vertical-align: top !important; text-align: left !important; word-wrap: break-word !important; }
-              #formal-contract-content th { background-color: #dbeafe !important; font-weight: bold !important; text-align: center !important; }
-              #formal-contract-content td img { max-width: 100% !important; height: auto !important; display: block !important; margin: auto !important; }
-              #formal-contract-content .page-break { page-break-before: always !important; visibility: hidden !important; height: 0 !important; margin: 0 !important; padding: 0 !important; display: block !important; }
-              body { margin: 0 !important; }
-            `;
+              /* Good for browser printing, but html2canvas ignores it */
+              @media print { .pdf-page-break { page-break-before: always !important; } }
+              
+              /* Ensures our spacer div takes up no space by default */
+              .pdf-page-break { height: 0; display: block; }
+
+              #formal-contract-content { background-color: white !important; color: black !important; line-height: 1.4 !important; }
+              #formal-contract-content table { border-collapse: collapse !important; width: 100% !important; border: 1px solid black !important; margin-bottom: 0.75rem !important; }
+              #formal-contract-content th, #formal-contract-content td { border: 1px solid black !important; padding: 5px 7px !important; vertical-align: top !important; text-align: left !important; word-wrap: break-word !important; }
+              #formal-contract-content th { background-color: #dbeafe !important; font-weight: bold !important; text-align: center !important; }
+              #formal-contract-content td img { max-width: 100% !important; height: auto !important; display: block !important; margin: auto !important; }
+              body { margin: 0 !important; }
+            `;
       tempContainer.appendChild(style);
       document.body.appendChild(tempContainer);
 
@@ -250,7 +256,7 @@ const Contracts = () => {
 
       await new Promise<void>((resolve) => {
         root.render(<FormalContractDocument order={orderToPrint} />);
-        setTimeout(resolve, 2000);
+        setTimeout(resolve, 2000); // Give images time to load
       });
 
       const elementToCapture = tempContainer.querySelector(
@@ -260,14 +266,31 @@ const Contracts = () => {
       if (!elementToCapture) {
         throw new Error("Could not find #formal-contract-content element.");
       }
+      // --- START: UPDATED PDF DIMENSIONS (8.5in x 13in) ---
+      const pageFormat: [number, number] = [13, 8.5]; // [height, width] in inches
+      const pdf = new jsPDF("p", "in", pageFormat); // units are "in"
+      const pdfWidth = pdf.internal.pageSize.getWidth(); // 8.5
+      const pdfHeight = pdf.internal.pageSize.getHeight(); // 13
+      const marginIn = 0.5; // 0.5 inch margin
+      const contentWidth = pdfWidth - marginIn * 2; // 7.5 in
+      const contentHeight = pdfHeight - marginIn * 2; // 12 in // --- END: UPDATED PDF DIMENSIONS --- // --- START: UPDATED PAGE BREAK LOGIC (using INCHES) --- // Calculate pixel-to-inch ratio from the rendered element // elementToCapture.scrollWidth should be 8.5in
+      const inchToPx = elementToCapture.scrollWidth / 8.5;
+      const pageHeightPx = contentHeight * inchToPx; // 12 * inchToPx
 
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const marginMM = 12.7; // 0.5 inch
-      const contentWidth = pdfWidth - marginMM * 2;
-      const contentHeight = pdfHeight - marginMM * 2;
+      const breakMarkers = elementToCapture.querySelectorAll(
+        ".pdf-page-break"
+      ) as NodeListOf<HTMLElement>; // Loop through all markers and add height to push content
 
+      breakMarkers.forEach((marker) => {
+        const markerTop = marker.offsetTop;
+        const currentPage = Math.floor(markerTop / pageHeightPx);
+        const nextPageTop = (currentPage + 1) * pageHeightPx;
+        const requiredPadding = nextPageTop - markerTop;
+
+        if (requiredPadding > 0) {
+          marker.style.height = `${requiredPadding}px`;
+        }
+      }); // --- END: UPDATED PAGE BREAK LOGIC ---
       const canvas = await html2canvas(elementToCapture, {
         scale: 3,
         useCORS: true,
@@ -284,41 +307,41 @@ const Contracts = () => {
         imageTimeout: 0,
       });
 
+      // --- START: UPDATED PDF SLICING (using INCHES) ---
       const imgData = canvas.toDataURL("image/png", 1.0);
-      const imgWidth = contentWidth;
+      const imgWidth = contentWidth; // 7.5 in
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
       let heightLeft = imgHeight;
-      let position = marginMM;
+      let position = marginIn; // Start at 0.5in margin
 
       pdf.addImage(
         imgData,
         "PNG",
-        marginMM,
-        position,
-        imgWidth,
+        marginIn, // 0.5in
+        position, // 0.5in
+        imgWidth, // 7.5in
         imgHeight,
         undefined,
         "SLOW"
       );
-      heightLeft -= contentHeight;
+      heightLeft -= contentHeight; // 12in
 
       while (heightLeft > 0) {
-        position = position - contentHeight;
+        position = position - contentHeight; // 12in
         pdf.addPage();
         pdf.addImage(
           imgData,
           "PNG",
-          marginMM,
+          marginIn, // 0.5in
           position,
-          imgWidth,
+          imgWidth, // 7.5in
           imgHeight,
           undefined,
           "SLOW"
         );
-        heightLeft -= contentHeight;
-      }
-
+        heightLeft -= contentHeight; // 12in
+      } // --- END: UPDATED PDF SLICING ---
       root.unmount();
       document.body.removeChild(tempContainer);
       tempContainer = null;
