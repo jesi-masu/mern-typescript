@@ -2,7 +2,7 @@
 import React from "react";
 import { Order, IProductPart, OrderProduct } from "@/types";
 import { formatPrice } from "@/lib/formatters";
-import Logo2 from "@/assets/logo2.png"; // Use the new logo path
+import Logo2 from "@/assets/logo2.png";
 
 interface FormalContractDocumentProps {
   order: Order;
@@ -21,12 +21,10 @@ const formatFullDeliveryAddress = (
   address: Order["customerInfo"]["deliveryAddress"] | undefined
 ): string => {
   if (!address) return "N/A";
-  // --- FIXED: Ensure your type uses barangaySubdivision if that's correct ---
-  // If your 'Order' type uses 'subdivision', change it there OR change this code back.
-  // Assuming 'barangaySubdivision' is correct based on previous error context.
+
   return [
     address.street,
-    address.subdivision, // Use the correct field name
+    address.subdivision,
     address.cityMunicipality,
     address.province,
     address.postalCode,
@@ -41,7 +39,6 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
 }) => {
   const quoteNumber = `RB-2024-${order._id.slice(-6)}`;
 
-  // Static Data (Keep as is or fetch dynamically)
   const notes = [
     "1.) Price is EXCLUSIVE of VAT",
     "2.) Deliveries within the city proper of Cagayan de Oro is free of charge",
@@ -90,8 +87,6 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
       <td className="border border-black p-2">{desc}</td>
       <td className="border border-black p-2 text-center">
         <img
-          // Add crossOrigin="anonymous" if facing CORS issues with images
-          // crossOrigin="anonymous"
           src={imgSrc || "https://placehold.co/60x40"}
           alt={imgAlt}
           className="w-16 h-10 object-cover mx-auto"
@@ -112,11 +107,7 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
       {/* CONTENT FOR PAGE 1                    */}
       {/* ====================================================== */}
       <div>
-        {/* --- 1. Header Section (Logo Adjusted) --- */}
-        {/* Changed items-start to items-center for vertical alignment */}
-        {/* Reduced mb-6 to mb-4 to bring header closer */}
         <div className="flex justify-between items-center mb-4">
-          {/* Logo container - Increased size w-32 h-20 */}
           <div className="w-32 h-20 flex items-center justify-center text-xs text-gray-500 mr-4">
             {Logo2 ? (
               <img
@@ -128,8 +119,6 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
               "Logo here"
             )}
           </div>
-
-          {/* Company Details */}
           <div className="text-center flex-grow">
             <h1 className="text-xl font-bold text-blue-800">
               CAMCO MEGA SALES CORP.
@@ -142,8 +131,6 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
               Masterson Ave., Upper Balulang, Cagayan de Oro City
             </p>
           </div>
-
-          {/* Quotation Details */}
           <div className="text-right w-32 flex-shrink-0 ml-2">
             <h2 className="text-lg font-bold">Quotation</h2>
             <p className="text-xs -ml-10">
@@ -154,8 +141,6 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
             </p>
           </div>
         </div>
-
-        {/* --- 2. Client Details Section --- */}
         <div className="mb-4 text-xs">
           <p>
             <strong>Name:</strong>{" "}
@@ -182,8 +167,6 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
           We are pleased to present and offer you the following products and
           services
         </p>
-
-        {/* --- 3. Ordered Products & Parts Table --- */}
         <div className="mb-4">
           <table className="w-full border-collapse border border-black text-xs">
             <thead>
@@ -248,7 +231,7 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
                                 part.description ?? "N/A",
                                 part.image,
                                 part.name,
-                                "NaN" // Assuming parts don't have individual prices shown here
+                                "NaN"
                               )
                           )}
                         </>
@@ -329,7 +312,6 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
       {/* ====================================================== */}
       {/* CONTENT FOR PAGE 2                    */}
       {/* ====================================================== */}
-      {/* --- ADDED: Wrapper div for page break --- */}
       <div style={{ pageBreakBefore: "always" }} className="pt-10">
         {/* --- 5. Notes --- */}
         <div className="mb-4 border border-black text-xs">

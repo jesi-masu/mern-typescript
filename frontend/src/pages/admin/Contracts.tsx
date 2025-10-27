@@ -1,9 +1,5 @@
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -11,28 +7,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   FileText,
-  Download,
-  Search,
-  Eye,
   CheckCircle,
   Clock,
   AlertCircle,
   XCircle,
-  FilePlus,
   Loader2,
   ServerCrash,
 } from "lucide-react";
-
-import { Order, OrderStatus } from "@/types";
+import { Order } from "@/types";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import FormalContractDocument from "@/components/contract/FormalContractDocument";
@@ -41,6 +24,12 @@ import jsPDF from "jspdf";
 import ReactDOM from "react-dom/client";
 import { formatPrice } from "@/lib/formatters";
 
+// Import the new child components
+import ContractStats from "./contracts/ContractStats";
+import ContractFilterBar from "./contracts/ContractFilterBar";
+import ContractTable from "./contracts/ContractTable";
+
+// This interface is needed by the parent (for useMemo) and the Table child
 interface ContractDisplayData {
   id: string;
   orderId: string;
@@ -96,6 +85,7 @@ const Contracts = () => {
   });
 
   const contracts = useMemo((): ContractDisplayData[] => {
+    // ... (memo logic remains unchanged)
     return ordersData.map((order) => {
       let contractStatus: ContractDisplayData["status"] = "Pending";
 
@@ -141,6 +131,7 @@ const Contracts = () => {
   }, [ordersData]);
 
   const filteredContracts = useMemo(() => {
+    // ... (filtering logic remains unchanged)
     return contracts.filter((contract) => {
       const customerName = contract.customerName || "";
       const orderId = contract.orderId || "";
@@ -162,6 +153,7 @@ const Contracts = () => {
 
   const stats = useMemo(
     () => ({
+      // ... (stats logic remains unchanged)
       total: contracts.length,
       completed: contracts.filter((c) => c.status === "Completed").length,
       pending: contracts.filter(
@@ -172,7 +164,10 @@ const Contracts = () => {
     [contracts]
   );
 
+  // --- All Helper & Handler Functions remain in the parent ---
+
   const getStatusIcon = (status: string): JSX.Element => {
+    // ... (logic remains unchanged)
     switch (status) {
       case "Completed":
         return <CheckCircle className="h-4 w-4 text-green-600" />;
@@ -188,6 +183,7 @@ const Contracts = () => {
   };
 
   const getStatusColor = (status: string): string => {
+    // ... (logic remains unchanged)
     switch (status) {
       case "Completed":
         return "bg-green-100 text-green-800 border-green-200";
@@ -203,10 +199,12 @@ const Contracts = () => {
   };
 
   const formatCurrency = (amount: number): string => {
+    // ... (logic remains unchanged)
     return formatPrice(amount);
   };
 
   const formatDate = (dateString: string | null | undefined): string => {
+    // ... (logic remains unchanged)
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -216,6 +214,7 @@ const Contracts = () => {
   };
 
   const handleDownloadPDF = async (orderToPrint: Order) => {
+    // ... (all PDF logic remains unchanged in the parent)
     if (!orderToPrint) return;
 
     const toastId = toast.loading("Generating PDF... Please wait");
@@ -343,14 +342,18 @@ const Contracts = () => {
   };
 
   const handleViewContract = (contractOrder: Order) => {
+    // ... (logic remains unchanged)
     console.log("View Contract for Order:", contractOrder._id);
     toast.info(`Implement view for order ${contractOrder._id.slice(-6)}`);
   };
 
   const handleGenerateFormalDocument = (contractOrder: Order) => {
+    // ... (logic remains unchanged)
     setSelectedContract(contractOrder);
     setIsFormalDocumentOpen(true);
   };
+
+  // --- Loading / Error States ---
 
   if (isLoading) {
     return (
@@ -373,6 +376,8 @@ const Contracts = () => {
     );
   }
 
+  // --- New, Cleaner Render Block ---
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -384,198 +389,25 @@ const Contracts = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Total Contracts
-                </p>
-                <p className="text-2xl font-bold">{stats.total}</p>
-              </div>
-              <FileText className="h-8 w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Completed</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {stats.completed}
-                </p>
-              </div>
-              <CheckCircle className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Pending</p>
-                <p className="text-2xl font-bold text-yellow-600">
-                  {stats.pending}
-                </p>
-              </div>
-              <Clock className="h-8 w-8 text-yellow-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Cancelled</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {stats.cancelled}
-                </p>
-              </div>
-              <XCircle className="h-8 w-8 text-red-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <ContractStats stats={stats} />
 
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search by Customer, Order ID, Product..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              <Button
-                variant={statusFilter === "all" ? "default" : "outline"}
-                onClick={() => setStatusFilter("all")}
-                size="sm"
-              >
-                All
-              </Button>
-              <Button
-                variant={statusFilter === "Pending" ? "default" : "outline"}
-                onClick={() => setStatusFilter("Pending")}
-                size="sm"
-              >
-                Pending
-              </Button>
-              <Button
-                variant={statusFilter === "Completed" ? "default" : "outline"}
-                onClick={() => setStatusFilter("Completed")}
-                size="sm"
-              >
-                Completed
-              </Button>
-              <Button
-                variant={statusFilter === "Cancelled" ? "default" : "outline"}
-                onClick={() => setStatusFilter("Cancelled")}
-                size="sm"
-              >
-                Cancelled
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <ContractFilterBar
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Contracts Overview</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order ID</TableHead>
-                <TableHead>Product</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Date Created</TableHead>
-                <TableHead>Value</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredContracts.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="text-center text-gray-500 py-8"
-                  >
-                    No contracts found matching your criteria.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredContracts.map((contract) => (
-                  <TableRow key={contract.id} className="hover:bg-gray-50">
-                    <TableCell>#{contract.orderId}</TableCell>
-                    <TableCell className="font-medium">
-                      {contract.productName}
-                    </TableCell>
-                    <TableCell>{contract.customerName}</TableCell>
-                    <TableCell>{formatDate(contract.createdAt)}</TableCell>
-                    <TableCell>
-                      {formatCurrency(contract.contractValue)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(contract.status)}>
-                        <div className="flex items-center gap-1">
-                          {getStatusIcon(contract.status)} {contract.status}
-                        </div>
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex gap-1 justify-end flex-wrap">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() =>
-                            handleViewContract(contract.originalOrder)
-                          }
-                          title="View Order Details"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() =>
-                            handleGenerateFormalDocument(contract.originalOrder)
-                          }
-                          className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
-                          title="Generate Formal Document"
-                        >
-                          <FilePlus className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() =>
-                            handleDownloadPDF(contract.originalOrder)
-                          }
-                          className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
-                          title="Download as PDF"
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <ContractTable
+        filteredContracts={filteredContracts}
+        formatDate={formatDate}
+        formatCurrency={formatCurrency}
+        getStatusIcon={getStatusIcon}
+        getStatusColor={getStatusColor}
+        handleViewContract={handleViewContract}
+        handleGenerateFormalDocument={handleGenerateFormalDocument}
+        handleDownloadPDF={handleDownloadPDF}
+      />
 
       <Dialog
         open={isFormalDocumentOpen}
