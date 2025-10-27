@@ -170,15 +170,13 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
         <div className="mb-4">
           <table className="w-full border-collapse border border-black text-xs">
             <thead>
-              <tr className="bg-blue-400 text-black font-bold text-center">
-                <th className="border border-black px-2 pt-1 pb-3">Qty</th>
-                <th className="border border-black px-2 pt-1 pb-3">Unit</th>
-                <th className="border border-black px-2 pt-1 pb-3">Items</th>
-                <th className="border border-black px-2 pt-1 pb-3">
-                  Description
-                </th>
-                <th className="border border-black px-2 pt-1 pb-3">Images</th>
-                <th className="border border-black px-2 pt-1 pb-3">Amount</th>
+              <tr className="bg-blue-500 text-black font-bold text-center">
+                <th className="border border-black p-2">Qty</th>
+                <th className="border border-black p-2">Unit</th>
+                <th className="border border-black p-2">Items</th>
+                <th className="border border-black p-2">Description</th>
+                <th className="border border-black p-2">Images</th>
+                <th className="border border-black p-2">Amount</th>
               </tr>
             </thead>
             <tbody>
@@ -195,7 +193,7 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
                       <tr className="bg-gray-100 text-black font-semibold">
                         <td
                           colSpan={6}
-                          className="border border-black pt-1 pb-2 text-center"
+                          className="border border-black p-1 text-center"
                         >
                           Ordered Product #{productIndex + 1}
                         </td>
@@ -218,7 +216,7 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
                           <tr className="bg-gray-100 text-black font-semibold">
                             <td
                               colSpan={6}
-                              className="border border-black pt-1 pb-2 text-center italic text-gray-700"
+                              className="border border-black p-1 text-center italic text-gray-700"
                             >
                               Product Parts for {product?.productName ?? ""}
                             </td>
@@ -284,23 +282,23 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
         {/* --- 4. Payment Terms & Bank Details --- */}
         <div className="flex justify-between items-start mb-6 text-xs">
           <div className="w-[48%]">
-            <div className="bg-blue-400 text-center font-bold pt-1 pb-2 border border-black">
+            <div className="bg-blue-500 text-center font-bold p-1 border border-black">
               Payment Terms
             </div>
             {paymentTerms.map((term, i) => (
               <div
                 key={i}
-                className="px-1 pt-1 pb-2 border-l border-r border-b border-black"
+                className="p-1 border-l border-r border-b border-black"
               >
                 {term}
               </div>
             ))}
           </div>
           <div className="w-[48%]">
-            <div className="bg-blue-400 text-center font-bold pt-1 pb-2 border border-black">
+            <div className="bg-blue-500 text-center font-bold p-1 border border-black">
               Bank Details
             </div>
-            <div className="px-1 pt-1 pb-2 border-l border-r border-b border-black">
+            <div className="p-1 border-l border-r border-b border-black">
               <p>
                 <strong>{bankDetails.bank}</strong>
               </p>
@@ -326,18 +324,9 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
       <br />
       <br />
       <div>
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
         {/* --- 5. Notes --- */}
         <div className="mb-4 border border-black text-xs">
-          <div className="bg-blue-400 text-center font-bold px-1 pt-1 pb-2  border-b border-black">
+          <div className="bg-blue-500 text-center font-bold p-1  border-b border-black">
             Notes
           </div>
           <div className="p-2 space-y-1 leading-normal">
@@ -349,7 +338,7 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
 
         {/* --- 6. Project Details --- */}
         <div className="mb-6 border border-black text-xs">
-          <div className="bg-blue-400 text-center font-bold px-1 pt-1 pb-2  border-b border-black">
+          <div className="bg-blue-500 text-center font-bold p-1  border-b border-black">
             Project Details
           </div>
           <div className="grid grid-cols-2">
@@ -379,7 +368,7 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
                 // crossOrigin="anonymous"
                 src={order.products[0].productId.image}
                 alt="Product"
-                className="w-40 h-auto max-h-48 object-cover mx-auto border border-gray-300"
+                className="w-50 h-auto max-h-48 object-cover mx-auto border border-gray-300"
               />
             </div>
           )}
@@ -395,15 +384,27 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
         </div>
 
         <div className="flex justify-between items-start text-xs mb-10">
-          <div>
-            <p>Prepared by:</p> <br /> <br /> <br />
-            <p className="border-t border-black pt-1">{preparedBy.name}</p>
-            <p>{preparedBy.phone}</p>
+          <div className="ml-40">
+            <p>Prepared by:</p> <br /> <br />
+            <p className="border-t border-black pt-1">
+              &nbsp; &nbsp; &nbsp; &nbsp;{preparedBy.name}&nbsp; &nbsp; &nbsp;
+              &nbsp;
+            </p>
+            <p>
+              &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp;{preparedBy.phone}&nbsp;
+              &nbsp; &nbsp; &nbsp;
+            </p>
           </div>
-          <div>
-            <p>Approved by:</p> <br /> <br /> <br />
-            <p className="border-t border-black pt-1">{approvedBy.name}</p>
-            <p>{approvedBy.phone}</p>
+          <div className="mr-40">
+            <p>Approved by:</p> <br /> <br />
+            <p className="border-t border-black pt-1">
+              &nbsp; &nbsp; &nbsp; &nbsp;{approvedBy.name} &nbsp; &nbsp; &nbsp;
+              &nbsp;
+            </p>
+            <p>
+              &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{approvedBy.phone}&nbsp; &nbsp;
+              &nbsp; &nbsp;
+            </p>
           </div>
         </div>
 
@@ -414,7 +415,7 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
             accordance with all requirements and specifics by signing this
             quotation.
           </p>
-          <br /> <br /> <br />
+          <br /> <br />
           <p className="border-t border-black pt-1 text-xs">
             Signature above Printed Name
           </p>

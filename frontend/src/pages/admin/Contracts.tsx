@@ -1,12 +1,13 @@
-//frontend/src/pages/admin/Contracts.tsx
+// frontend/src/pages/admin/Contracts.tsx
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+// Remove Dialog imports - no longer needed
+// import {
+//  Dialog,
+//  DialogContent,
+//  DialogHeader,
+//  DialogTitle,
+// } from "@/components/ui/dialog";
 import {
   FileText,
   CheckCircle,
@@ -22,7 +23,7 @@ import { toast } from "sonner";
 import FormalContractDocument from "@/components/contract/FormalContractDocument";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import ReactDOM from "react-dom/client";
+import ReactDOM from "react-dom/client"; // Keep ReactDOM for the new handler
 import { formatPrice } from "@/lib/formatters";
 import ContractCardView from "./contracts/ContractCardView";
 
@@ -72,9 +73,10 @@ const Contracts = () => {
   const { token } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedContract, setSelectedContract] = useState<Order | null>(null);
-  const [isFormalDocumentOpen, setIsFormalDocumentOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>("card"); // Add view mode state
+  // Remove state related to the modal
+  // const [selectedContract, setSelectedContract] = useState<Order | null>(null);
+  // const [isFormalDocumentOpen, setIsFormalDocumentOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("card"); // Default to card view
 
   const {
     data: ordersData = [],
@@ -219,7 +221,7 @@ const Contracts = () => {
   };
 
   const handleDownloadPDF = async (orderToPrint: Order) => {
-    // ... (all PDF logic remains unchanged in the parent)
+    // ... (PDF generation logic remains the same) ...
     if (!orderToPrint) return;
 
     const toastId = toast.loading("Generating PDF... Please wait");
@@ -238,21 +240,21 @@ const Contracts = () => {
       tempContainer.style.margin = "0";
 
       const style = document.createElement("style");
-      // --- UPDATE THE INJECTED STYLES ---
       style.textContent = `
-              /* Good for browser printing, but html2canvas ignores it */
-              @media print { .pdf-page-break { page-break-before: always !important; } }
-              
-              /* Ensures our spacer div takes up no space by default */
-              .pdf-page-break { height: 0; display: block; }
-
-              #formal-contract-content { background-color: white !important; color: black !important; line-height: 1.4 !important; }
-              #formal-contract-content table { border-collapse: collapse !important; width: 100% !important; border: 1px solid black !important; margin-bottom: 0.75rem !important; }
-              #formal-contract-content th, #formal-contract-content td { border: 1px solid black !important; padding: 5px 7px !important; vertical-align: top !important; text-align: left !important; word-wrap: break-word !important; }
-              #formal-contract-content th { background-color: #dbeafe !important; font-weight: bold !important; text-align: center !important; }
-              #formal-contract-content td img { max-width: 100% !important; height: auto !important; display: block !important; margin: auto !important; }
-              body { margin: 0 !important; }
-            `;
+             /* Basic print styles */
+             @media print { 
+               .pdf-keep-together { page-break-inside: avoid !important; } 
+             }
+             /* This class is for our JS logic */
+             .pdf-keep-together { display: block; } 
+             /* All other styles are the same */
+             #formal-contract-content { background-color: white !important; color: black !important; line-height: 1.4 !important; }
+             #formal-contract-content table { border-collapse: collapse !important; width: 100% !important; border: 1px solid black !important; margin-bottom: 0.75rem !important; }
+             #formal-contract-content th, #formal-contract-content td { border: 1px solid black !important; padding: 5px 7px !important; vertical-align: top !important; text-align: left !important; word-wrap: break-word !important; }
+             #formal-contract-content th { background-color: #dbeafe !important; font-weight: bold !important; text-align: center !important; }
+             #formal-contract-content td img { max-width: 100% !important; height: auto !important; display: block !important; margin: auto !important; }
+             body { margin: 0 !important; }
+           `;
       tempContainer.appendChild(style);
       document.body.appendChild(tempContainer);
 
@@ -260,7 +262,7 @@ const Contracts = () => {
 
       await new Promise<void>((resolve) => {
         root.render(<FormalContractDocument order={orderToPrint} />);
-        setTimeout(resolve, 2000); // Give images time to load
+        setTimeout(resolve, 2000);
       });
 
       const elementToCapture = tempContainer.querySelector(
@@ -270,6 +272,7 @@ const Contracts = () => {
       if (!elementToCapture) {
         throw new Error("Could not find #formal-contract-content element.");
       }
+
       // --- START: UPDATED PDF DIMENSIONS (8.5in x 13in) ---
       const pageFormat: [number, number] = [13, 8.5]; // [height, width] in inches
       const pdf = new jsPDF("p", "in", pageFormat); // units are "in"
@@ -277,24 +280,43 @@ const Contracts = () => {
       const pdfHeight = pdf.internal.pageSize.getHeight(); // 13
       const marginIn = 0.5; // 0.5 inch margin
       const contentWidth = pdfWidth - marginIn * 2; // 7.5 in
-      const contentHeight = pdfHeight - marginIn * 2; // 12 in // --- END: UPDATED PDF DIMENSIONS --- // --- START: UPDATED PAGE BREAK LOGIC (using INCHES) --- // Calculate pixel-to-inch ratio from the rendered element // elementToCapture.scrollWidth should be 8.5in
+      const contentHeight = pdfHeight - marginIn * 2; // 12 in
+      // --- END: UPDATED PDF DIMENSIONS ---
+
+      // --- START: NEW ROBUST "KEEP-TOGETHER" LOGIC ---
       const inchToPx = elementToCapture.scrollWidth / 8.5;
       const pageHeightPx = contentHeight * inchToPx; // 12 * inchToPx
+      const topMarginPx = marginIn * inchToPx;
 
-      const breakMarkers = elementToCapture.querySelectorAll(
-        ".pdf-page-break"
-      ) as NodeListOf<HTMLElement>; // Loop through all markers and add height to push content
+      const keepTogetherElements = elementToCapture.querySelectorAll(
+        ".pdf-keep-together"
+      ) as NodeListOf<HTMLElement>;
 
-      breakMarkers.forEach((marker) => {
-        const markerTop = marker.offsetTop;
-        const currentPage = Math.floor(markerTop / pageHeightPx);
-        const nextPageTop = (currentPage + 1) * pageHeightPx;
-        const requiredPadding = nextPageTop - markerTop;
+      // Loop backwards because adding spacers changes the offsetTop of subsequent elements
+      for (let i = keepTogetherElements.length - 1; i >= 0; i--) {
+        const el = keepTogetherElements[i];
+        const elTop = el.offsetTop;
+        const elHeight = el.offsetHeight;
 
-        if (requiredPadding > 0) {
-          marker.style.height = `${requiredPadding}px`;
+        // Calculate the page boundaries
+        const elBottom = elTop + elHeight;
+        const startPage = Math.floor((elTop - topMarginPx) / pageHeightPx);
+        const endPage = Math.floor((elBottom - topMarginPx) / pageHeightPx);
+
+        if (startPage !== endPage && elHeight < pageHeightPx) {
+          // Element is split AND not taller than a page, push it
+          const newPageTop = (startPage + 1) * pageHeightPx + topMarginPx;
+          const spaceToFill = newPageTop - elTop;
+
+          if (spaceToFill > 0) {
+            const spacer = document.createElement("div");
+            spacer.style.height = `${spaceToFill}px`;
+            el.parentNode?.insertBefore(spacer, el);
+          }
         }
-      }); // --- END: UPDATED PAGE BREAK LOGIC ---
+      }
+      // --- END: NEW ROBUST "KEEP-TOGETHER" LOGIC ---
+
       const canvas = await html2canvas(elementToCapture, {
         scale: 3,
         useCORS: true,
@@ -311,41 +333,43 @@ const Contracts = () => {
         imageTimeout: 0,
       });
 
-      // --- START: UPDATED PDF SLICING (using INCHES) ---
+      // --- PDF SLICING LOGIC ---
       const imgData = canvas.toDataURL("image/png", 1.0);
-      const imgWidth = contentWidth; // 7.5 in
+      const imgWidth = contentWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
       let heightLeft = imgHeight;
-      let position = marginIn; // Start at 0.5in margin
+      let position = marginIn;
 
       pdf.addImage(
         imgData,
         "PNG",
-        marginIn, // 0.5in
-        position, // 0.5in
-        imgWidth, // 7.5in
+        marginIn,
+        position,
+        imgWidth,
         imgHeight,
         undefined,
         "SLOW"
       );
-      heightLeft -= contentHeight; // 12in
+      heightLeft -= contentHeight;
 
       while (heightLeft > 0) {
-        position = position - contentHeight; // 12in
+        position = position - contentHeight;
         pdf.addPage();
         pdf.addImage(
           imgData,
           "PNG",
-          marginIn, // 0.5in
+          marginIn,
           position,
-          imgWidth, // 7.5in
+          imgWidth,
           imgHeight,
           undefined,
           "SLOW"
         );
-        heightLeft -= contentHeight; // 12in
-      } // --- END: UPDATED PDF SLICING ---
+        heightLeft -= contentHeight;
+      }
+      // --- END: PDF SLICING ---
+
       root.unmount();
       document.body.removeChild(tempContainer);
       tempContainer = null;
@@ -369,15 +393,118 @@ const Contracts = () => {
   };
 
   const handleViewContract = (contractOrder: Order) => {
-    // ... (logic remains unchanged)
+    // This function can be removed if not used elsewhere, or kept for future features
     console.log("View Contract for Order:", contractOrder._id);
     toast.info(`Implement view for order ${contractOrder._id.slice(-6)}`);
   };
 
-  const handleGenerateFormalDocument = (contractOrder: Order) => {
-    // ... (logic remains unchanged)
-    setSelectedContract(contractOrder);
-    setIsFormalDocumentOpen(true);
+  // --- REWRITTEN handleGenerateFormalDocument with PRINT COLOR FIX ---
+  const handleGenerateFormalDocument = async (contractOrder: Order) => {
+    const toastId = toast.loading("Generating document preview...");
+    let tempContainer: HTMLDivElement | null = null;
+    let newWindow: Window | null = null;
+
+    try {
+      // 1. Create temporary container (unchanged)
+      tempContainer = document.createElement("div");
+      tempContainer.id = `formal-doc-temp-${Date.now()}`;
+      tempContainer.style.position = "absolute";
+      tempContainer.style.left = "-9999px";
+      tempContainer.style.top = "-9999px";
+      tempContainer.style.width = "8.5in";
+      tempContainer.style.backgroundColor = "white";
+      document.body.appendChild(tempContainer);
+
+      // 2. Render component (unchanged)
+      const root = ReactDOM.createRoot(tempContainer);
+      await new Promise<void>((resolve) => {
+        root.render(<FormalContractDocument order={contractOrder} />);
+        setTimeout(resolve, 500);
+      });
+
+      // 3. Get HTML content (unchanged)
+      const contentElement = tempContainer.querySelector(
+        "#formal-contract-content"
+      );
+      if (!contentElement) {
+        throw new Error("Could not find rendered document content.");
+      }
+      const contentHtml = contentElement.outerHTML;
+
+      // 4. Open new window (unchanged)
+      newWindow = window.open("", "_blank");
+      if (!newWindow) {
+        throw new Error(
+          "Could not open new window. Please check browser pop-up settings."
+        );
+      }
+
+      // 5. Write HTML and UPDATED styles to the new window
+      newWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Formal Document - Order #${contractOrder._id.slice(-6)}</title>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <script src="https://cdn.tailwindcss.com"></script>
+          <style>
+            body { margin: 0; background-color: #f0f0f0; display: flex; justify-content: center; padding-top: 20px; padding-bottom: 20px; }
+            #formal-contract-content {
+              box-shadow: 0 0 10px rgba(0,0,0,0.1);
+              transform-origin: top center;
+              margin: auto;
+            }
+             /* --- UPDATED @media print --- */
+            @media print {
+              body { background-color: white !important; padding: 0 !important; }
+              #formal-contract-content {
+                 box-shadow: none !important;
+                 margin: 0 !important;
+                 /* VVV ADD THESE LINES VVV */
+                 -webkit-print-color-adjust: exact !important; /* Chrome, Safari, Edge */
+                 print-color-adjust: exact !important; /* Firefox */
+              }
+              /* Ensure elements with background colors print them */
+              .bg-blue-500, .bg-gray-100 { /* Add other bg classes if needed */
+                 -webkit-print-color-adjust: exact !important;
+                 print-color-adjust: exact !important;
+              }
+              .pdf-keep-together { page-break-inside: avoid !important; }
+            }
+          </style>
+        </head>
+        <body>
+          ${contentHtml}
+        </body>
+        </html>
+      `);
+      newWindow.document.close();
+
+      toast.success("Document preview opened in new tab.", { id: toastId });
+    } catch (error) {
+      // ... (catch block unchanged)
+      console.error("Error generating formal document preview:", error);
+      toast.error(`Failed to open document: ${(error as Error).message}`, {
+        id: toastId,
+      });
+      if (newWindow) {
+        try {
+          newWindow.close();
+        } catch (e) {}
+      }
+    } finally {
+      // ... (finally block unchanged)
+      if (tempContainer) {
+        try {
+          const root = ReactDOM.createRoot(tempContainer);
+          root.unmount();
+        } catch (e) {}
+        if (document.body.contains(tempContainer)) {
+          document.body.removeChild(tempContainer);
+        }
+      }
+    }
   };
 
   // --- Loading / Error States ---
@@ -403,12 +530,10 @@ const Contracts = () => {
     );
   }
 
-  // --- New, Cleaner Render Block ---
-
-  // --- Updated Render Block ---
+  // --- Render Block ---
 
   return (
-    <div className="space-y-6 p-4  bg-gray-50">
+    <div className="space-y-6 p-4 bg-gray-50">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Contract Management</h1>
@@ -438,8 +563,8 @@ const Contracts = () => {
           formatCurrency={formatCurrency}
           getStatusIcon={getStatusIcon}
           getStatusColor={getStatusColor}
-          handleViewContract={handleViewContract}
-          handleGenerateFormalDocument={handleGenerateFormalDocument}
+          handleViewContract={handleViewContract} // Keep if needed
+          handleGenerateFormalDocument={handleGenerateFormalDocument} // Use updated handler
           handleDownloadPDF={handleDownloadPDF}
         />
       ) : (
@@ -449,28 +574,13 @@ const Contracts = () => {
           formatCurrency={formatCurrency}
           getStatusIcon={getStatusIcon}
           getStatusColor={getStatusColor}
-          handleViewContract={handleViewContract}
-          handleGenerateFormalDocument={handleGenerateFormalDocument}
+          handleViewContract={handleViewContract} // Keep if needed
+          handleGenerateFormalDocument={handleGenerateFormalDocument} // Use updated handler
           handleDownloadPDF={handleDownloadPDF}
         />
       )}
 
-      <Dialog
-        open={isFormalDocumentOpen}
-        onOpenChange={setIsFormalDocumentOpen}
-      >
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0">
-          <DialogHeader className="p-6 pb-0">
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" /> Formal Contract Document - Order
-              #{selectedContract?._id.slice(-6)}
-            </DialogTitle>
-          </DialogHeader>
-          {selectedContract && (
-            <FormalContractDocument order={selectedContract} />
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Dialog component is removed */}
     </div>
   );
 };
