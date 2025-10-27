@@ -1,5 +1,3 @@
-// src/pages/admin/Contracts.tsx
-
 import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +31,7 @@ import {
   Loader2,
   ServerCrash,
 } from "lucide-react";
+
 import { Order, OrderStatus } from "@/types";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
@@ -42,7 +41,6 @@ import jsPDF from "jspdf";
 import ReactDOM from "react-dom/client";
 import { formatPrice } from "@/lib/formatters";
 
-// Interface for transformed data
 interface ContractDisplayData {
   id: string;
   orderId: string;
@@ -60,17 +58,19 @@ interface ContractDisplayData {
   warrantyPeriod: string;
 }
 
-// API Fetching Function
 const fetchOrders = async (token: string | null): Promise<Order[]> => {
   if (!token) throw new Error("Authentication required.");
+
   const response = await fetch(
     `${import.meta.env.VITE_BACKEND_URL}/api/orders`,
     { headers: { Authorization: `Bearer ${token}` } }
   );
+
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.message || "Failed to fetch orders");
   }
+
   const orders = await response.json();
   return orders;
 };
@@ -95,11 +95,10 @@ const Contracts = () => {
     refetchOnWindowFocus: false,
   });
 
-  // Transform fetched orders into display data
   const contracts = useMemo((): ContractDisplayData[] => {
-    // --- Ensure return statement ---
     return ordersData.map((order) => {
       let contractStatus: ContractDisplayData["status"] = "Pending";
+
       if (
         order.orderStatus === "Completed" ||
         order.orderStatus === "Delivered"
@@ -110,12 +109,15 @@ const Contracts = () => {
       }
 
       const deliveryAddress = order.customerInfo?.deliveryAddress;
+
       const customerName = deliveryAddress
         ? `${deliveryAddress.firstName ?? ""} ${
             deliveryAddress.lastName ?? ""
           }`.trim() || "Unknown Customer"
         : "Unknown Customer";
+
       const customerEmail = order.customerInfo?.email ?? "No email";
+
       const productName =
         order.products?.[0]?.productId?.productName || "Unknown Product";
 
@@ -138,9 +140,7 @@ const Contracts = () => {
     });
   }, [ordersData]);
 
-  // Filtering based on transformed data
   const filteredContracts = useMemo(() => {
-    // --- Ensure return statement ---
     return contracts.filter((contract) => {
       const customerName = contract.customerName || "";
       const orderId = contract.orderId || "";
@@ -160,11 +160,10 @@ const Contracts = () => {
     });
   }, [contracts, searchTerm, statusFilter]);
 
-  // Calculate Stats
   const stats = useMemo(
     () => ({
       total: contracts.length,
-      signed: contracts.filter((c) => c.status === "Completed").length,
+      completed: contracts.filter((c) => c.status === "Completed").length,
       pending: contracts.filter(
         (c) => c.status === "Pending" || c.status === "Ready for Delivery"
       ).length,
@@ -173,9 +172,7 @@ const Contracts = () => {
     [contracts]
   );
 
-  // --- Helper Functions ---
   const getStatusIcon = (status: string): JSX.Element => {
-    // Added return type
     switch (status) {
       case "Completed":
         return <CheckCircle className="h-4 w-4 text-green-600" />;
@@ -186,12 +183,11 @@ const Contracts = () => {
       case "Cancelled":
         return <XCircle className="h-4 w-4 text-red-600" />;
       default:
-        return <Clock className="h-4 w-4 text-gray-600" />; // Default return
+        return <Clock className="h-4 w-4 text-gray-600" />;
     }
   };
 
   const getStatusColor = (status: string): string => {
-    // Added return type
     switch (status) {
       case "Completed":
         return "bg-green-100 text-green-800 border-green-200";
@@ -202,20 +198,17 @@ const Contracts = () => {
       case "Cancelled":
         return "bg-red-100 text-red-800 border-red-200";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200"; // Default return
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
   const formatCurrency = (amount: number): string => {
-    // Added return type
     return formatPrice(amount);
   };
 
   const formatDate = (dateString: string | null | undefined): string => {
-    // Added return type
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString("en-US", {
-      // Use en-US or en-PH
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -242,15 +235,15 @@ const Contracts = () => {
 
       const style = document.createElement("style");
       style.textContent = `
-            @media print { .page-break { page-break-before: always !important; } }
-            #formal-contract-content { background-color: white !important; color: black !important; line-height: 1.4 !important; }
-            #formal-contract-content table { border-collapse: collapse !important; width: 100% !important; border: 1px solid black !important; margin-bottom: 0.75rem !important; }
-            #formal-contract-content th, #formal-contract-content td { border: 1px solid black !important; padding: 5px 7px !important; vertical-align: top !important; text-align: left !important; word-wrap: break-word !important; }
-            #formal-contract-content th { background-color: #dbeafe !important; font-weight: bold !important; text-align: center !important; }
-            #formal-contract-content td img { max-width: 100% !important; height: auto !important; display: block !important; margin: auto !important; }
-            #formal-contract-content .page-break { page-break-before: always !important; visibility: hidden !important; height: 0 !important; margin: 0 !important; padding: 0 !important; display: block !important; }
-            body { margin: 0 !important; }
-        `;
+              @media print { .page-break { page-break-before: always !important; } }
+              #formal-contract-content { background-color: white !important; color: black !important; line-height: 1.4 !important; }
+              #formal-contract-content table { border-collapse: collapse !important; width: 100% !important; border: 1px solid black !important; margin-bottom: 0.75rem !important; }
+              #formal-contract-content th, #formal-contract-content td { border: 1px solid black !important; padding: 5px 7px !important; vertical-align: top !important; text-align: left !important; word-wrap: break-word !important; }
+              #formal-contract-content th { background-color: #dbeafe !important; font-weight: bold !important; text-align: center !important; }
+              #formal-contract-content td img { max-width: 100% !important; height: auto !important; display: block !important; margin: auto !important; }
+              #formal-contract-content .page-break { page-break-before: always !important; visibility: hidden !important; height: 0 !important; margin: 0 !important; padding: 0 !important; display: block !important; }
+              body { margin: 0 !important; }
+            `;
       tempContainer.appendChild(style);
       document.body.appendChild(tempContainer);
 
@@ -264,6 +257,7 @@ const Contracts = () => {
       const elementToCapture = tempContainer.querySelector(
         "#formal-contract-content"
       ) as HTMLElement;
+
       if (!elementToCapture) {
         throw new Error("Could not find #formal-contract-content element.");
       }
@@ -294,6 +288,7 @@ const Contracts = () => {
       const imgData = canvas.toDataURL("image/png", 1.0);
       const imgWidth = contentWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
       let heightLeft = imgHeight;
       let position = marginMM;
 
@@ -310,7 +305,7 @@ const Contracts = () => {
       heightLeft -= contentHeight;
 
       while (heightLeft > 0) {
-        position = position - contentHeight; // Correctly calculate the negative offset relative to the TOP of the previous image segment
+        position = position - contentHeight;
         pdf.addPage();
         pdf.addImage(
           imgData,
@@ -337,12 +332,11 @@ const Contracts = () => {
       toast.error(`Failed to generate PDF: ${(error as Error).message}`, {
         id: toastId,
       });
+
       if (tempContainer && document.body.contains(tempContainer)) {
         try {
           ReactDOM.createRoot(tempContainer).unmount();
-        } catch (e) {
-          /* Ignore */
-        }
+        } catch (e) {}
         document.body.removeChild(tempContainer);
       }
     }
@@ -351,7 +345,6 @@ const Contracts = () => {
   const handleViewContract = (contractOrder: Order) => {
     console.log("View Contract for Order:", contractOrder._id);
     toast.info(`Implement view for order ${contractOrder._id.slice(-6)}`);
-    // Example: navigate(`/admin/orders/${contractOrder._id}`);
   };
 
   const handleGenerateFormalDocument = (contractOrder: Order) => {
@@ -359,236 +352,189 @@ const Contracts = () => {
     setIsFormalDocumentOpen(true);
   };
 
-  // --- Loading and Error States UI ---
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        {" "}
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />{" "}
-        <span className="ml-2 text-gray-600">Loading contracts...</span>{" "}
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <span className="ml-2 text-gray-600">Loading contracts...</span>
       </div>
     );
   }
+
   if (isError) {
     return (
       <div className="flex flex-col justify-center items-center h-64 bg-red-50 p-6 rounded-lg border border-red-200">
-        {" "}
-        <ServerCrash className="h-12 w-12 text-red-500 mb-4" />{" "}
-        <p className="text-red-700 font-semibold">Failed to load contracts</p>{" "}
+        <ServerCrash className="h-12 w-12 text-red-500 mb-4" />
+        <p className="text-red-700 font-semibold">Failed to load contracts</p>
         <p className="text-red-600 text-sm mt-1">
           {(error as Error)?.message || "An unknown error occurred."}
-        </p>{" "}
+        </p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          {" "}
-          <h1 className="text-3xl font-bold">Contract Management</h1>{" "}
+          <h1 className="text-3xl font-bold">Contract Management</h1>
           <p className="text-gray-600">
-            {" "}
-            View, manage and download customer contracts based on orders{" "}
-          </p>{" "}
+            View, manage and download customer contracts based on orders
+          </p>
         </div>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
-          {" "}
           <CardContent className="p-6">
-            {" "}
             <div className="flex items-center justify-between">
-              {" "}
               <div>
-                {" "}
                 <p className="text-sm font-medium text-gray-600">
-                  {" "}
-                  Total Contracts{" "}
-                </p>{" "}
-                <p className="text-2xl font-bold">{stats.total}</p>{" "}
-              </div>{" "}
-              <FileText className="h-8 w-8 text-blue-600" />{" "}
-            </div>{" "}
-          </CardContent>{" "}
+                  Total Contracts
+                </p>
+                <p className="text-2xl font-bold">{stats.total}</p>
+              </div>
+              <FileText className="h-8 w-8 text-blue-600" />
+            </div>
+          </CardContent>
         </Card>
         <Card>
-          {" "}
           <CardContent className="p-6">
-            {" "}
             <div className="flex items-center justify-between">
-              {" "}
               <div>
-                {" "}
-                <p className="text-sm font-medium text-gray-600">Signed</p>{" "}
+                <p className="text-sm font-medium text-gray-600">Completed</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {" "}
-                  {stats.signed}{" "}
-                </p>{" "}
-              </div>{" "}
-              <CheckCircle className="h-8 w-8 text-green-600" />{" "}
-            </div>{" "}
-          </CardContent>{" "}
+                  {stats.completed}
+                </p>
+              </div>
+              <CheckCircle className="h-8 w-8 text-green-600" />
+            </div>
+          </CardContent>
         </Card>
         <Card>
-          {" "}
           <CardContent className="p-6">
-            {" "}
             <div className="flex items-center justify-between">
-              {" "}
               <div>
-                {" "}
-                <p className="text-sm font-medium text-gray-600">
-                  Pending
-                </p>{" "}
+                <p className="text-sm font-medium text-gray-600">Pending</p>
                 <p className="text-2xl font-bold text-yellow-600">
-                  {" "}
-                  {stats.pending}{" "}
-                </p>{" "}
-              </div>{" "}
-              <Clock className="h-8 w-8 text-yellow-600" />{" "}
-            </div>{" "}
-          </CardContent>{" "}
+                  {stats.pending}
+                </p>
+              </div>
+              <Clock className="h-8 w-8 text-yellow-600" />
+            </div>
+          </CardContent>
         </Card>
         <Card>
-          {" "}
           <CardContent className="p-6">
-            {" "}
             <div className="flex items-center justify-between">
-              {" "}
               <div>
-                {" "}
-                <p className="text-sm font-medium text-gray-600">
-                  Cancelled
-                </p>{" "}
+                <p className="text-sm font-medium text-gray-600">Cancelled</p>
                 <p className="text-2xl font-bold text-red-600">
-                  {" "}
-                  {stats.cancelled}{" "}
-                </p>{" "}
-              </div>{" "}
-              <XCircle className="h-8 w-8 text-red-600" />{" "}
-            </div>{" "}
-          </CardContent>{" "}
+                  {stats.cancelled}
+                </p>
+              </div>
+              <XCircle className="h-8 w-8 text-red-600" />
+            </div>
+          </CardContent>
         </Card>
       </div>
 
-      {/* Filters */}
       <Card>
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
-              {" "}
               <div className="relative">
-                {" "}
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />{" "}
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   placeholder="Search by Customer, Order ID, Product..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
-                />{" "}
-              </div>{" "}
+                />
+              </div>
             </div>
             <div className="flex gap-2 flex-wrap">
-              {" "}
               <Button
                 variant={statusFilter === "all" ? "default" : "outline"}
                 onClick={() => setStatusFilter("all")}
                 size="sm"
               >
-                {" "}
-                All{" "}
-              </Button>{" "}
+                All
+              </Button>
               <Button
                 variant={statusFilter === "Pending" ? "default" : "outline"}
                 onClick={() => setStatusFilter("Pending")}
                 size="sm"
               >
-                {" "}
-                Pending{" "}
-              </Button>{" "}
+                Pending
+              </Button>
               <Button
                 variant={statusFilter === "Completed" ? "default" : "outline"}
                 onClick={() => setStatusFilter("Completed")}
                 size="sm"
               >
-                {" "}
-                Signed{" "}
-              </Button>{" "}
+                Completed
+              </Button>
               <Button
                 variant={statusFilter === "Cancelled" ? "default" : "outline"}
                 onClick={() => setStatusFilter("Cancelled")}
                 size="sm"
               >
-                {" "}
-                Cancelled{" "}
-              </Button>{" "}
+                Cancelled
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Contracts List / Table */}
       <Card>
         <CardHeader>
-          {" "}
-          <CardTitle>Contracts Overview</CardTitle>{" "}
+          <CardTitle>Contracts Overview</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
-              {" "}
               <TableRow>
-                {" "}
-                <TableHead>Product</TableHead> <TableHead>Customer</TableHead>{" "}
-                <TableHead>Order ID</TableHead>{" "}
-                <TableHead>Date Created</TableHead> <TableHead>Value</TableHead>{" "}
-                <TableHead>Status</TableHead>{" "}
-                <TableHead className="text-right">Actions</TableHead>{" "}
-              </TableRow>{" "}
+                <TableHead>Order ID</TableHead>
+                <TableHead>Product</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead>Date Created</TableHead>
+                <TableHead>Value</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
             </TableHeader>
             <TableBody>
               {filteredContracts.length === 0 ? (
                 <TableRow>
-                  {" "}
                   <TableCell
                     colSpan={7}
                     className="text-center text-gray-500 py-8"
                   >
-                    {" "}
-                    No contracts found matching your criteria.{" "}
-                  </TableCell>{" "}
+                    No contracts found matching your criteria.
+                  </TableCell>
                 </TableRow>
               ) : (
                 filteredContracts.map((contract) => (
                   <TableRow key={contract.id} className="hover:bg-gray-50">
+                    <TableCell>#{contract.orderId}</TableCell>
                     <TableCell className="font-medium">
                       {contract.productName}
                     </TableCell>
                     <TableCell>{contract.customerName}</TableCell>
-                    <TableCell>#{contract.orderId}</TableCell>
                     <TableCell>{formatDate(contract.createdAt)}</TableCell>
                     <TableCell>
                       {formatCurrency(contract.contractValue)}
                     </TableCell>
                     <TableCell>
-                      {" "}
                       <Badge className={getStatusColor(contract.status)}>
-                        {" "}
                         <div className="flex items-center gap-1">
-                          {" "}
-                          {getStatusIcon(contract.status)} {contract.status}{" "}
-                        </div>{" "}
-                      </Badge>{" "}
+                          {getStatusIcon(contract.status)} {contract.status}
+                        </div>
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      {" "}
                       <div className="flex gap-1 justify-end flex-wrap">
-                        {" "}
                         <Button
                           variant="outline"
                           size="icon"
@@ -597,9 +543,8 @@ const Contracts = () => {
                           }
                           title="View Order Details"
                         >
-                          {" "}
-                          <Eye className="h-4 w-4" />{" "}
-                        </Button>{" "}
+                          <Eye className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="outline"
                           size="icon"
@@ -609,9 +554,8 @@ const Contracts = () => {
                           className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
                           title="Generate Formal Document"
                         >
-                          {" "}
-                          <FilePlus className="h-4 w-4" />{" "}
-                        </Button>{" "}
+                          <FilePlus className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="outline"
                           size="icon"
@@ -621,10 +565,9 @@ const Contracts = () => {
                           className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
                           title="Download as PDF"
                         >
-                          {" "}
-                          <Download className="h-4 w-4" />{" "}
-                        </Button>{" "}
-                      </div>{" "}
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -634,19 +577,16 @@ const Contracts = () => {
         </CardContent>
       </Card>
 
-      {/* Formal Contract Document Dialog */}
       <Dialog
         open={isFormalDocumentOpen}
         onOpenChange={setIsFormalDocumentOpen}
       >
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0">
           <DialogHeader className="p-6 pb-0">
-            {" "}
             <DialogTitle className="flex items-center gap-2">
-              {" "}
               <FileText className="h-5 w-5" /> Formal Contract Document - Order
-              #{selectedContract?._id.slice(-6)}{" "}
-            </DialogTitle>{" "}
+              #{selectedContract?._id.slice(-6)}
+            </DialogTitle>
           </DialogHeader>
           {selectedContract && (
             <FormalContractDocument order={selectedContract} />
