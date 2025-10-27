@@ -107,8 +107,8 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
       {/* CONTENT FOR PAGE 1                    */}
       {/* ====================================================== */}
       <div>
-        <div className="flex justify-between items-center mb-4">
-          <div className="w-32 h-20 flex items-center justify-center text-xs text-gray-500 mr-4">
+        <div className="flex justify-between items-center mb-4 -mt-4">
+          <div className="w-32 h-20 flex items-center justify-center text-xs text-gray-500 mt-1 mr-4">
             {Logo2 ? (
               <img
                 src={Logo2}
@@ -162,7 +162,7 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
           </p>
         </div>
 
-        <p className="mb-4 text-xs">To our valued client,</p>
+        <p className="mb-2 text-xs">To our valued client,</p>
         <p className="mb-4 text-xs">
           We are pleased to present and offer you the following products and
           services
@@ -170,13 +170,15 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
         <div className="mb-4">
           <table className="w-full border-collapse border border-black text-xs">
             <thead>
-              <tr className="bg-blue-200 text-black font-bold text-center">
-                <th className="border border-black p-2">Qty</th>
-                <th className="border border-black p-2">Unit</th>
-                <th className="border border-black p-2">Items</th>
-                <th className="border border-black p-2">Description</th>
-                <th className="border border-black p-2">Images</th>
-                <th className="border border-black p-2">Amount</th>
+              <tr className="bg-blue-400 text-black font-bold text-center">
+                <th className="border border-black px-2 pt-1 pb-3">Qty</th>
+                <th className="border border-black px-2 pt-1 pb-3">Unit</th>
+                <th className="border border-black px-2 pt-1 pb-3">Items</th>
+                <th className="border border-black px-2 pt-1 pb-3">
+                  Description
+                </th>
+                <th className="border border-black px-2 pt-1 pb-3">Images</th>
+                <th className="border border-black px-2 pt-1 pb-3">Amount</th>
               </tr>
             </thead>
             <tbody>
@@ -193,7 +195,7 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
                       <tr className="bg-gray-100 text-black font-semibold">
                         <td
                           colSpan={6}
-                          className="border border-black p-1 text-center"
+                          className="border border-black pt-1 pb-2 text-center"
                         >
                           Ordered Product #{productIndex + 1}
                         </td>
@@ -216,7 +218,7 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
                           <tr className="bg-gray-100 text-black font-semibold">
                             <td
                               colSpan={6}
-                              className="border border-black p-1 text-center italic text-gray-700"
+                              className="border border-black pt-1 pb-2 text-center italic text-gray-700"
                             >
                               Product Parts for {product?.productName ?? ""}
                             </td>
@@ -231,7 +233,7 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
                                 part.description ?? "N/A",
                                 part.image,
                                 part.name,
-                                "NaN"
+                                "-"
                               )
                           )}
                         </>
@@ -282,23 +284,23 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
         {/* --- 4. Payment Terms & Bank Details --- */}
         <div className="flex justify-between items-start mb-6 text-xs">
           <div className="w-[48%]">
-            <div className="bg-blue-200 text-center font-bold p-1 border border-black">
+            <div className="bg-blue-400 text-center font-bold pt-1 pb-2 border border-black">
               Payment Terms
             </div>
             {paymentTerms.map((term, i) => (
               <div
                 key={i}
-                className="p-1 border-l border-r border-b border-black"
+                className="px-1 pt-1 pb-2 border-l border-r border-b border-black"
               >
                 {term}
               </div>
             ))}
           </div>
           <div className="w-[48%]">
-            <div className="bg-blue-200 text-center font-bold p-1 border border-black">
+            <div className="bg-blue-400 text-center font-bold pt-1 pb-2 border border-black">
               Bank Details
             </div>
-            <div className="p-1 border-l border-r border-b border-black">
+            <div className="px-1 pt-1 pb-2 border-l border-r border-b border-black">
               <p>
                 <strong>{bankDetails.bank}</strong>
               </p>
@@ -307,7 +309,7 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
             </div>
           </div>
         </div>
-      </div>{" "}
+      </div>
       {/* End of Page 1 Content */}
       {/* ====================================================== */}
       {/* CONTENT FOR PAGE 2                    */}
@@ -315,7 +317,7 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
       <div style={{ pageBreakBefore: "always" }} className="pt-10">
         {/* --- 5. Notes --- */}
         <div className="mb-4 border border-black text-xs">
-          <div className="bg-blue-200 text-center font-bold p-1 border-b border-black">
+          <div className="bg-blue-400 text-center font-bold px-1 pt-1 pb-2  border-b border-black">
             Notes
           </div>
           <div className="p-2 space-y-1 leading-normal">
@@ -327,13 +329,13 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
 
         {/* --- 6. Project Details --- */}
         <div className="mb-6 border border-black text-xs">
-          <div className="bg-blue-200 text-center font-bold p-1 border-b border-black">
+          <div className="bg-blue-400 text-center font-bold px-1 pt-1 pb-2  border-b border-black">
             Project Details
           </div>
           <div className="grid grid-cols-2">
             <div className="p-2 border-r border-black leading-normal">
               <p className="font-semibold mb-1">Inclusion:</p>
-              <ul className="list-disc list-inside space-y-0.5">
+              <ul className="list-disc list-inside px-3 space-y-0.5">
                 {projectInclusions.map((item, i) => (
                   <li key={i}>{item}</li>
                 ))}
@@ -341,7 +343,7 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
             </div>
             <div className="p-2 leading-normal">
               <p className="font-semibold mb-1">Exclusion:</p>
-              <ul className="list-disc list-inside space-y-0.5">
+              <ul className="list-disc list-inside px-3 space-y-0.5">
                 {projectExclusions.map((item, i) => (
                   <li key={i}>{item}</li>
                 ))}
@@ -351,7 +353,7 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
           {/* Main Product Image */}
           {order.products[0]?.productId?.image && (
             <div className="border-t border-black p-2">
-              <p className="font-semibold text-center mb-1">Product Image</p>
+              <p className="font-semibold text-center mb-3">Product Image</p>
               <img
                 // Add crossOrigin="anonymous" if facing CORS issues
                 // crossOrigin="anonymous"
@@ -362,14 +364,7 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
             </div>
           )}
         </div>
-      </div>{" "}
-      {/* End of Page 2 Content */}
-      {/* ====================================================== */}
-      {/* CONTENT FOR PAGE 3                    */}
-      {/* ====================================================== */}
-      {/* --- ADDED: Wrapper div for page break --- */}
-      <div style={{ pageBreakBefore: "always" }} className="pt-10">
-        {/* --- 7. Closing & Signatures --- */}
+
         <div className="text-xs space-y-4 mb-10 leading-normal">
           <p>We are looking forward to hear from you soon.</p>
           <p>
@@ -393,7 +388,7 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
         </div>
 
         <div>
-          <p className="font-bold text-xs">CONFORME:</p>
+          <p className="font-bold text-sm italic">CONFORME:</p>
           <p className="text-xs mb-6 leading-normal">
             I, the undersigned, hereby agree to proceed with this project in
             accordance with all requirements and specifics by signing this
@@ -410,8 +405,8 @@ const FormalContractDocument: React.FC<FormalContractDocumentProps> = ({
         <p className="text-center font-bold text-xs mt-10">
           THANK YOU FOR YOUR BUSINESS!
         </p>
-      </div>{" "}
-      {/* End of Page 3 Content */}
+      </div>
+      {/* End of Page 2 Content */}
     </div> // End of main document div
   );
 };
