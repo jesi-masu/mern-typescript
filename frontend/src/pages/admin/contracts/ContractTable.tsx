@@ -100,16 +100,6 @@ const ContractTable: React.FC<ContractTableProps> = ({
                         variant="outline"
                         size="icon"
                         onClick={() =>
-                          handleViewContract(contract.originalOrder)
-                        }
-                        title="View Order Details"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() =>
                           handleGenerateFormalDocument(contract.originalOrder)
                         }
                         className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"

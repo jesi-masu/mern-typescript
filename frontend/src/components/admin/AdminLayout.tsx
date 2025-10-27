@@ -135,7 +135,7 @@ const AdminLayout: React.FC = () => {
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <AdminHeader navItems={navItems} />
         <main className="flex-1 overflow-y-auto bg-gray-100">
-          <div className="h-full px-4 sm:px-6 md:px-8 py-6 bg-gray-50">
+          <div className="px-4 sm:px-6 md:px-8 py-6 bg-gray-50">
             <div className="max-w-7xl mx-auto">
               <Outlet />
             </div>

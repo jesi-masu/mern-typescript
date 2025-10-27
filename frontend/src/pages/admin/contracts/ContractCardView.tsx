@@ -98,19 +98,12 @@ const ContractCardView: React.FC<ContractCardViewProps> = ({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleViewContract(contract.originalOrder)}
-                    >
-                      <Eye className="h-4 w-4 mr-2" /> View
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
                       onClick={() =>
                         handleGenerateFormalDocument(contract.originalOrder)
                       }
                       className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
                     >
-                      <FilePlus className="h-4 w-4 mr-2" /> Formal Doc
+                      <FilePlus className="h-4 w-4 mr-2" /> Generate Formal Doc
                     </Button>
                     <Button
                       variant="outline"
@@ -118,7 +111,7 @@ const ContractCardView: React.FC<ContractCardViewProps> = ({
                       onClick={() => handleDownloadPDF(contract.originalOrder)}
                       className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
                     >
-                      <Download className="h-4 w-4 mr-2" /> Download
+                      <Download className="h-4 w-4 mr-2" /> Download as PDF
                     </Button>
                   </div>
                 </div>
