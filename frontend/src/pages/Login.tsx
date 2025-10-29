@@ -184,11 +184,15 @@ const Login = () => {
       <div className="space-y-2 text-sm text-white/80">
         <div className="bg-white/10 rounded p-2 text-center">
           <div className="font-medium">Admin:</div>
-          <div>admin@prefabplus.com / admin123</div>
+          <div>admin@prefabplus.com / Admin1234</div>
         </div>
         <div className="bg-white/10 rounded p-2 text-center">
           <div className="font-medium">Personnel:</div>
           <div>personnel@prefabplus.com / personnel123</div>
+        </div>
+        <div className="bg-white/10 rounded p-2 text-center">
+          <div className="font-medium">Client:</div>
+          <div>test@mail.com / Test1234</div>
         </div>
       </div>
     </div>

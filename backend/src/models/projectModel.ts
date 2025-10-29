@@ -57,9 +57,7 @@ const projectSchema = new Schema<IProject>(
     videoDesc: { type: String, required: false },
     imagesDesc: { type: [String], required: false },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 const Project = model<IProject>("Project", projectSchema);
