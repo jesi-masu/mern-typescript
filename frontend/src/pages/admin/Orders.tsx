@@ -1,15 +1,7 @@
+// frontend/src/pages/admin/Orders.tsx
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Card } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -25,7 +17,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/context/AuthContext"; // ✅ 1. IMPORT THE CORRECT AUTH HOOK
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import OrderCard from "@/components/admin/orders/OrderCard";
 import OrderDetailsModal from "@/components/admin/orders/OrderDetailsModal";
@@ -35,18 +28,13 @@ import {
   updateOrderStatusAdmin,
 } from "@/services/orderService";
 import { Order, OrderStatus, PaymentStatus } from "@/types/order";
-import {
-  Search,
-  Filter,
-  Package,
-  Loader2,
-  AlertCircle,
-  MoreHorizontal,
-  LayoutGrid,
-  List,
-} from "lucide-react";
+import { Package, Loader2, AlertCircle, MoreHorizontal } from "lucide-react";
 
-// --- OrderTable Component (No changes needed) ---
+// Imports for new filter components and logic
+import { DateRange } from "react-day-picker";
+import { isAfter, isBefore, isEqual, startOfDay, endOfDay } from "date-fns";
+import OrderFilterCard from "@/components/admin/orders/OrderFilterCard";
+
 const OrderTable: React.FC<{
   orders: Order[];
   onViewDetails: (order: Order) => void;
@@ -183,17 +171,20 @@ const OrderTable: React.FC<{
 
 // --- Main Orders Component ---
 const Orders: React.FC = () => {
-  const { isLoading: isAuthLoading } = useAuth(); // ✅ 2. USE THE CORRECT AUTH HOOK
+  const { isLoading: isAuthLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // --- State ---
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"card" | "table">("card");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
+  // --- Queries ---
   const {
     data: orders = [],
     isLoading: isOrdersLoading,
@@ -202,9 +193,10 @@ const Orders: React.FC = () => {
   } = useQuery<Order[]>({
     queryKey: ["adminOrders"],
     queryFn: fetchAllOrders,
-    enabled: !isAuthLoading, // ✅ 3. PREVENT QUERY UNTIL AUTH IS LOADED
+    enabled: !isAuthLoading,
   });
 
+  // --- Mutations ---
   const updateOrderMutation = useMutation({
     mutationFn: ({
       orderId,
@@ -221,7 +213,6 @@ const Orders: React.FC = () => {
           -6
         )} has been updated successfully.`,
       });
-      // Removed old logActivity function call
     },
     onError: (err: any) => {
       toast({
@@ -232,6 +223,7 @@ const Orders: React.FC = () => {
     },
   });
 
+  // --- Filtering Logic ---
   const filteredOrders = orders.filter((order) => {
     const searchLower = searchQuery.toLowerCase();
     const address = order.customerInfo?.deliveryAddress;
@@ -244,26 +236,61 @@ const Orders: React.FC = () => {
       order.products
         ?.map((p) => p.productId.productName.toLowerCase())
         .join(" ") || "";
-    const orderDate = new Date(order.createdAt)
+
+    // 1. Short format (e.g., "11/10/2025")
+    const shortDateStr = new Date(order.createdAt)
       .toLocaleDateString()
       .toLowerCase();
+
+    // 2. Long format (e.g., "november 10, 2025")
+    const longDateStr = new Date(order.createdAt)
+      .toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+      .toLowerCase();
+
+    // 1. Search Match
     const matchesSearch =
       order._id.toLowerCase().includes(searchLower) ||
       order.customerInfo.firstName.toLowerCase().includes(searchLower) ||
       order.customerInfo.lastName.toLowerCase().includes(searchLower) ||
       order.customerInfo.email.toLowerCase().includes(searchLower) ||
       productNames.includes(searchLower) ||
-      orderDate.includes(searchLower) ||
+      shortDateStr.includes(searchLower) || // Check short date
+      longDateStr.includes(searchLower) || // Check long date
       province.includes(searchLower) ||
       city.includes(searchLower) ||
       subdivision.includes(searchLower) ||
       street.includes(searchLower) ||
       additionalInfo.includes(searchLower);
+
+    // 2. Status Match
     const matchesStatus =
       statusFilter === "all" || order.orderStatus === statusFilter;
-    return matchesSearch && matchesStatus;
+
+    // 3. Date Range Match (from the calendar pop-up)
+    const orderDateObj = new Date(order.createdAt);
+    let matchesDate = true; // Default to true if no range is selected
+
+    if (dateRange?.from) {
+      const fromDate = startOfDay(dateRange.from);
+      // If 'to' is not set, treat 'from' as a single-day filter
+      const toDate = dateRange.to
+        ? endOfDay(dateRange.to)
+        : endOfDay(dateRange.from);
+
+      matchesDate =
+        (isAfter(orderDateObj, fromDate) || isEqual(orderDateObj, fromDate)) &&
+        (isBefore(orderDateObj, toDate) || isEqual(orderDateObj, toDate));
+    }
+
+    // Return all filter results
+    return matchesSearch && matchesStatus && matchesDate;
   });
 
+  // --- Event Handlers ---
   const handleStatusUpdate = (orderId: string, newStatus: OrderStatus) => {
     updateOrderMutation.mutate({
       orderId,
@@ -288,7 +315,7 @@ const Orders: React.FC = () => {
     setIsPaymentModalOpen(true);
   };
 
-  // ✅ 4. COMBINE AUTH AND DATA LOADING STATES
+  // --- Loading and Error States ---
   if (isAuthLoading || isOrdersLoading) {
     return (
       <div className="flex h-full w-full items-center justify-center">
@@ -307,6 +334,7 @@ const Orders: React.FC = () => {
     );
   }
 
+  // --- Render ---
   return (
     <div className="space-y-6 p-4 bg-gray-50 min-h-screen">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -327,58 +355,22 @@ const Orders: React.FC = () => {
         </div>
       </div>
       <hr className="border-t border-gray-200" />
-      <Card className="shadow-lg rounded-xl">
-        <CardHeader>
-          <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
-            <CardTitle className="flex items-center gap-3 text-2xl text-gray-800">
-              <Filter className="h-6 w-6 text-blue-600" />
-              Order Filters
-            </CardTitle>
-            <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-              <div className="relative flex-grow">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
-                <Input
-                  placeholder="Search by ID, name, date, product, or address..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-12 pr-4 py-2 rounded-lg border border-gray-300 w-full"
-                />
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-52 rounded-lg border border-gray-300">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="Processing">Processing</SelectItem>
-                  <SelectItem value="In Production">In Production</SelectItem>
-                  <SelectItem value="Shipped">Shipped</SelectItem>
-                  <SelectItem value="Completed">Completed</SelectItem>
-                  <SelectItem value="Cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() =>
-                  setViewMode(viewMode === "card" ? "table" : "card")
-                }
-              >
-                {viewMode === "card" ? (
-                  <List className="h-5 w-5" />
-                ) : (
-                  <LayoutGrid className="h-5 w-5" />
-                )}
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <div className="pb-4 px-5 text-sm text-muted-foreground">
-          Showing <strong>{filteredOrders.length}</strong> of{" "}
-          <strong>{orders.length}</strong> total orders.
-        </div>
-      </Card>
+
+      {/* --- Filter Card Component --- */}
+      <OrderFilterCard
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        dateRange={dateRange}
+        setDateRange={setDateRange}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        filteredOrderCount={filteredOrders.length}
+        totalOrderCount={orders.length}
+      />
+
+      {/* --- Order Display Area --- */}
       <div>
         {filteredOrders.length > 0 ? (
           viewMode === "card" ? (
@@ -413,6 +405,8 @@ const Orders: React.FC = () => {
           </Card>
         )}
       </div>
+
+      {/* --- Modals --- */}
       <OrderDetailsModal
         order={selectedOrder}
         isOpen={isDetailsModalOpen}
