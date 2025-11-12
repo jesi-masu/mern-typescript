@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react"; // ADDED: Import loader icon
+import { Loader2 } from "lucide-react";
 
 interface CheckoutNavigationProps {
   currentStep: number;
@@ -8,8 +8,8 @@ interface CheckoutNavigationProps {
   isStepValid: boolean;
   onPrevious: () => void;
   onNext: () => void;
-  onSubmit: () => void;
-  isSubmitting: boolean; // ADDED: Prop to track submission state
+  onSubmit: () => void; // This will now trigger the modal
+  isSubmitting: boolean;
 }
 
 const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
@@ -19,30 +19,30 @@ const CheckoutNavigation: React.FC<CheckoutNavigationProps> = ({
   onPrevious,
   onNext,
   onSubmit,
-  isSubmitting, // ADDED: Destructure the new prop
+  isSubmitting,
 }) => {
   return (
     <div className="flex justify-between mt-8">
       <Button
         variant="outline"
         onClick={onPrevious}
-        disabled={currentStep === 1}
+        disabled={currentStep === 1 || isSubmitting}
       >
         Previous
       </Button>
       {currentStep < totalSteps ? (
-        <Button onClick={onNext} disabled={!isStepValid}>
+        <Button onClick={onNext} disabled={!isStepValid || isSubmitting}>
           Next Step
         </Button>
       ) : (
-        // UPDATED: Added loading state to the submit button
         <Button
-          onClick={onSubmit}
+          onClick={onSubmit} // This now calls `handleTriggerSubmit` in the parent
           disabled={!isStepValid || isSubmitting}
           className="bg-green-600 hover:bg-green-700"
         >
+          {/* ✏️ 1. CHANGED TEXT */}
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isSubmitting ? "Placing Order..." : "Place Order"}
+          {isSubmitting ? "Placing..." : "Place Reservation"}
         </Button>
       )}
     </div>

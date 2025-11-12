@@ -1,7 +1,4 @@
-// frontend/src/components/checkout/MultiStepCheckout.tsx
-// (This is the complete, final file)
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Progress } from "../ui/progress";
@@ -17,10 +14,30 @@ import ContractStep from "./steps/ContractStep";
 import OrderSummary from "./OrderSummary";
 import CheckoutSteps from "./CheckoutSteps";
 import CheckoutNavigation from "./CheckoutNavigation";
+import InstructionalModal from "@/components/checkout/InstructionalModal";
+import PersistentHelpButton from "@/components/checkout/PersistentHelpButton";
+import ConfirmationModal from "@/components/checkout/ConfirmationModal";
 
-// (Keep your uploadFileToCloudinary function here, it's correct)
+// Import the product fetcher
+import { fetchProductById } from "@/services/productService";
+
+// Define the full product and parts types
+type ProductPart = {
+  _id: string;
+  name: string;
+  description?: string;
+  quantity: number;
+  price?: number;
+  image: string;
+};
+type FullProduct = {
+  _id: string;
+  images: string[];
+  productParts: ProductPart[];
+  // ... (add any other fields from your full product model)
+};
+
 const uploadFileToCloudinary = async (file: File): Promise<string> => {
-  // ... (your existing function)
   const signatureResponse = await fetch(
     `${import.meta.env.VITE_BACKEND_URL}/api/upload/signature`,
     {
@@ -53,6 +70,8 @@ const uploadFileToCloudinary = async (file: File): Promise<string> => {
   return uploadResult.secure_url;
 };
 
+const SESSION_STORAGE_KEY = "hasSeenCheckoutIntro";
+
 const MultiStepCheckout = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -61,6 +80,10 @@ const MultiStepCheckout = () => {
   const { removeItems } = useCart();
   const [items, setItems] = useState<CartItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Ref for scrolling to top
+  const checkoutWrapperRef = useRef<HTMLDivElement>(null);
+
   const {
     currentStep,
     customerInfo,
@@ -73,6 +96,18 @@ const MultiStepCheckout = () => {
     handlePrevious,
   } = useCheckoutState();
 
+  // State for instructional modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showHelpButton, setShowHelpButton] = useState(false);
+
+  // State for the new confirmation modal
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+
+  // State for the full product details
+  const [fullProduct, setFullProduct] = useState<FullProduct | null>(null);
+  const [isLoadingProduct, setIsLoadingProduct] = useState(true);
+
+  // Effect to load cart items from location state
   useEffect(() => {
     if (
       location.state &&
@@ -90,12 +125,77 @@ const MultiStepCheckout = () => {
     }
   }, [location, navigate, toast]);
 
+  // Effect to fetch full product details *once*
+  useEffect(() => {
+    // Only run if we have items and haven't fetched the product yet
+    if (items.length > 0 && !fullProduct) {
+      const firstItemId = items[0].id;
+      const getProductDetails = async () => {
+        setIsLoadingProduct(true);
+        try {
+          // @ts-ignore - Assuming fetchProductById returns the full product
+          const product = await fetchProductById(firstItemId);
+          setFullProduct(product);
+        } catch (err) {
+          console.error("Failed to load full product details:", err);
+        } finally {
+          setIsLoadingProduct(false);
+        }
+      };
+      getProductDetails();
+    }
+  }, [items, fullProduct]); // Runs when 'items' are first loaded
+
+  // Effect for first-visit modal (using sessionStorage)
+  useEffect(() => {
+    try {
+      const hasSeen = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (hasSeen === "true") {
+        setIsModalOpen(false);
+        setShowHelpButton(true);
+      } else {
+        setIsModalOpen(true);
+        setShowHelpButton(false);
+      }
+    } catch (error) {
+      console.error("Could not access sessionStorage: ", error);
+      setShowHelpButton(true);
+    }
+  }, []); // Empty dependency array ensures this runs only once on mount
+
+  // Effect for scrolling to top on step change
+  useEffect(() => {
+    if (checkoutWrapperRef.current) {
+      checkoutWrapperRef.current.scrollIntoView({
+        behavior: "smooth", // A nice, smooth scroll
+        block: "start", // Aligns the top of the element to the top of the viewport
+      });
+    }
+  }, [currentStep]); // This runs every time 'currentStep' changes
+
+  // Handler for instructional modal "OK" button
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setShowHelpButton(true);
+    try {
+      sessionStorage.setItem(SESSION_STORAGE_KEY, "true");
+    } catch (error) {
+      console.error("Could not write to sessionStorage: ", error);
+    }
+  };
+
+  // Handler to open instructional modal from help button
+  const handleHelpOpen = () => {
+    setIsModalOpen(true);
+  };
+
   const totalAmount = items.reduce(
     (acc, item) => acc + item.price * item.quantity,
     0
   );
 
-  if (items.length === 0) {
+  // Show loading screen if items or product details are not ready
+  if (items.length === 0 || isLoadingProduct) {
     return (
       <div className="container py-12 text-center">
         <h1 className="text-2xl font-bold mb-4">Loading Checkout...</h1>
@@ -117,17 +217,18 @@ const MultiStepCheckout = () => {
     },
     {
       number: 3,
-      title: "Contract & Finalize",
-      description: "Review and sign contract",
+      title: "Review & Finalize",
+      description: "Review and agree to terms",
     },
   ];
   const progress = (currentStep / steps.length) * 100;
 
+  // The *actual* API submission function
   const handleOrderSubmit = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      // (Your Cloudinary upload logic is correct, keep it)
+      // ... (file upload logic) ...
       const uploadedReceipts: { [key: string]: string[] } = {};
       if (paymentInfo.paymentReceipts) {
         for (const [stage, files] of Object.entries(
@@ -146,8 +247,6 @@ const MultiStepCheckout = () => {
       );
       const locationImagesUrls = await Promise.all(locationImageUploads);
 
-      // --- START: MODIFICATION ---
-      // This payload is now 100% consistent with all your files
       const paymentInfoPayload = {
         paymentMethod: paymentInfo.paymentMethod,
         paymentMode: paymentInfo.paymentMode,
@@ -157,18 +256,16 @@ const MultiStepCheckout = () => {
       };
 
       const orderPayload = {
+        // ... (order payload creation) ...
         products: items.map((item) => ({
           productId: item.id,
           quantity: item.quantity,
         })),
         customerInfo: {
-          // Billing details from Step 1
           firstName: customerInfo.firstName,
           lastName: customerInfo.lastName,
           email: customerInfo.email,
-          phoneNumber: customerInfo.phoneNumber, // Correctly from CustomerInfoStep
-
-          // Delivery details from Step 2, now 100% complete
+          phoneNumber: customerInfo.phoneNumber,
           deliveryAddress: {
             firstName: paymentInfo.deliveryAddress?.firstName ?? "",
             lastName: paymentInfo.deliveryAddress?.lastName ?? "",
@@ -186,14 +283,13 @@ const MultiStepCheckout = () => {
         },
         paymentInfo: paymentInfoPayload,
         contractInfo: {
-          signature: contractInfo.signature,
           agreedToTerms: contractInfo.agreedToTerms,
         },
         locationImages: locationImagesUrls,
         totalAmount: totalAmount,
       };
-      // --- END: MODIFICATION ---
 
+      // ... (fetch POST to /api/orders) ...
       const response = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/orders`,
         {
@@ -212,6 +308,8 @@ const MultiStepCheckout = () => {
         );
       }
       const newOrder = await response.json();
+
+      setIsConfirmModalOpen(false); // Close modal on success
       const orderedItemIds = items.map((item) => item.id);
       removeItems(orderedItemIds);
       toast({
@@ -227,9 +325,14 @@ const MultiStepCheckout = () => {
           submitError.message || "There was an error placing your order.",
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
+      setIsConfirmModalOpen(false); // Close modal on failure
+      setIsSubmitting(false); // Re-enable buttons on failure
     }
+  };
+
+  // New "trigger" function to open the confirmation modal
+  const handleTriggerSubmit = () => {
+    setIsConfirmModalOpen(true);
   };
 
   const stepValid = isStepValid(
@@ -240,7 +343,19 @@ const MultiStepCheckout = () => {
   );
 
   return (
-    <div className="container py-8 max-w-6xl">
+    <div ref={checkoutWrapperRef} className="container py-8 max-w-6xl">
+      {/* Render the instructional modal */}
+      <InstructionalModal isOpen={isModalOpen} onClose={handleModalClose} />
+      {showHelpButton && <PersistentHelpButton onClick={handleHelpOpen} />}
+
+      {/* Render the new confirmation modal */}
+      <ConfirmationModal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        onConfirm={handleOrderSubmit}
+        isSubmitting={isSubmitting}
+      />
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <Card>
@@ -273,10 +388,10 @@ const MultiStepCheckout = () => {
                   contractInfo={contractInfo}
                   onChange={handleContractInfoChange}
                   customerInfo={customerInfo}
-                  // Pass the correct deliveryAddress object
                   deliveryAddress={paymentInfo.deliveryAddress}
                   items={items}
                   totalAmount={totalAmount}
+                  fullProduct={fullProduct} // Pass prop
                 />
               )}
               <CheckoutNavigation
@@ -285,14 +400,18 @@ const MultiStepCheckout = () => {
                 isStepValid={stepValid}
                 onPrevious={handlePrevious}
                 onNext={handleNext}
-                onSubmit={handleOrderSubmit}
+                onSubmit={handleTriggerSubmit} // Pass the trigger function
                 isSubmitting={isSubmitting}
               />
             </CardContent>
           </Card>
         </div>
         <div className="lg:col-span-1">
-          <OrderSummary items={items} totalAmount={totalAmount} />
+          <OrderSummary
+            items={items}
+            totalAmount={totalAmount}
+            fullProduct={fullProduct} // Pass prop
+          />
         </div>
       </div>
     </div>

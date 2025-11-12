@@ -1,6 +1,6 @@
 // src/components/project-detail/ProjectMainContentTabs.tsx
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -48,6 +48,10 @@ const ProjectMainContentTabs = ({ project }: ProjectMainContentTabsProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [currentLayoutIndex, setCurrentLayoutIndex] = useState(0);
 
+  // Add autoplay state for each carousel
+  const [isGalleryAutoPlay, setIsGalleryAutoPlay] = useState(true);
+  const [isLayoutAutoPlay, setIsLayoutAutoPlay] = useState(true);
+
   // Dynamic image arrays
   const galleryImages =
     project.images && project.images.length > 0
@@ -64,7 +68,7 @@ const ProjectMainContentTabs = ({ project }: ProjectMainContentTabsProps) => {
     Completed: { icon: CheckCircle },
   };
 
-  // Carousel functions
+  // ✏️ 2. Create auto-play-aware handlers for Gallery
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length);
   };
@@ -73,6 +77,20 @@ const ProjectMainContentTabs = ({ project }: ProjectMainContentTabsProps) => {
       (prev) => (prev - 1 + galleryImages.length) % galleryImages.length
     );
   };
+  const handleGalleryNext = () => {
+    setIsGalleryAutoPlay(false);
+    nextImage();
+  };
+  const handleGalleryPrev = () => {
+    setIsGalleryAutoPlay(false);
+    prevImage();
+  };
+  const handleGalleryThumbnailClick = (index: number) => {
+    setIsGalleryAutoPlay(false);
+    setCurrentImageIndex(index);
+  };
+
+  // ✏️ 3. Create auto-play-aware handlers for Layout
   const nextLayout = () => {
     setCurrentLayoutIndex((prev) => (prev + 1) % layoutImages.length);
   };
@@ -81,6 +99,54 @@ const ProjectMainContentTabs = ({ project }: ProjectMainContentTabsProps) => {
       (prev) => (prev - 1 + layoutImages.length) % layoutImages.length
     );
   };
+  const handleLayoutNext = () => {
+    setIsLayoutAutoPlay(false);
+    nextLayout();
+  };
+  const handleLayoutPrev = () => {
+    setIsLayoutAutoPlay(false);
+    prevLayout();
+  };
+  const handleLayoutThumbnailClick = (index: number) => {
+    setIsLayoutAutoPlay(false);
+    setCurrentLayoutIndex(index);
+  };
+
+  // ✏️ 4. Add useEffect for Gallery autoplay
+  useEffect(() => {
+    // Only run if autoplay is on, the tab is active, and there's more than one image
+    if (
+      !isGalleryAutoPlay ||
+      activeTab !== "gallery" ||
+      galleryImages.length <= 1
+    ) {
+      return;
+    }
+
+    const timer = setInterval(() => {
+      nextImage();
+    }, 5000); // 5 seconds
+
+    return () => clearInterval(timer);
+  }, [isGalleryAutoPlay, activeTab, galleryImages.length]);
+
+  // ✏️ 5. Add useEffect for Layout autoplay
+  useEffect(() => {
+    // Only run if autoplay is on, the tab is active, and there's more than one image
+    if (
+      !isLayoutAutoPlay ||
+      activeTab !== "layout" ||
+      layoutImages.length <= 1
+    ) {
+      return;
+    }
+
+    const timer = setInterval(() => {
+      nextLayout();
+    }, 5000); // 5 seconds
+
+    return () => clearInterval(timer);
+  }, [isLayoutAutoPlay, activeTab, layoutImages.length]);
 
   // Combine location details for specifications
   const fullLocation = `${project.cityMunicipality}, ${project.province}, ${project.country}`;
@@ -207,7 +273,7 @@ const ProjectMainContentTabs = ({ project }: ProjectMainContentTabsProps) => {
         </div>
       </TabsContent>
 
-      {/* Gallery Tab */}
+      {/* ✏️ Gallery Tab (MODIFIED) */}
       <TabsContent value="gallery">
         <div className="bg-white rounded-2xl p-8 shadow-lg border border-slate-200/50">
           <h2 className="text-3xl font-semibold mb-6 text-slate-900">
@@ -224,30 +290,43 @@ const ProjectMainContentTabs = ({ project }: ProjectMainContentTabsProps) => {
             <>
               <div className="relative mb-8">
                 <div className="aspect-video bg-slate-100 rounded-2xl overflow-hidden relative group">
-                  <img
-                    src={galleryImages[currentImageIndex]}
-                    alt={`${project.projectTitle} - Image ${
-                      currentImageIndex + 1
-                    }`}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
+                  {/* ✏️ 6. Map all images for cross-fade transition */}
+                  {galleryImages.map((imageSrc, index) => (
+                    <img
+                      key={index}
+                      src={imageSrc}
+                      alt={`${project.projectTitle} - Image ${index + 1}`}
+                      className={`
+                        absolute inset-0 w-full h-full object-cover
+                        transition-all duration-700 ease-in-out
+                        group-hover:scale-105
+                        ${
+                          currentImageIndex === index
+                            ? "opacity-100"
+                            : "opacity-0"
+                        }
+                      `}
+                    />
+                  ))}
                   {galleryImages.length > 1 && (
                     <>
+                      {/* ✏️ 7. Use new handler */}
                       <button
-                        onClick={prevImage}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-slate-800 p-3 rounded-full shadow-lg transition-all duration-300 opacity-0 group-hover:opacity-100"
+                        onClick={handleGalleryPrev}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-slate-800 p-3 rounded-full shadow-lg transition-all duration-300 opacity-0 group-hover:opacity-100 z-10"
                       >
                         <ChevronLeft className="h-5 w-5" />
                       </button>
+                      {/* ✏️ 7. Use new handler */}
                       <button
-                        onClick={nextImage}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-slate-800 p-3 rounded-full shadow-lg transition-all duration-300 opacity-0 group-hover:opacity-100"
+                        onClick={handleGalleryNext}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-slate-800 p-3 rounded-full shadow-lg transition-all duration-300 opacity-0 group-hover:opacity-100 z-10"
                       >
                         <ChevronRight className="h-5 w-5" />
                       </button>
                     </>
                   )}
-                  <div className="absolute bottom-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm backdrop-blur-sm">
+                  <div className="absolute bottom-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm backdrop-blur-sm z-10">
                     {currentImageIndex + 1} / {galleryImages.length}
                   </div>
                 </div>
@@ -257,7 +336,8 @@ const ProjectMainContentTabs = ({ project }: ProjectMainContentTabsProps) => {
                   {galleryImages.map((image, index) => (
                     <button
                       key={index}
-                      onClick={() => setCurrentImageIndex(index)}
+                      // ✏️ 7. Use new handler
+                      onClick={() => handleGalleryThumbnailClick(index)}
                       className={`aspect-square rounded-xl overflow-hidden border-2 transition-all duration-300 ${
                         currentImageIndex === index
                           ? "border-slate-900 ring-2 ring-slate-900/20"
@@ -282,7 +362,7 @@ const ProjectMainContentTabs = ({ project }: ProjectMainContentTabsProps) => {
         </div>
       </TabsContent>
 
-      {/* Layout Tab */}
+      {/* ✏️ Layout Tab (MODIFIED) */}
       <TabsContent value="layout">
         <div className="bg-white rounded-2xl p-8 shadow-lg border border-slate-200/50">
           <h2 className="text-3xl font-semibold mb-8 text-slate-900 flex items-center gap-3">
@@ -298,30 +378,43 @@ const ProjectMainContentTabs = ({ project }: ProjectMainContentTabsProps) => {
             <>
               <div className="relative mb-8">
                 <div className="aspect-[4/3] bg-slate-100 rounded-2xl overflow-hidden relative group">
-                  <img
-                    src={layoutImages[currentLayoutIndex]}
-                    alt={`${project.projectTitle} - Layout ${
-                      currentLayoutIndex + 1
-                    }`}
-                    className="w-full h-full object-contain p-4 transition-transform duration-500 group-hover:scale-[1.02]"
-                  />
+                  {/* ✏️ 8. Map all images for cross-fade transition */}
+                  {layoutImages.map((imageSrc, index) => (
+                    <img
+                      key={index}
+                      src={imageSrc}
+                      alt={`${project.projectTitle} - Layout ${index + 1}`}
+                      className={`
+                        absolute inset-0 w-full h-full object-contain p-4
+                        transition-all duration-700 ease-in-out
+                        group-hover:scale-[1.02]
+                        ${
+                          currentLayoutIndex === index
+                            ? "opacity-100"
+                            : "opacity-0"
+                        }
+                      `}
+                    />
+                  ))}
                   {layoutImages.length > 1 && (
                     <>
+                      {/* ✏️ 9. Use new handler */}
                       <button
-                        onClick={prevLayout}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-slate-800 p-3 rounded-full shadow-lg transition-all duration-300 opacity-0 group-hover:opacity-100"
+                        onClick={handleLayoutPrev}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-slate-800 p-3 rounded-full shadow-lg transition-all duration-300 opacity-0 group-hover:opacity-100 z-10"
                       >
                         <ChevronLeft className="h-5 w-5" />
                       </button>
+                      {/* ✏️ 9. Use new handler */}
                       <button
-                        onClick={nextLayout}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-slate-800 p-3 rounded-full shadow-lg transition-all duration-300 opacity-0 group-hover:opacity-100"
+                        onClick={handleLayoutNext}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-slate-800 p-3 rounded-full shadow-lg transition-all duration-300 opacity-0 group-hover:opacity-100 z-10"
                       >
                         <ChevronRight className="h-5 w-5" />
                       </button>
                     </>
                   )}
-                  <div className="absolute bottom-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm backdrop-blur-sm">
+                  <div className="absolute bottom-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm backdrop-blur-sm z-10">
                     Plan {currentLayoutIndex + 1} / {layoutImages.length}
                   </div>
                 </div>
@@ -331,7 +424,8 @@ const ProjectMainContentTabs = ({ project }: ProjectMainContentTabsProps) => {
                   {layoutImages.map((image, index) => (
                     <button
                       key={index}
-                      onClick={() => setCurrentLayoutIndex(index)}
+                      // ✏️ 9. Use new handler
+                      onClick={() => handleLayoutThumbnailClick(index)}
                       className={`aspect-[4/3] rounded-xl overflow-hidden border-2 bg-slate-50 transition-all duration-300 ${
                         currentLayoutIndex === index
                           ? "border-slate-900 ring-2 ring-slate-900/20"

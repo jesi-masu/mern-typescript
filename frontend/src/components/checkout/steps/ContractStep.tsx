@@ -1,19 +1,21 @@
-//frontend/src/components/checkout/steps/ContractStep.tsx
 import React, { useState } from "react";
-import { Button } from "../../ui/button";
 import { Checkbox } from "../../ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import { Separator } from "../../ui/separator";
-import { Badge } from "../../ui/badge";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import {
   FileText,
   User,
   Package,
-  Eye,
-  EyeOff,
   Shield,
   CheckCircle,
   AlertCircle,
+  ListTree,
 } from "lucide-react";
 import {
   ContractInfo,
@@ -22,22 +24,34 @@ import {
 } from "../../../types/checkout";
 import { CartItem } from "../../../context/CartContext";
 import { formatPrice } from "../../../lib/formatters";
-import SignaturePad from "../../contract/SignaturePad";
-import ContractDocument from "./ContractDocument"; // Import the new component
+import OrderInvoice from "./OrderInvoice"; // Import the invoice component
 
 type DeliveryAddress = PaymentInfo["deliveryAddress"];
 
-interface UpdatedContractInfo extends ContractInfo {
-  signatureTimestamp?: string;
-}
+// Define the Product Part and Full Product types
+type ProductPart = {
+  _id: string;
+  name: string;
+  description?: string;
+  quantity: number;
+  price?: number;
+  image: string;
+};
+type FullProduct = {
+  _id: string;
+  images: string[];
+  productParts: ProductPart[];
+} | null;
 
+// Update the props interface
 interface ContractStepProps {
-  contractInfo: UpdatedContractInfo;
-  onChange: (info: Partial<UpdatedContractInfo>) => void;
+  contractInfo: ContractInfo;
+  onChange: (info: Partial<ContractInfo>) => void;
   customerInfo: CustomerInfo;
   deliveryAddress?: DeliveryAddress;
   items: CartItem[];
   totalAmount: number;
+  fullProduct: FullProduct; // Add the new prop
 }
 
 const ContractStep: React.FC<ContractStepProps> = ({
@@ -47,37 +61,25 @@ const ContractStep: React.FC<ContractStepProps> = ({
   deliveryAddress,
   items,
   totalAmount,
+  fullProduct, // Accept the new prop
 }) => {
-  const [showContract, setShowContract] = useState(false);
+  const [showInvoice, setShowInvoice] = useState(true); // Show invoice by default
+  const isReviewComplete = contractInfo.agreedToTerms;
 
-  const handleSignatureSave = (signature: string) => {
-    onChange({ signature, signatureTimestamp: new Date().toISOString() });
-    setShowContract(true);
-  };
-
-  const isContractComplete =
-    contractInfo.signature && contractInfo.agreedToTerms;
-
-  const getSignatureDate = () => {
-    return contractInfo.signatureTimestamp
-      ? new Date(contractInfo.signatureTimestamp).toLocaleDateString()
-      : new Date().toLocaleDateString();
-  };
-
-  const getSignatureTime = () => {
-    return contractInfo.signatureTimestamp
-      ? new Date(contractInfo.signatureTimestamp).toLocaleTimeString()
-      : new Date().toLocaleTimeString();
-  };
+  // Get parts data from the new prop
+  // @ts-ignore
+  const productParts: ProductPart[] = fullProduct?.productParts || [];
 
   return (
     <div className="space-y-8">
+      {/* --- Header & Status --- */}
       <div className="text-center space-y-2">
         <h3 className="text-2xl font-bold text-gray-900">
-          Contract & Finalization
+          Review & Finalization
         </h3>
         <p className="text-gray-600">
-          Review your order details and complete the digital signing process
+          Please review your order summary, check the invoice, and agree to the
+          terms.
         </p>
       </div>
       <div className="flex items-center justify-center space-x-4">
@@ -93,20 +95,9 @@ const ContractStep: React.FC<ContractStepProps> = ({
           )}
           <span className="text-sm font-medium">Terms Agreed</span>
         </div>
-        <div className="h-px w-8 bg-gray-300"></div>
-        <div
-          className={`flex items-center space-x-2 ${
-            contractInfo.signature ? "text-green-600" : "text-gray-400"
-          }`}
-        >
-          {contractInfo.signature ? (
-            <CheckCircle className="h-5 w-5" />
-          ) : (
-            <AlertCircle className="h-5 w-5" />
-          )}
-          <span className="text-sm font-medium">Digitally Signed</span>
-        </div>
       </div>
+
+      {/* --- Order Summary Card --- */}
       <Card className="border-2 border-gray-100">
         <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
           <CardTitle className="flex items-center gap-2 text-gray-900">
@@ -116,45 +107,7 @@ const ContractStep: React.FC<ContractStepProps> = ({
         </CardHeader>
         <CardContent className="pt-6">
           <div className="space-y-6">
-            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-              <User className="h-6 w-6 text-gray-500" />
-              <div className="flex-1">
-                <p className="font-semibold text-gray-900">
-                  {customerInfo.firstName} {customerInfo.lastName}
-                </p>
-                <p className="text-sm text-gray-600">{customerInfo.email}</p>
-                <p className="text-sm text-gray-600">
-                  {customerInfo.phoneNumber}
-                </p>
-              </div>
-            </div>
-            <Separator />
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-4 mb-4">
-                <Package className="h-6 w-6 text-gray-500" />
-                <p className="font-semibold text-gray-900">
-                  Products ({items.length})
-                </p>
-              </div>
-              <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
-                {items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="text-sm text-gray-700 flex justify-between"
-                  >
-                    <span>
-                      {item.name} (x{item.quantity})
-                    </span>
-                    <span>{formatPrice(item.price * item.quantity)}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="border-t mt-4 pt-2 text-lg font-bold text-blue-600 flex justify-between">
-                <span>Total Amount</span>
-                <span>{formatPrice(totalAmount)}</span>
-              </div>
-            </div>
-            <Separator />
+            {/* Delivery Address */}
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
               <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
                 <Shield className="h-4 w-4" />
@@ -163,6 +116,10 @@ const ContractStep: React.FC<ContractStepProps> = ({
               <div className="text-sm text-blue-800 space-y-1">
                 {deliveryAddress ? (
                   <>
+                    <p>
+                      <strong>Recipient:</strong> {deliveryAddress.firstName}{" "}
+                      {deliveryAddress.lastName} ({deliveryAddress.phone})
+                    </p>
                     <p>{deliveryAddress.street || "[No Street]"}</p>
                     <p>{deliveryAddress.subdivision || "[No Subdivision]"}</p>
                     {deliveryAddress.additionalAddressLine && (
@@ -182,9 +139,132 @@ const ContractStep: React.FC<ContractStepProps> = ({
                 )}
               </div>
             </div>
+
+            {/* Products & Parts Section */}
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-4 mb-4">
+                <Package className="h-6 w-6 text-gray-500" />
+                <p className="font-semibold text-gray-900">
+                  Products ({items.length})
+                </p>
+              </div>
+
+              {/* Main Product List (Compact) */}
+              <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
+                {items.map((item) => (
+                  <div
+                    key={item.id}
+                    className="text-sm text-gray-700 flex items-center justify-between gap-3"
+                  >
+                    {/* Image + Info */}
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="h-12 w-12 rounded-md object-cover flex-shrink-0 border"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 truncate">
+                          {item.name}
+                        </p>
+                        <p className="text-gray-600">
+                          Quantity: {item.quantity}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Price */}
+                    <span className="font-semibold text-gray-800 flex-shrink-0">
+                      {formatPrice(item.price * item.quantity)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Accordion for Parts (Compact) */}
+              <Separator className="my-4 bg-gray-200" />
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="item-1" className="border-none">
+                  <AccordionTrigger className="text-sm font-medium py-2 hover:no-underline">
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <ListTree className="h-4 w-4" />
+                      <span>View Included Parts ({productParts.length})</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="py-4 space-y-3 max-h-60 overflow-y-auto pr-2">
+                      {productParts.length > 0 ? (
+                        productParts.map((part) => (
+                          <div
+                            key={part._id}
+                            className="flex items-center gap-2.5"
+                          >
+                            <img
+                              src={part.image}
+                              alt={part.name}
+                              className="h-10 w-10 rounded-md object-cover flex-shrink-0 border"
+                            />
+                            <div className="flex-1">
+                              <span className="font-medium text-gray-900 text-sm">
+                                {part.name}
+                              </span>
+                              <p className="text-gray-600 text-xs">
+                                Quantity: {part.quantity}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-gray-500 text-center py-10">
+                          {!fullProduct
+                            ? "Loading..."
+                            : "No detailed parts list."}
+                        </p>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+
+              {/* Total Amount */}
+              <div className="border-t mt-4 pt-4 text-lg font-bold text-blue-600 flex justify-between">
+                <span>Total Amount</span>
+                <span>{formatPrice(totalAmount)}</span>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* --- OrderInvoice --- */}
+      <OrderInvoice
+        showInvoice={showInvoice}
+        setShowInvoice={setShowInvoice}
+        customerInfo={customerInfo}
+        deliveryAddress={deliveryAddress}
+        items={items}
+        totalAmount={totalAmount}
+      />
+
+      {/* --- isReviewComplete Card --- */}
+      {isReviewComplete && (
+        <Card className="border-2 border-green-300 bg-gradient-to-r from-green-50 to-emerald-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-center gap-3 text-green-800">
+              <CheckCircle className="h-6 w-6" />
+              <span className="text-lg font-semibold">
+                Order Ready for Finalization
+              </span>
+            </div>
+            <p className="text-center text-sm text-green-700 mt-2">
+              All requirements have been met. You may now proceed to place your
+              order.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* --- Terms & Conditions --- */}
       <Card className="border-2 border-gray-100">
         <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
           <CardTitle className="text-gray-900">Terms & Conditions</CardTitle>
@@ -229,75 +309,12 @@ const ContractStep: React.FC<ContractStepProps> = ({
                 className="text-sm text-blue-900 cursor-pointer"
               >
                 <span className="font-medium">I acknowledge and agree</span> to
-                the terms and conditions stated above, and I understand that my
-                digital signature will be legally binding.
+                the terms and conditions stated above.
               </label>
             </div>
           </div>
         </CardContent>
       </Card>
-      <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-blue-900">
-            <Shield className="h-5 w-5" />
-            Digital Signature Required
-          </CardTitle>
-          <p className="text-sm text-blue-700">
-            Complete your contract by providing a secure digital signature
-          </p>
-        </CardHeader>
-        <CardContent>
-          {contractInfo.signature && (
-            <div className="mb-6 p-4 bg-white rounded-lg border border-green-200">
-              <div className="flex items-center gap-2 mb-2">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <span className="text-sm font-medium text-green-800">
-                  Signature Captured
-                </span>
-                <Badge className="bg-green-100 text-green-800">Verified</Badge>
-              </div>
-              <img
-                src={contractInfo.signature}
-                alt="Digital Signature"
-                className="border border-gray-300 rounded-lg max-w-xs bg-white p-2"
-              />
-            </div>
-          )}
-          <SignaturePad onSave={handleSignatureSave} />
-        </CardContent>
-      </Card>
-
-      {/* --- Render the new ContractDocument component --- */}
-      {contractInfo.signature && (
-        <ContractDocument
-          showContract={showContract}
-          setShowContract={setShowContract}
-          contractInfo={contractInfo}
-          customerInfo={customerInfo}
-          deliveryAddress={deliveryAddress}
-          items={items}
-          totalAmount={totalAmount}
-          getSignatureDate={getSignatureDate}
-          getSignatureTime={getSignatureTime}
-        />
-      )}
-
-      {isContractComplete && (
-        <Card className="border-2 border-green-300 bg-gradient-to-r from-green-50 to-emerald-50">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-center gap-3 text-green-800">
-              <CheckCircle className="h-6 w-6" />
-              <span className="text-lg font-semibold">
-                Contract Ready for Finalization
-              </span>
-            </div>
-            <p className="text-center text-sm text-green-700 mt-2">
-              All requirements have been met. You may now proceed to place your
-              order.
-            </p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

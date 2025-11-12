@@ -277,9 +277,8 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
                 Pay Later Selected
               </h4>
               <p className="text-sm text-amber-700">
-                You have chosen to submit your order now and upload the payment
-                receipt later. You can find this order in your dashboard to
-                complete the payment.
+                You have chosen to reserve your item now and pay later. You can
+                find this item in your dashboard to complete the payment.
               </p>
             </div>
           </CardContent>

@@ -1,82 +1,62 @@
-//frontend/src/components/checkout/steps/ContractDocument.tsx
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import { Button } from "../../ui/button";
 import { Badge } from "../../ui/badge";
 import { FileText, Eye, EyeOff } from "lucide-react";
-import {
-  CustomerInfo,
-  PaymentInfo,
-  ContractInfo,
-} from "../../../types/checkout";
+import { CustomerInfo, PaymentInfo } from "../../../types/checkout";
 import { CartItem } from "../../../context/CartContext";
 import { formatPrice } from "../../../lib/formatters";
 
 type DeliveryAddress = PaymentInfo["deliveryAddress"];
 
-interface UpdatedContractInfo extends ContractInfo {
-  signatureTimestamp?: string;
-}
-
-interface ContractDocumentProps {
-  showContract: boolean;
-  setShowContract: (show: boolean) => void;
-  contractInfo: UpdatedContractInfo;
+interface OrderInvoiceProps {
+  showInvoice: boolean;
+  setShowInvoice: (show: boolean) => void;
   customerInfo: CustomerInfo;
   deliveryAddress?: DeliveryAddress;
   items: CartItem[];
   totalAmount: number;
-  getSignatureDate: () => string;
-  getSignatureTime: () => string;
 }
 
-export const ContractDocument: React.FC<ContractDocumentProps> = ({
-  showContract,
-  setShowContract,
-  contractInfo,
+export const OrderInvoice: React.FC<OrderInvoiceProps> = ({
+  showInvoice,
+  setShowInvoice,
   customerInfo,
   deliveryAddress,
   items,
   totalAmount,
-  getSignatureDate,
-  getSignatureTime,
 }) => {
   return (
-    <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50">
+    <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span className="flex items-center gap-2 text-green-900">
+          <span className="flex items-center gap-2 text-blue-900">
             <FileText className="h-5 w-5" />
-            Contract Document
-            <Badge className="bg-green-100 text-green-800">Ready</Badge>
+            Order Invoice
+            <Badge className="bg-blue-100 text-blue-800">Review</Badge>
           </span>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setShowContract(!showContract)}
-            className="flex items-center gap-2 border-green-300 hover:bg-green-100"
+            onClick={() => setShowInvoice(!showInvoice)}
+            className="flex items-center gap-2 border-blue-300 hover:bg-blue-100"
           >
-            {showContract ? (
+            {showInvoice ? (
               <EyeOff className="h-4 w-4" />
             ) : (
               <Eye className="h-4 w-4" />
             )}
-            {showContract ? "Hide" : "View"} Contract
+            {showInvoice ? "Hide" : "View"} Invoice
           </Button>
         </CardTitle>
       </CardHeader>
-      {showContract && (
+      {showInvoice && (
         <CardContent>
           <div className="bg-white p-6 rounded-lg border space-y-6">
             <div className="text-center border-b pb-4">
-              <h2 className="text-xl font-bold">
-                PREFAB CONSTRUCTION CONTRACT
-              </h2>
+              <h2 className="text-xl font-bold">ORDER INVOICE</h2>
               <p className="text-sm text-gray-600 mt-2">
-                Contract No: PC-
-                {contractInfo.signatureTimestamp
-                  ? new Date(contractInfo.signatureTimestamp).getTime()
-                  : "N/A"}
+                Order Date: {new Date().toLocaleDateString()}
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -110,9 +90,6 @@ export const ContractDocument: React.FC<ContractDocumentProps> = ({
                   <p className="border-t pt-1 font-bold">
                     <strong>Total:</strong> {formatPrice(totalAmount)}
                   </p>
-                  <p>
-                    <strong>Contract Date:</strong> {getSignatureDate()}
-                  </p>
                 </div>
               </div>
             </div>
@@ -121,6 +98,10 @@ export const ContractDocument: React.FC<ContractDocumentProps> = ({
               <div className="text-sm bg-gray-50 p-3 rounded">
                 {deliveryAddress ? (
                   <>
+                    <p>
+                      <strong>Recipient:</strong> {deliveryAddress.firstName}{" "}
+                      {deliveryAddress.lastName} ({deliveryAddress.phone})
+                    </p>
                     <p>{deliveryAddress.street || "[No Street]"}</p>
                     <p>{deliveryAddress.subdivision || "[No Subdivision]"}</p>
                     {deliveryAddress.additionalAddressLine && (
@@ -155,28 +136,6 @@ export const ContractDocument: React.FC<ContractDocumentProps> = ({
                 <p>5. Warranty terms as specified in product documentation.</p>
               </div>
             </div>
-            <div className="border-t pt-4">
-              <h3 className="font-semibold mb-2">Customer Signature</h3>
-              <div className="flex items-center gap-4">
-                <img
-                  src={contractInfo.signature}
-                  alt="Customer Signature"
-                  className="border border-gray-300 rounded max-w-48 bg-white"
-                />
-                <div className="text-sm">
-                  <p>
-                    <strong>Signed by:</strong> {customerInfo.firstName}{" "}
-                    {customerInfo.lastName}
-                  </p>
-                  <p>
-                    <strong>Date:</strong> {getSignatureDate()}
-                  </p>
-                  <p>
-                    <strong>Time:</strong> {getSignatureTime()}
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
         </CardContent>
       )}
@@ -184,4 +143,4 @@ export const ContractDocument: React.FC<ContractDocumentProps> = ({
   );
 };
 
-export default ContractDocument;
+export default OrderInvoice;

@@ -50,13 +50,6 @@ export const validatePaymentInfo = (paymentInfo: PaymentInfo): boolean => {
     return logFailure("Delivery Address is incomplete");
   }
 
-  // --- MODIFICATION: The check for location images has been removed ---
-  // const hasLocationImages =
-  //   !!paymentInfo.locationImages && paymentInfo.locationImages.length > 0;
-  // if (!hasLocationImages) {
-  //   return logFailure("Location Images not uploaded");
-  // }
-
   if (paymentInfo.paymentTiming === "now") {
     const hasReceipts =
       Object.values(paymentInfo.paymentReceipts || {}).flat().length > 0;
@@ -69,9 +62,12 @@ export const validatePaymentInfo = (paymentInfo: PaymentInfo): boolean => {
   return true;
 };
 
+// --- THIS IS THE FIX ---
+// We only need to check if they agreed to the terms now.
 export const validateContractInfo = (contractInfo: ContractInfo): boolean => {
-  return !!(contractInfo.signature && contractInfo.agreedToTerms);
+  return contractInfo.agreedToTerms === true;
 };
+// --- END OF FIX ---
 
 export const isStepValid = (
   step: number,
@@ -85,7 +81,7 @@ export const isStepValid = (
     case 2:
       return validatePaymentInfo(paymentInfo);
     case 3:
-      return validateContractInfo(contractInfo);
+      return validateContractInfo(contractInfo); // This will now use the corrected function
     default:
       return false;
   }

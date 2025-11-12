@@ -82,7 +82,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
               onClick={() => handleBuyNow(product._id)}
               disabled={isOutOfStock} // ✏️ 4. DISABLE BUTTON
             >
-              {isOutOfStock ? "Out of Stock" : "Buy Now"}
+              {isOutOfStock ? "Out of Stock" : "Reserve Now"}
             </Button>
           </div>
         </div>

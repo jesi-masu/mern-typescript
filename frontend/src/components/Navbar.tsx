@@ -78,7 +78,7 @@ const Navbar = () => {
               to="/shop"
               className="text-gray-700 hover:text-blue-600 font-medium"
             >
-              Shop
+              Products
             </Link>
             <Link
               to="/projects"
@@ -247,7 +247,7 @@ const Navbar = () => {
                 className="text-gray-700 block px-3 py-2 rounded-md hover:bg-gray-50"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Shop
+                Products
               </Link>
               <Link
                 to="/projects"

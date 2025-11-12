@@ -15,20 +15,18 @@ export interface IOrder extends Document {
     firstName: string;
     lastName: string;
     email: string;
-    phoneNumber: string; // This is the BILLING phone
+    phoneNumber: string;
     deliveryAddress: {
-      // --- START: MODIFIED ---
-      firstName: string; // Recipient's First Name
-      lastName: string; // Recipient's Last Name
-      phone: string; // Recipient's Phone
+      firstName: string;
+      lastName: string;
+      phone: string;
       street: string;
-      subdivision: string; // Matched to frontend form
+      subdivision: string;
       additionalAddressLine?: string;
       cityMunicipality: string;
       province: string;
       postalCode: string;
       country: string;
-      // --- END: MODIFIED ---
     };
   };
   paymentInfo: {
@@ -90,7 +88,7 @@ const orderSchema: Schema = new Schema(
             lastName: { type: String, required: true },
             phone: { type: String, required: true },
             street: { type: String, required: true },
-            subdivision: { type: String, required: true }, // Changed from barangaySubdivision
+            subdivision: { type: String, required: true },
             additionalAddressLine: { type: String, required: false },
             cityMunicipality: { type: String, required: true },
             province: { type: String, required: true },
@@ -145,7 +143,7 @@ const orderSchema: Schema = new Schema(
     },
     contractInfo: {
       type: {
-        signature: { type: String, required: true },
+        signature: { type: String, required: false },
         agreedToTerms: { type: Boolean, required: true },
       },
       required: true,

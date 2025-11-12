@@ -270,9 +270,14 @@ const PaymentSelector: React.FC<PaymentSelectorProps> = ({
 
         {paymentMethod && paymentMode && (
           <div className="mt-6 pt-6 border-t">
-            <h3 className="text-base font-medium mb-4">
+            <h3 className="text-base font-medium mb-1">
               When would you like to pay?
             </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Select <strong>Pay Now</strong> to finalize your purchase
+              immediately, or choose <strong>Pay Later</strong> to reserve your
+              items and complete payment when you're ready.
+            </p>
             <RadioGroup
               value={paymentTiming}
               onValueChange={(val) =>
@@ -296,7 +301,7 @@ const PaymentSelector: React.FC<PaymentSelectorProps> = ({
                 <div>
                   <span className="font-medium">Pay Now</span>
                   <p className="text-sm text-gray-600">
-                    Upload your payment receipt to proceed.
+                    Pay today and upload your receipt to secure your item.
                   </p>
                 </div>
               </Label>
@@ -320,7 +325,7 @@ const PaymentSelector: React.FC<PaymentSelectorProps> = ({
                 <div>
                   <span className="font-medium">Pay Later</span>
                   <p className="text-sm text-gray-600">
-                    Submit your order now and pay later.
+                    Reserve you item now and pay later.
                   </p>
                 </div>
               </Label>

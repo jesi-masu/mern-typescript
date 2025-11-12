@@ -4,7 +4,7 @@ import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge"; // ✏️ 1. IMPORT BADGE
+import { Badge } from "@/components/ui/badge";
 import { Truck, Package, Box, Rotate3D, Check, X } from "lucide-react";
 import {
   Dialog,
@@ -26,6 +26,8 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeImage, setActiveImage] = useState(0);
+
+  const [isAutoPlayActive, setIsAutoPlayActive] = useState(true);
 
   useEffect(() => {
     const getProduct = async () => {
@@ -51,6 +53,32 @@ const ProductDetail = () => {
 
     getProduct();
   }, [id]);
+
+  // ✏️ 1. CREATE A CLEAN LIST OF ALL IMAGES
+  // This combines the main 'product.image' with the 'product.images' array
+  // and removes any duplicates or empty values.
+  const allImages = product
+    ? [product.image, ...(product.images || [])].filter(Boolean)
+    : [];
+  const uniqueImages = [...new Set(allImages)]; // Get only unique images
+
+  // ✏️ 2. Add useEffect for the image slideshow
+  useEffect(() => {
+    // Don't run the timer if auto-play is disabled or there's only one image
+    if (!isAutoPlayActive || uniqueImages.length <= 1) {
+      return;
+    }
+
+    const timer = setInterval(() => {
+      // Use the functional update to get the latest state
+      setActiveImage((prevImage) => {
+        return (prevImage + 1) % uniqueImages.length;
+      });
+    }, 6000); // 5000ms = 6 seconds
+
+    // Clear the interval when the component unmounts or dependencies change
+    return () => clearInterval(timer);
+  }, [isAutoPlayActive, uniqueImages.length]); // Re-run if autoplay or image count changes
 
   if (loading) {
     // ... (no change)
@@ -92,10 +120,8 @@ const ProductDetail = () => {
     );
   }
 
-  // ✏️ 2. DEFINE STOCK LOGIC
   const isOutOfStock = product.stock <= 0;
 
-  // --- START: MODIFICATION ---
   const handleBuyNow = () => {
     // ✏️ 3. ADD A GUARD FOR SAFETY
     if (isOutOfStock) return;
@@ -114,11 +140,14 @@ const ProductDetail = () => {
     // 2. Navigate to the correct route and pass the item in the state.
     navigate("/checkout", { state: { items: [itemToCheckout] } });
   };
-  // --- END: MODIFICATION ---
-
+  // ✏️ 3. Create a handler for thumbnail clicks to stop autoplay
+  const handleThumbnailClick = (index: number) => {
+    setIsAutoPlayActive(false); // Stop the auto-play
+    setActiveImage(index); // Set the clicked image
+  };
   return (
     <Layout>
-      <div className="container py-8">
+      <div className="container py-4">
         <Button
           variant="outline"
           className="mb-6"
@@ -142,26 +171,33 @@ const ProductDetail = () => {
                 </Badge>
               )}
 
-              <img
-                src={
-                  product.images && product.images.length > 0
-                    ? product.images[activeImage]
-                    : product.image
-                }
-                alt={product.productName}
-                className="w-full h-full object-cover"
-              />
+              {uniqueImages.map((imageSrc, index) => (
+                <img
+                  key={index}
+                  src={imageSrc}
+                  alt={`${product.productName} view ${index + 1}`}
+                  className={`
+                    absolute inset-0 w-full h-full object-cover
+                    transition-opacity duration-1000 ease-in-out
+                    ${activeImage === index ? "opacity-100" : "opacity-0"}
+                  `}
+                />
+              ))}
             </div>
-            <div className="grid grid-cols-3 gap-3">
-              {(product.images || []).map((image, index) => (
+
+            <div className="grid grid-cols-4 gap-3">
+              {uniqueImages.map((image, index) => (
                 <button
                   key={index}
-                  className={`h-20 rounded overflow-hidden border-2 ${
-                    activeImage === index
-                      ? "border-prefab-500"
-                      : "border-transparent"
-                  }`}
-                  onClick={() => setActiveImage(index)}
+                  className={`
+                    h-20 rounded overflow-hidden border-2
+                    ${
+                      activeImage === index
+                        ? "border-prefab-500"
+                        : "border-transparent"
+                    }
+                  `}
+                  onClick={() => handleThumbnailClick(index)}
                 >
                   <img
                     src={image}
@@ -225,7 +261,7 @@ const ProductDetail = () => {
                 onClick={handleBuyNow}
                 disabled={isOutOfStock}
               >
-                {isOutOfStock ? "Out of Stock" : "Buy Now"}
+                {isOutOfStock ? "Out of Stock" : "Reserve Now"}
               </Button>
 
               <Dialog>
