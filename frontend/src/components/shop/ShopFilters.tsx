@@ -56,22 +56,7 @@ const ShopFilters = ({
             />
           </div>
         </div>
-        {/* Price Range */}
-        <div className="mb-5">
-          <label className="block text-sm font-medium mb-2">
-            Price Range: {formatPrice(priceRange[0])} -{" "}
-            {formatPrice(priceRange[1])}
-          </label>
-          <Slider
-            defaultValue={[minPrice, maxPrice]}
-            min={minPrice}
-            max={maxPrice}
-            step={50000}
-            value={priceRange}
-            onValueChange={setPriceRange}
-            className="mt-2"
-          />
-        </div>
+
         {/* Categories */}
         <div className="mb-6">
           <label className="block text-sm font-medium mb-2">Categories</label>
