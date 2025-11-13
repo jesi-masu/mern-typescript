@@ -40,10 +40,17 @@ const ConfirmationModal = ({
         <div className="py-4 space-y-6">
           {/* 3. Critical Policy */}
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md">
-            <p className="font-semibold text-yellow-900">Please Note:</p>
+            <p className="font-semibold text-yellow-900">
+              Please Review This Policy
+            </p>
             <p className="text-yellow-800 text-sm">
-              Once your initial payment is made after your item is validated,
-              this reservation cannot be cancelled.
+              After our team validates your order, you will be asked for an
+              initial payment. Once that payment is processed, your reservation
+              is{" "}
+              <strong className="font-medium">
+                considered final and cannot be cancelled
+              </strong>
+              .
             </p>
           </div>
 

@@ -147,7 +147,7 @@ const ProductDetail = () => {
   };
   return (
     <Layout>
-      <div className="container py-4">
+      <div className="animate-fadeIn container py-4">
         <Button
           variant="outline"
           className="mb-6"

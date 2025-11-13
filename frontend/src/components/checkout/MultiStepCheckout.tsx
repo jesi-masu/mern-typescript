@@ -17,6 +17,7 @@ import CheckoutNavigation from "./CheckoutNavigation";
 import InstructionalModal from "@/components/checkout/InstructionalModal";
 import PersistentHelpButton from "@/components/checkout/PersistentHelpButton";
 import ConfirmationModal from "@/components/checkout/ConfirmationModal";
+import ReservationSuccessModal from "@/components/checkout/ReservationSuccessModal";
 
 // Import the product fetcher
 import { fetchProductById } from "@/services/productService";
@@ -102,6 +103,8 @@ const MultiStepCheckout = () => {
 
   // State for the new confirmation modal
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
   // State for the full product details
   const [fullProduct, setFullProduct] = useState<FullProduct | null>(null);
@@ -312,11 +315,13 @@ const MultiStepCheckout = () => {
       setIsConfirmModalOpen(false); // Close modal on success
       const orderedItemIds = items.map((item) => item.id);
       removeItems(orderedItemIds);
-      toast({
-        title: "Order placed successfully!",
-        description: `Your order #${newOrder._id} has been created.`,
-      });
-      navigate("/order-history");
+      // ✏️ 3. MODIFY THE SUCCESS LOGIC
+      // Instead of navigating, we close the confirm modal and open the success modal
+      setIsConfirmModalOpen(false);
+      setIsSuccessModalOpen(true);
+
+      // We no longer show a toast, as the modal replaces it.
+      // We no longer navigate, as the modal handler will do it.
     } catch (submitError: any) {
       console.error("Failed to place order:", submitError);
       toast({
@@ -325,14 +330,22 @@ const MultiStepCheckout = () => {
           submitError.message || "There was an error placing your order.",
         variant: "destructive",
       });
-      setIsConfirmModalOpen(false); // Close modal on failure
-      setIsSubmitting(false); // Re-enable buttons on failure
+      setIsConfirmModalOpen(false);
+      setIsSubmitting(false);
     }
+    // We can set submitting to false here, but it's handled in success/error
+    // setIsSubmitting(false); // This can be removed
   };
 
-  // New "trigger" function to open the confirmation modal
+  // "trigger" function to open the confirmation modal
   const handleTriggerSubmit = () => {
     setIsConfirmModalOpen(true);
+  };
+
+  // ✏️ 4. ADD A HANDLER FOR THE SUCCESS MODAL'S "OK" BUTTON
+  const handleSuccessModalClose = () => {
+    setIsSuccessModalOpen(false);
+    navigate("/order-history"); // Now we navigate
   };
 
   const stepValid = isStepValid(
@@ -354,6 +367,12 @@ const MultiStepCheckout = () => {
         onClose={() => setIsConfirmModalOpen(false)}
         onConfirm={handleOrderSubmit}
         isSubmitting={isSubmitting}
+      />
+
+      {/* ✏️ 5. RENDER THE NEW SUCCESS MODAL */}
+      <ReservationSuccessModal
+        isOpen={isSuccessModalOpen}
+        onClose={handleSuccessModalClose}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

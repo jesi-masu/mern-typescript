@@ -9,54 +9,51 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-// ✏️ 1. IMPORT A 'Check' ICON FOR THE BULLETS
 import { User, FileCheck, PenSquare, ChevronRight } from "lucide-react";
 
 type Props = {
   isOpen: boolean;
-  onClose: () => void; // This is the function we call on "OK"
+  onClose: () => void;
 };
-
-// ✏️ 2. UPDATED THE STEPS CONSTANT
 const STEPS = [
   {
     step: 1,
-    title: "Your Information",
+    title: "Contact & Delivery", // <-- Changed from "Your Information"
     description: [
-      "Fill in your personal contact and delivery address details.",
+      "Provide your contact details.",
+      "Confirm the delivery address and recipient information.", // <-- Consolidated all "address" info here.
     ],
     icon: <User className="h-10 w-10 text-prefab-600" />,
   },
   {
     step: 2,
-    title: "Uploads & Payment",
-    // Changed from a string to an array of strings
+    title: "Payment & Uploads", // <-- Clearer title
     description: [
-      "Select your payment method (Full or Installment).",
-      "Choose when would you like to pay. ",
+      "Select your payment plan (Full or Installment).",
+      "Choose your preferred payment schedule.", // <-- Clearer action
       "Upload your proof of payment (e.g., bank receipt).",
-      "Fill up the required information (Recepient & Delivery Address).",
-      "Provide photos of your installation site.",
+      "Upload required photos of your installation site.",
+      // <-- REMOVED the redundant "Recipient & Delivery Address" item
     ],
     icon: <FileCheck className="h-10 w-10 text-prefab-600" />,
   },
   {
     step: 3,
-    title: "Review & Finalize",
+    title: "Review & Confirm", // <-- More active title
     description: [
-      "Review the final order details and  the Terms & Conditions .",
-      "After placing a reservation, expect calls from our Customer Service for your item validation within 24 hours",
+      "Do a final review of your complete order summary.",
+      "Read and accept the Terms & Conditions.",
+      "Click 'Place Reservation' to submit.", // <-- Clarifies the final action
+      // <-- REMOVED the "24-hour call" message. It's better in the *next* modal.
     ],
     icon: <PenSquare className="h-10 w-10 text-prefab-600" />,
   },
 ];
-
 const InstructionalModal = ({ isOpen, onClose }: Props) => {
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = STEPS.length;
   const activeStepData = STEPS[currentStep - 1];
 
-  // Reset to step 1 every time the modal becomes visible
   useEffect(() => {
     if (isOpen) {
       setCurrentStep(1);
@@ -72,21 +69,18 @@ const InstructionalModal = ({ isOpen, onClose }: Props) => {
       <DialogContent
         className="sm:max-w-[480px]"
         onInteractOutside={(e) => {
-          // Prevent closing by clicking overlay
           e.preventDefault();
         }}
       >
         <DialogHeader>
           <DialogTitle className="text-2xl">
-            {/* I saw you changed this, nice! */}
-            Take a moment before you proceed
+            How Our Reservation Process Works
           </DialogTitle>
           <DialogDescription>
-            Here's a quick guide to our 3-step reservation process.
+            Here’s a quick guide on what to expect.
           </DialogDescription>
         </DialogHeader>
 
-        {/* Progress Bar */}
         <div className="flex items-center gap-3 pt-2">
           <span className="text-sm font-medium text-muted-foreground">
             Step {currentStep}/{totalSteps}
@@ -97,8 +91,6 @@ const InstructionalModal = ({ isOpen, onClose }: Props) => {
           />
         </div>
 
-        {/* ✏️ 3. UPDATED STEP CONTENT SECTION */}
-        {/* Increased min-h to comfortably fit the new list */}
         <div className="py-6 min-h-[210px]">
           {activeStepData && (
             <div className="flex items-start gap-6">
@@ -110,9 +102,6 @@ const InstructionalModal = ({ isOpen, onClose }: Props) => {
                   {activeStepData.title}
                 </h3>
 
-                {/* This logic now checks if the description is an array.
-                  If true, it renders a list. If false, it renders a paragraph.
-                */}
                 {Array.isArray(activeStepData.description) ? (
                   <ul className="space-y-2.5">
                     {activeStepData.description.map((item, index) => (
@@ -134,12 +123,10 @@ const InstructionalModal = ({ isOpen, onClose }: Props) => {
 
         <DialogFooter>
           {currentStep < totalSteps ? (
-            // Show "Next" button
             <Button onClick={handleNext} className="w-full">
               Next
             </Button>
           ) : (
-            // Show "OK, Got It!" button on the last step
             <Button
               onClick={onClose}
               className="w-full bg-prefab-600 hover:bg-prefab-700"
