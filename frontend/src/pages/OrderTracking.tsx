@@ -1,6 +1,6 @@
 // src/pages/OrderTracking.tsx
-import React from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useEffect } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,8 @@ const OrderTracking = () => {
   const navigate = useNavigate();
   const { token } = useAuth();
 
+  const location = useLocation();
+
   const {
     data: order,
     isLoading,
@@ -50,15 +52,27 @@ const OrderTracking = () => {
     queryKey: ["order", id],
     queryFn: () => fetchOrderById(id!, token),
     enabled: !!id && !!token,
-    refetchOnWindowFocus: true, // This is good, it keeps the data fresh when you switch tabs
-
-    // --- START: MODIFICATION ---
-    // Add this line to automatically refetch every 15 seconds
+    refetchOnWindowFocus: true,
     refetchInterval: 15000,
-    // --- END: MODIFICATION ---
   });
 
-  // ... rest of your component is unchanged
+  // ✏️ 3. PARSE THE URL AND HANDLE SCROLLING
+  const queryParams = new URLSearchParams(location.search);
+  const autoOpenPayment = queryParams.get("action") === "pay";
+  const hash = location.hash;
+
+  useEffect(() => {
+    // This effect runs when the page loads or the hash changes
+    if (hash === "#payment-stages") {
+      // Give the page a tiny moment to render, then scroll
+      setTimeout(() => {
+        const element = document.getElementById("payment-stages");
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 100); // 100ms delay
+    }
+  }, [hash]); // Only re-run if the hash changes
 
   if (isLoading) {
     return (
@@ -74,7 +88,8 @@ const OrderTracking = () => {
   if (isError) {
     return (
       <Layout>
-        <div className="container py-12 text-center bg-red-50 p-8 rounded-lg">
+        {/* ✏️ 1. Added 'animate-fadeIn' */}
+        <div className="container py-12 text-center bg-red-50 p-8 rounded-lg animate-fadeIn">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-red-800 mb-4">
             Could Not Load Order
@@ -91,7 +106,8 @@ const OrderTracking = () => {
   if (!order) {
     return (
       <Layout>
-        <div className="container py-12 text-center">
+        {/* ✏️ 2. Added 'animate-fadeIn' */}
+        <div className="container py-12 text-center animate-fadeIn">
           <h1 className="text-2xl font-bold mb-4">Order Not Found</h1>
           <p className="mb-6">The order you're looking for doesn't exist.</p>
           <Button onClick={() => navigate("/order-history")}>
@@ -102,9 +118,18 @@ const OrderTracking = () => {
     );
   }
 
+  // ✏️ 1. THIS IS THE MISSING LINE!
+  // This flattens the receipts object into a single array
+  const allReceipts = [
+    ...(order.paymentInfo?.paymentReceipts?.initial || []),
+    ...(order.paymentInfo?.paymentReceipts?.pre_delivery || []),
+    ...(order.paymentInfo?.paymentReceipts?.final || []),
+  ];
+
   return (
     <Layout>
-      <div className="container py-8 max-w-6xl">
+      {/* ✏️ 3. Added 'animate-fadeIn' to the main content wrapper */}
+      <div className="container py-8 max-w-6xl animate-fadeIn">
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold">Order Tracking</h1>
@@ -124,34 +149,36 @@ const OrderTracking = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <OrderStatusCard order={order} />
-            <PaymentStatusCard order={order} />
 
-            {order.paymentInfo?.paymentReceipts &&
-              order.paymentInfo.paymentReceipts.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Uploaded Payment Proofs</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2 text-sm">
-                      {order.paymentInfo.paymentReceipts.map(
-                        (receipt, index) => (
-                          <li key={index}>
-                            <a
-                              href={receipt}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline"
-                            >
-                              Receipt #{index + 1}
-                            </a>
-                          </li>
-                        )
-                      )}
-                    </ul>
-                  </CardContent>
-                </Card>
-              )}
+            <PaymentStatusCard
+              order={order!}
+              autoOpenPayment={autoOpenPayment}
+            />
+
+            {/* This receipt logic is now correct */}
+            {allReceipts.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Uploaded Payment Proofs</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 text-sm">
+                    {allReceipts.map((receipt, index) => (
+                      <li key={index}>
+                        <a
+                          href={receipt}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          Receipt #{index + 1}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
           </div>
           <div className="space-y-6">
             <OrderDetailsSidebar order={order} />

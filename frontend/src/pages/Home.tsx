@@ -29,9 +29,9 @@ const Home = () => {
           <Banner />
         </div>
 
-        <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
+        {/* <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
           <StatisticsSection />
-        </div>
+        </div> */}
 
         <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
           <Featured />
@@ -40,10 +40,10 @@ const Home = () => {
         <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
           <Collections />
         </div>
-
+        {/* 
         <div className="animate-fade-in" style={{ animationDelay: "0.4s" }}>
           <CreativeDesignsCarousel />
-        </div>
+        </div> */}
 
         <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
           <FeaturesSection />
@@ -68,10 +68,10 @@ const Home = () => {
         <div className="animate-fade-in" style={{ animationDelay: "0.8s" }}>
           <PrefabVsConventionalSection />
         </div>
-
+        {/* 
         <div className="animate-fade-in" style={{ animationDelay: "0.9s" }}>
           <TestimonialsSection />
-        </div>
+        </div> */}
 
         <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
           <PhilippinesMapSection />

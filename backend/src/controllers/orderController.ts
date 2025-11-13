@@ -22,30 +22,40 @@ const getAuthUser = (req: Request): AuthenticatedUser => {
   return req.user as AuthenticatedUser;
 };
 
-// A central error handler for this controller
-const handleControllerError = (res: Response, error: any, context: string) => {
+// ✏️ 1. UPDATED THE ERROR HANDLER TO RETURN 'void'
+// This fixes the 'catch' block return type for all controllers
+const handleControllerError = (
+  res: Response,
+  error: any,
+  context: string
+): void => {
   console.error(`Error in ${context}:`, error.message);
 
   // Send specific status codes based on error messages
   if (error.message.includes("not found")) {
-    return res.status(404).json({ message: error.message });
+    res.status(404).json({ message: error.message });
+    return;
   }
   if (
     error.message.includes("Forbidden") ||
-    error.message.includes("not authenticated")
+    error.message.includes("not authenticated") ||
+    error.message.includes("not authorized")
   ) {
-    return res.status(403).json({ message: error.message });
+    res.status(403).json({ message: error.message });
+    return;
   }
   if (
     error.message.includes("Invalid") ||
     error.message.includes("required fields") ||
-    error.message.includes("Not enough stock")
+    error.message.includes("Not enough stock") ||
+    error.message.includes("no longer be cancelled")
   ) {
-    return res.status(400).json({ message: error.message });
+    res.status(400).json({ message: error.message });
+    return;
   }
 
   // Default server error
-  return res.status(500).json({ message: `Server error during ${context}.` });
+  res.status(500).json({ message: `Server error during ${context}.` });
 };
 
 // --- CONTROLLER FUNCTIONS ---
@@ -71,13 +81,13 @@ export const createOrder: RequestHandler = async (req, res) => {
 export const updateOrder: RequestHandler = async (req, res) => {
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    res.status(400).json({ message: "Invalid Order ID format." }); // ✅ Fixed
+    res.status(400).json({ message: "Invalid Order ID format." });
     return;
   }
 
   try {
     const user = getAuthUser(req);
-    const userName = getUserName(req); // Get the name for logging
+    const userName = getUserName(req);
 
     // Call the service
     const updatedOrder = await OrderService.updateOrderLogic(
@@ -90,6 +100,31 @@ export const updateOrder: RequestHandler = async (req, res) => {
     res.status(200).json(updatedOrder);
   } catch (error: any) {
     handleControllerError(res, error, "updateOrder");
+  }
+};
+
+export const cancelOrder: RequestHandler = async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    // FIXED: Send the response, then return.
+    res.status(400).json({ message: "Invalid Order ID format." });
+    return;
+  }
+
+  try {
+    const user = getAuthUser(req);
+    const userName = getUserName(req); // For logging
+
+    // Call the service to do the work
+    const cancelledOrder = await OrderService.cancelOrderLogic(
+      id,
+      user._id,
+      userName
+    );
+
+    res.status(200).json(cancelledOrder);
+  } catch (error: any) {
+    handleControllerError(res, error, "cancelOrder"); // This now returns void
   }
 };
 
@@ -115,7 +150,8 @@ export const getOrders: RequestHandler = async (req, res) => {
 export const getOrderById: RequestHandler = async (req, res) => {
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
-    res.status(400).json({ message: "Invalid Order ID format." }); // ✅ Fixed
+    // ✏️ 4. FIXED THE PATTERN (send, then return)
+    res.status(400).json({ message: "Invalid Order ID format." });
     return;
   }
 

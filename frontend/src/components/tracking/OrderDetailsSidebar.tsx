@@ -1,11 +1,15 @@
-// frontend/src/components/tracking/OrderDetailsSidebar.tsx
-// (This is the complete, final file)
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Phone, Mail, User, Landmark } from "lucide-react";
-import { Order } from "../../types/order"; // This imports the correct, new Order type
+import { MapPin, Phone, Mail, User, Landmark, ListTree } from "lucide-react"; // ✏️ 1. IMPORT 'ListTree'
+import { Order } from "../../types/order";
 import { Separator } from "../ui/separator";
+// ✏️ 2. IMPORT 'Accordion'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface OrderDetailsSidebarProps {
   order: Order;
@@ -27,7 +31,6 @@ const formatDate = (dateString: string) => {
   });
 };
 
-// Updated to use the correct fields
 const formatFullAddress = (
   address: Order["customerInfo"]["deliveryAddress"]
 ) => {
@@ -46,9 +49,8 @@ const formatFullAddress = (
 export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
   order,
 }) => {
-  // Read from the correct nested locations
-  const customer = order.customerInfo; // This is the billing/account info
-  const address = order.customerInfo.deliveryAddress; // This is the recipient/delivery info
+  const customer = order.customerInfo;
+  const address = order.customerInfo.deliveryAddress;
 
   return (
     <div className="space-y-6">
@@ -57,47 +59,106 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
           <CardTitle>Products in this Order</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* (Product list is correct) */}
-          <div className="space-y-4">
-            {order.products.map((item, index) => (
-              <div key={item.productId._id}>
-                <div className="flex gap-4">
-                  <img
-                    src={
-                      item.productId.image ||
-                      "https://placehold.co/400x300/E2E8F0/4A5568?text=No+Image"
-                    }
-                    alt={item.productId.productName}
-                    className="w-20 h-20 object-cover rounded flex-shrink-0"
-                  />
-                  <div className="min-w-0">
-                    <h3
-                      className="font-medium truncate"
-                      title={item.productId.productName}
-                    >
-                      {item.productId.productName}
-                    </h3>
-                    {item.productId.productShortDescription && (
-                      <p
-                        className="text-sm text-gray-600 truncate"
-                        title={item.productId.productShortDescription}
+          {/* ✏️ 1. Reduced vertical spacing between products */}
+          <div className="space-y-3">
+            {order.products.map((item, index) => {
+              const hasParts =
+                item.productId.productParts &&
+                item.productId.productParts.length > 0;
+
+              return (
+                <div key={item.productId._id}>
+                  {/* ✏️ 2. Reduced gap between image and text */}
+                  <div className="flex gap-3">
+                    <img
+                      src={
+                        item.productId.image ||
+                        "https://placehold.co/400x300/E2E8F0/4A5568?text=No+Image"
+                      }
+                      alt={item.productId.productName}
+                      // ✏️ 3. Made image smaller
+                      className="w-16 h-16 object-cover rounded flex-shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <h3
+                        className="font-semibold text-base truncate" // ✏️ 4. Made title 'text-base'
+                        title={item.productId.productName}
                       >
-                        {item.productId.productShortDescription}
+                        {item.productId.productName}
+                      </h3>
+                      {item.productId.productShortDescription && (
+                        <p
+                          // ✏️ 5. Made description 'text-xs'
+                          className="text-xs text-gray-500 truncate"
+                          title={item.productId.productShortDescription}
+                        >
+                          {item.productId.productShortDescription}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        {" "}
+                        {/* ✏️ 6. Made quantity 'text-xs' */}
+                        Quantity: {item.quantity}
                       </p>
-                    )}
-                    <p className="text-sm text-gray-600">
-                      Quantity: {item.quantity}
-                    </p>
-                    <p className="text-blue-600 font-semibold text-sm">
-                      {formatPrice(item.productId.productPrice)} each
-                    </p>
+                      <p className="text-blue-600 font-semibold text-sm mt-0.5">
+                        {" "}
+                        {/* Kept price at text-sm to stand out */}
+                        {formatPrice(item.productId.productPrice)}
+                      </p>
+                    </div>
                   </div>
+
+                  {/* (No changes to the "Parts" accordion logic) */}
+                  {hasParts && (
+                    <Accordion
+                      type="single"
+                      collapsible
+                      className="w-full mt-2" // ✏️ 7. Reduced top margin
+                    >
+                      <AccordionItem value="item-1" className="border-b-0">
+                        <AccordionTrigger className="text-xs font-medium py-1.5 text-gray-600 hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <ListTree className="h-3.5 w-3.5" />
+                            <span>
+                              View Included Parts (
+                              {item.productId.productParts!.length})
+                            </span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="py-2 space-y-3 max-h-48 overflow-y-auto pr-2">
+                            {item.productId.productParts!.map((part) => (
+                              <div
+                                key={part._id}
+                                className="flex items-center gap-2.5"
+                              >
+                                <img
+                                  src={part.image}
+                                  alt={part.name}
+                                  className="h-10 w-10 rounded object-cover flex-shrink-0 border"
+                                />
+                                <div className="flex-1">
+                                  <span className="font-medium text-gray-800 text-xs">
+                                    {part.name}
+                                  </span>
+                                  <p className="text-gray-500 text-xs">
+                                    Quantity: {part.quantity}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  )}
+
+                  {index < order.products.length - 1 && (
+                    <Separator className="mt-3" /> // ✏️ 8. Reduced separator margin
+                  )}
                 </div>
-                {index < order.products.length - 1 && (
-                  <Separator className="mt-4" />
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -107,7 +168,6 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
           <CardTitle>Customer & Delivery</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
-          {/* Recipient's info (from 'address' object) */}
           {address && (
             <>
               <div className="flex items-start gap-3">
@@ -122,14 +182,14 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
               </div>
             </>
           )}
-          {/* Account email (from 'customer' object) */}
+
           {customer && (
             <div className="flex items-start gap-3">
               <Mail className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
               <span>{customer.email}</span>
             </div>
           )}
-          {/* Delivery address details (from 'address' object) */}
+
           {address && (
             <div className="space-y-3 pt-3 border-t">
               <div className="flex items-start gap-3">
@@ -148,7 +208,6 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
       </Card>
 
       <Card>
-        {/* (Order Summary is correct) */}
         <CardHeader>
           <CardTitle>Order Summary</CardTitle>
         </CardHeader>
@@ -167,7 +226,6 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
       </Card>
 
       <Card>
-        {/* (Need Help? is correct) */}
         <CardHeader>
           <CardTitle>Need Help?</CardTitle>
         </CardHeader>

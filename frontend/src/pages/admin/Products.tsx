@@ -112,7 +112,7 @@ const Products: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 p-4 md:p-4 bg-gray-50 min-h-screen">
+    <div className="animate-fadeIn space-y-6 p-4 md:p-4 bg-gray-50 min-h-screen">
       <ProductHeader productCount={products.length} totalStock={totalStock} />
       <hr className="border-t border-gray-200" />
 

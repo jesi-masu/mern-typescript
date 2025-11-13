@@ -9,6 +9,7 @@ import {
   AlertCircle,
   Clock,
   Info,
+  XCircle,
 } from "lucide-react";
 import { PaymentUpload } from "@/components/customer/PaymentUpload";
 import { OrderDetail, PaymentStatus } from "@/types/order";
@@ -19,8 +20,10 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
+// ✏️ 1. UPDATE THE 'props' INTERFACE
 interface PaymentStatusCardProps {
   order: OrderDetail;
+  autoOpenPayment?: boolean; // Add this line to accept the new prop
 }
 
 const paymentStatusSteps = [
@@ -60,11 +63,16 @@ const formatPrice = (price: number) => {
   }).format(price);
 };
 
+// ✏️ 2. RECEIVE THE NEW PROP IN THE COMPONENT
 export const PaymentStatusCard: React.FC<PaymentStatusCardProps> = ({
   order,
+  autoOpenPayment = false, // Set a default value
 }) => {
   // --- MODIFICATION: Define the upload limit ---
   const UPLOAD_LIMIT = 3;
+
+  // ✏️ 3. ADD THE 'isCancelled' CHECK
+  const isCancelled = order.orderStatus === "Cancelled";
 
   const currentStatus = order.paymentInfo?.paymentStatus || "Pending";
   const currentPaymentStatusIndex = paymentStatusSteps.findIndex(
@@ -143,6 +151,29 @@ export const PaymentStatusCard: React.FC<PaymentStatusCardProps> = ({
   };
   const currentStageIndex = getCurrentStageIndex();
 
+  if (isCancelled) {
+    return (
+      <Card className="opacity-70 bg-gray-50">
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle>Payment Status</CardTitle>
+            <Badge className="bg-red-100 text-red-800">Cancelled</Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center text-center h-40 gap-3">
+            <XCircle className="h-12 w-12 text-red-500" />
+            <h3 className="text-lg font-semibold text-gray-800">
+              Reservation Cancelled
+            </h3>
+            <p className="text-sm text-gray-600">
+              Payment is not required as this reservation has been cancelled.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
   return (
     <Card>
       <CardHeader>
@@ -200,30 +231,40 @@ export const PaymentStatusCard: React.FC<PaymentStatusCardProps> = ({
               </span>
             </div>
           </div>
+          {/* --- Installment Payment Section --- */}
           {order.paymentInfo?.paymentMethod === "installment" && (
-            <div className="space-y-4 pt-4">
+            // ✏️ 5. ADD THE 'id' FOR SCROLLING
+            <div id="payment-stages" className="space-y-4 pt-4">
               <Separator />
               <h4 className="font-semibold text-gray-800">Payment Stages</h4>
+
+              <p className="text-sm text-muted-foreground">
+                This is where you can upload your payment receipts for each
+                stage.
+              </p>
+
               <div className="space-y-3">
                 {paymentStages.map((stage, index) => {
                   const isCompleted = index <= currentStageIndex;
                   const isNextPayable = index === currentStageIndex + 1;
                   const isFutureStage = index > currentStageIndex + 1;
-
-                  // --- MODIFICATION: Check existing receipt count for the current stage ---
+                  // ... (receiptCount, isClickable, etc. - NO CHANGE) ...
                   const receiptCount =
                     order.paymentInfo.paymentReceipts?.[stage.stageKey]
                       ?.length || 0;
-
-                  // --- MODIFICATION: A stage is only clickable if it's next AND under the limit ---
                   const isClickable =
                     isNextPayable && receiptCount < UPLOAD_LIMIT;
                   const limitReached =
                     isNextPayable && receiptCount >= UPLOAD_LIMIT;
-
                   const Icon = stage.icon;
+
                   return (
-                    <Collapsible key={stage.id} disabled={!isClickable}>
+                    // ✏️ 7. ADD THE 'defaultOpen' PROP
+                    <Collapsible
+                      key={stage.id}
+                      defaultOpen={autoOpenPayment && isNextPayable}
+                      disabled={!isClickable}
+                    >
                       <CollapsibleTrigger asChild disabled={!isClickable}>
                         <div
                           className={`relative overflow-hidden p-3 rounded-lg border-2 flex items-start gap-3 transition-all ${

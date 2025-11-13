@@ -7,7 +7,8 @@ import {
   getOrderById,
   updateOrder,
   getUserOrders,
-  getAllUploads, // <-- IMPORT THE NEW CONTROLLER
+  getAllUploads,
+  cancelOrder,
 } from "../controllers/orderController";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { checkRole } from "../middleware/checkRole";
@@ -18,10 +19,14 @@ const router = express.Router();
 router.get("/my-orders", authMiddleware, checkRole(["client"]), getUserOrders);
 router.post("/", authMiddleware, checkRole(["client"]), createOrder);
 
+// ✏️ 2. ADD THE NEW CANCELLATION ROUTE
+// This allows a client to cancel their *own* order
+router.patch("/:id/cancel", authMiddleware, checkRole(["client"]), cancelOrder);
+
 // --- Admin/Personnel facing routes ---
 router.get("/", authMiddleware, checkRole(["admin", "personnel"]), getOrders);
 
-// ✅ ADD THE NEW ROUTE FOR FETCHING ALL UPLOADS
+// route for fetching uploads
 router.get(
   "/uploads",
   authMiddleware,

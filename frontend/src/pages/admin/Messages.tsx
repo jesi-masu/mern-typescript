@@ -177,7 +177,7 @@ const Messages = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50 p-6 space-y-6">
+    <div className="animate-fadeIn min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50 p-6 space-y-6">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div>
           <h1 className="text-4xl font-bold text-slate-900 tracking-tight">

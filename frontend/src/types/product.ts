@@ -14,6 +14,7 @@ export interface ProductSpecifications {
 
 // --- 1. ADD THIS NEW INTERFACE FOR A SINGLE PART ---
 export interface IProductPart {
+  _id: string;
   name: string;
   quantity: number;
   price?: number;

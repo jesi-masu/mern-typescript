@@ -1,3 +1,5 @@
+// frontend/src/components/customer/dashboard-components/CustomerShoppingTab.tsx
+
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, AlertCircle } from "lucide-react";
@@ -150,7 +152,8 @@ const CustomerShoppingTab = () => {
 
   if (isError) {
     return (
-      <div className="flex flex-col justify-center items-center h-64 bg-red-50 text-red-700 rounded-lg p-4">
+      // ✏️ 1. ADDED 'animate-fadeIn' TO THE ERROR BLOCK
+      <div className="flex flex-col justify-center items-center h-64 bg-red-50 text-red-700 rounded-lg p-4 animate-fadeIn">
         <AlertCircle className="h-8 w-8 mb-2" />
         <h3 className="text-lg font-semibold">Failed to Load Products</h3>
         <p>
@@ -165,17 +168,21 @@ const CustomerShoppingTab = () => {
       selectedItems.has(item.id)
     );
     return (
-      <CheckoutSummary
-        selectedCartItems={selectedCartItems}
-        onBackToCart={() => setShowCheckout(false)}
-        onProceedToCheckout={handleProceedToCheckout}
-        getSelectedItemsTotal={getSelectedItemsTotal}
-      />
+      // ✏️ 2. ADDED 'animate-fadeIn' TO THE CHECKOUT VIEW
+      <div className="animate-fadeIn">
+        <CheckoutSummary
+          selectedCartItems={selectedCartItems}
+          onBackToCart={() => setShowCheckout(false)}
+          onProceedToCheckout={handleProceedToCheckout}
+          getSelectedItemsTotal={getSelectedItemsTotal}
+        />
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    // ✏️ 3. ADDED 'animate-fadeIn' TO THE MAIN CONTENT
+    <div className="space-y-6 animate-fadeIn">
       <CartSummaryCard
         totalItems={getTotalItems()}
         totalPrice={getTotalPrice()}

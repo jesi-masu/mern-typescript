@@ -10,7 +10,9 @@ import {
   ClipboardList,
   CreditCard,
   ChevronDown,
-  Hash, // Receipt icon removed
+  Hash,
+  XCircle,
+  Loader2,
 } from "lucide-react";
 import { Order, PaymentStatus } from "@/types/order";
 import {
@@ -19,6 +21,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
+import { useCancelReservation } from "@/hooks/useUserOrders";
 
 interface OrderHistoryCardProps {
   order: Order;
@@ -27,7 +30,6 @@ interface OrderHistoryCardProps {
 const getStatusClasses = (
   status: Order["orderStatus"] | PaymentStatus
 ): string => {
-  // ... (no change in this function)
   const baseClasses = "font-semibold border-transparent text-xs px-2.5 py-1";
   switch (status) {
     case "Pending":
@@ -54,8 +56,6 @@ const getStatusClasses = (
   }
 };
 
-// --- START: MODIFICATION (1/3) ---
-// Added currencyDisplay: "symbol" to show '₱'
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat("en-PH", {
     style: "currency",
@@ -63,7 +63,6 @@ const formatPrice = (price: number) => {
     currencyDisplay: "symbol",
   }).format(price);
 };
-// --- END: MODIFICATION (1/3) ---
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -79,17 +78,32 @@ export const OrderHistoryCard: React.FC<OrderHistoryCardProps> = ({
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = React.useState(false);
 
+  const { mutate: cancelReservation, isPending: isCancelling } =
+    useCancelReservation();
+
   const displayProduct = order.products?.[0]?.productId;
   const currentPaymentStatus = order.paymentInfo?.paymentStatus || "Pending";
+
+  const handleCancel = () => {
+    if (
+      window.confirm(
+        "Are you sure you want to cancel this reservation? This action cannot be undone."
+      )
+    ) {
+      cancelReservation(order._id);
+    }
+  };
 
   if (!displayProduct) {
     return null;
   }
 
   return (
-    <Card className="overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white">
-      {/* --- Card Header (Made smaller) --- */}
-      {/* --- START: MODIFICATION (2/3) --- */}
+    <Card
+      className={`overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white ${
+        order.orderStatus === "Cancelled" ? "opacity-60 bg-gray-50" : ""
+      }`}
+    >
       <div className="bg-gray-50 p-2 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <div className="flex items-center gap-1.5">
@@ -106,19 +120,15 @@ export const OrderHistoryCard: React.FC<OrderHistoryCardProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-1.5 self-end sm:self-center">
-          {/* Receipt icon removed */}
           <span className="text-sm text-muted-foreground">Total:</span>
           <span className="text-lg font-bold text-blue-600">
             {formatPrice(order.totalAmount)}
           </span>
         </div>
       </div>
-      {/* --- END: MODIFICATION (2/3) --- */}
 
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        {/* --- Main Body (Made smaller) --- */}
         <div className="p-3 flex flex-col sm:flex-row justify-between items-start gap-3">
-          {/* Left Side: Product Info */}
           <div className="flex items-start gap-3 flex-1">
             <img
               src={
@@ -126,7 +136,7 @@ export const OrderHistoryCard: React.FC<OrderHistoryCardProps> = ({
                 "https://placehold.co/150x150/E2E8F0/4A5568?text=No+Image"
               }
               alt={displayProduct.productName}
-              className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border" // Reduced size
+              className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border"
             />
             <div className="space-y-1">
               <p className="font-semibold text-gray-900 leading-tight">
@@ -148,7 +158,6 @@ export const OrderHistoryCard: React.FC<OrderHistoryCardProps> = ({
             </div>
           </div>
 
-          {/* Right Side: Status Info */}
           <div className="flex flex-row sm:flex-col items-start sm:items-end gap-2 w-full sm:w-auto">
             <div className="flex items-center gap-2">
               <ClipboardList className="h-3.5 w-3.5 text-muted-foreground" />
@@ -165,7 +174,6 @@ export const OrderHistoryCard: React.FC<OrderHistoryCardProps> = ({
           </div>
         </div>
 
-        {/* --- Collapsible Product List (Made smaller) --- */}
         {order.products.length > 1 && (
           <CollapsibleContent className="px-3 pb-3 space-y-3">
             <Separator />
@@ -183,7 +191,7 @@ export const OrderHistoryCard: React.FC<OrderHistoryCardProps> = ({
                     "https://placehold.co/100x100/E2E8F0/4A5568?text=N/A"
                   }
                   alt={item.productId.productName}
-                  className="w-10 h-10 object-cover rounded border" // Reduced size
+                  className="w-10 h-10 object-cover rounded border"
                 />
                 <div className="flex-grow min-w-0">
                   <p className="font-medium text-gray-700 truncate">
@@ -209,8 +217,6 @@ export const OrderHistoryCard: React.FC<OrderHistoryCardProps> = ({
           </CollapsibleContent>
         )}
 
-        {/* --- Footer Actions (Made smaller) --- */}
-        {/* --- START: MODIFICATION (3/3) --- */}
         <div className="bg-gray-50 px-3 py-2 flex justify-between items-center gap-2 border-t">
           <div className="flex items-center gap-2">
             {order.products.length > 1 && (
@@ -229,26 +235,71 @@ export const OrderHistoryCard: React.FC<OrderHistoryCardProps> = ({
                 </Button>
               </CollapsibleTrigger>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(`/product/${displayProduct._id}`)}
-              className="text-gray-600 hover:text-gray-900 hover:bg-gray-200"
-            >
-              <Package className="h-4 w-4 mr-2" />
-              View Product
-            </Button>
+
+            {order.orderStatus !== "Cancelled" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(`/product/${displayProduct._id}`)}
+                className="text-gray-600 hover:text-gray-900 hover:bg-gray-200"
+              >
+                <Package className="h-4 w-4 mr-2" />
+                View Product
+              </Button>
+            )}
           </div>
-          <Button
-            size="sm"
-            onClick={() => navigate(`/order-tracking/${order._id}`)}
-            className="bg-blue-600 text-white hover:bg-blue-700"
-          >
-            <Eye className="h-4 w-4 mr-2" />
-            Track Order
-          </Button>
+
+          <div className="flex items-center gap-2">
+            {order.orderStatus === "Pending" && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleCancel}
+                disabled={isCancelling}
+              >
+                {isCancelling ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <XCircle className="h-4 w-4 mr-2" />
+                )}
+                Cancel Reservation
+              </Button>
+            )}
+
+            {order.orderStatus === "Processing" && (
+              <Button
+                size="sm"
+                className="bg-green-600 hover:bg-green-700"
+                // This now navigates to the tracking page with a query and hash
+                onClick={() =>
+                  navigate(
+                    `/order-tracking/${order._id}?action=pay#payment-stages`
+                  )
+                }
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                Proceed to Payment
+              </Button>
+            )}
+
+            {!["Pending", "Cancelled"].includes(order.orderStatus) && (
+              <Button
+                size="sm"
+                onClick={() => navigate(`/order-tracking/${order._id}`)}
+                className="bg-blue-600 text-white hover:bg-blue-700"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Track Order
+              </Button>
+            )}
+
+            {order.orderStatus === "Cancelled" && (
+              <span className="text-sm text-red-600 font-medium px-3">
+                Reservation Cancelled
+              </span>
+            )}
+          </div>
         </div>
-        {/* --- END: MODIFICATION (3/3) --- */}
       </Collapsible>
     </Card>
   );

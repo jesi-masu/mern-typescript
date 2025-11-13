@@ -245,7 +245,7 @@ const ManagePersonnelPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8 p-4 sm:p-8 bg-gray-50 min-h-screen">
+    <div className="animate-fadeIn space-y-8 p-4 sm:p-8 bg-gray-50 min-h-screen">
       <PersonnelStatsHeader
         totalCount={totalCount}
         activeCount={activeCount}

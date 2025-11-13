@@ -2,8 +2,14 @@ import React from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, ChevronDown } from "lucide-react";
-// --- THIS IMPORT WILL NOW WORK ---
+import {
+  Eye,
+  ChevronDown,
+  CreditCard,
+  XCircle,
+  Loader2,
+  Package,
+} from "lucide-react";
 import { Order, PaymentStatus } from "@/types/order";
 import { useNavigate } from "react-router-dom";
 import {
@@ -12,13 +18,13 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
+import { useCancelReservation } from "@/hooks/useUserOrders";
 
 interface OrderCardItemProps {
-  order: Order; // Use the correct 'Order' type
+  order: Order;
 }
 
 const getStatusClasses = (
-  // Use the correct 'Order' type
   status: Order["orderStatus"] | PaymentStatus
 ): string => {
   const baseClasses = "font-semibold border-transparent text-xs px-2 py-0.5";
@@ -66,19 +72,39 @@ export const OrderCardItem: React.FC<OrderCardItemProps> = ({ order }) => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = React.useState(false);
 
-  // --- THIS LOGIC IS NOW CORRECT ---
+  // ✏️ 5. CALL THE CANCELLATION HOOK
+  const { mutate: cancelReservation, isPending: isCancelling } =
+    useCancelReservation();
+
   const displayProduct = order.products?.[0]?.productId;
   const currentPaymentStatus = order.paymentInfo?.paymentStatus || "Pending";
+
+  // ✏️ 6. ADD THE HANDLER FUNCTION
+  const handleCancel = () => {
+    // 💡 As we discussed, you can swap this with your 'ConfirmationModal'
+    // by lifting the state up to the parent page.
+    if (
+      window.confirm(
+        "Are you sure you want to cancel this reservation? This action cannot be undone."
+      )
+    ) {
+      cancelReservation(order._id);
+    }
+  };
 
   if (!displayProduct) {
     return null;
   }
 
   return (
-    <Card className="hover:shadow-md transition-shadow duration-300 bg-white">
+    // ✏️ 7. ADD FADING FOR CANCELLED ORDERS
+    <Card
+      className={`hover:shadow-md transition-shadow duration-300 bg-white ${
+        order.orderStatus === "Cancelled" ? "opacity-60 bg-gray-50" : ""
+      }`}
+    >
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <div className="p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          {/* --- Left Side: Product Info --- */}
           <div className="flex items-center gap-4 flex-1 min-w-0">
             <img
               src={
@@ -97,7 +123,6 @@ export const OrderCardItem: React.FC<OrderCardItemProps> = ({ order }) => {
                 {displayProduct.productName}
               </p>
 
-              {/* Your requested short description */}
               {displayProduct.productShortDescription && (
                 <p
                   className="text-xs text-muted-foreground truncate"
@@ -113,12 +138,13 @@ export const OrderCardItem: React.FC<OrderCardItemProps> = ({ order }) => {
             </div>
           </div>
 
-          {/* --- Right Side: Status, Price & Actions --- */}
           <div className="flex flex-col items-stretch sm:items-end gap-3 w-full sm:w-auto pt-4 sm:pt-0 border-t sm:border-none">
             <p className="font-bold text-xl text-blue-500 text-left sm:text-right">
               {formatPrice(order.totalAmount)}
             </p>
+            {/* ✏️ 8. UPDATED THIS BLOCK TO BE DYNAMIC */}
             <div className="flex items-center justify-between sm:justify-end gap-2 w-full">
+              {/* Badges */}
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1.5">
                   <p className="text-xs text-muted-foreground">Order:</p>
@@ -133,20 +159,64 @@ export const OrderCardItem: React.FC<OrderCardItemProps> = ({ order }) => {
                   </Badge>
                 </div>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => navigate(`/order-tracking/${order._id}`)}
-                className="flex-shrink-0"
-              >
-                <Eye className="h-4 w-4 mr-2" />
-                Track Order
-              </Button>
+
+              {/* Conditional Buttons */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {order.orderStatus === "Pending" && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleCancel}
+                    disabled={isCancelling}
+                    className="flex-shrink-0"
+                  >
+                    {isCancelling ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <XCircle className="h-4 w-4" />
+                    )}
+                    <span className="ml-2 hidden sm:inline">Cancel</span>
+                  </Button>
+                )}
+
+                {/* ✏️ 2. UPDATED THIS 'onClick' HANDLER */}
+                {order.orderStatus === "Processing" && (
+                  <Button
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700 flex-shrink-0"
+                    onClick={() =>
+                      navigate(
+                        `/order-tracking/${order._id}?action=pay#payment-stages`
+                      )
+                    }
+                  >
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Pay Now
+                  </Button>
+                )}
+
+                {!["Pending", "Cancelled"].includes(order.orderStatus) && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => navigate(`/order-tracking/${order._id}`)}
+                    className="flex-shrink-0"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Track Order
+                  </Button>
+                )}
+
+                {order.orderStatus === "Cancelled" && (
+                  <span className="text-sm text-red-600 font-medium px-3 flex-shrink-0">
+                    Cancelled
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* --- THIS COLLAPSIBLE SECTION WILL NOW WORK --- */}
         {order.products.length > 1 && (
           <>
             <CollapsibleContent className="px-4 pb-4 space-y-3">

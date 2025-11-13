@@ -250,7 +250,7 @@ const Dashboard = () => {
     : [];
 
   return (
-    <div className="space-y-6 p-4 bg-gray-50">
+    <div className="animate-fadeIn space-y-6 p-4 bg-gray-50">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">

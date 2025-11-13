@@ -217,6 +217,71 @@ export const updateOrderLogic = async (
   return updatedOrder;
 };
 
+// ✏️ 1. ADD THE NEW 'cancelOrderLogic' SERVICE
+/**
+ * Allows a client to cancel their own order, ONLY if it's in the 'Pending' state.
+ * This will also restore the product stock.
+ */
+export const cancelOrderLogic = async (
+  orderId: string,
+  userId: string,
+  userName: string
+) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const order = await Order.findById(orderId).session(session);
+
+    // 1. Check if order exists
+    if (!order) {
+      throw new Error("Order not found.");
+    }
+
+    // 2. Security Check: Check if the user owns this order
+    if (order.userId.toString() !== userId) {
+      throw new Error(
+        "Forbidden: You are not authorized to cancel this order."
+      );
+    }
+
+    // 3. Business Rule: Only allow cancellation if the order is "Pending"
+    if (order.orderStatus !== "Pending") {
+      throw new Error(
+        "This reservation can no longer be cancelled as it is already being processed."
+      );
+    }
+
+    // 4. Update the Order Status
+    order.orderStatus = "Cancelled";
+    await order.save({ session });
+
+    // 5. CRITICAL: Restore the stock for each product in the order
+    const stockUpdatePromises = order.products.map((item) => {
+      return Product.updateOne(
+        { _id: item.productId },
+        { $inc: { stock: item.quantity } } // $inc increments the stock
+      ).session(session);
+    });
+    await Promise.all(stockUpdatePromises);
+
+    // 6. Commit the transaction
+    await session.commitTransaction();
+
+    // 7. Side Effects (Logging & Notifications) - non-transactional
+    const logDetails = `Order status changed from 'Pending' to 'Cancelled' by user.`;
+    _createUpdateActivityLog(userId, userName, orderId, logDetails);
+    _createStatusUpdateNotification(order, { orderStatus: "Cancelled" }); // Re-use your helper
+
+    return order;
+  } catch (error: any) {
+    await session.abortTransaction();
+    throw error; // Re-throw for the controller
+  } finally {
+    session.endSession();
+  }
+};
+
 // --- Get Orders Logic ---
 export const getUserOrdersLogic = async (userId: string) => {
   return await Order.find({ userId })

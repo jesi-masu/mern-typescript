@@ -4,10 +4,7 @@ import React, { useState } from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Bell, MessageSquare } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-
-// --- [FIXED] Corrected the import path to point to the new location ---
 import CustomerShoppingTab from "./dashboard-components/CustomerShoppingTab";
-
 import { DashboardHeader } from "./dashboard-components/DashboardHeader";
 import { DashboardTabs } from "./dashboard-components/DashboardTabs";
 import { OrdersTab } from "./dashboard-components/OrdersTab";

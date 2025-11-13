@@ -232,7 +232,7 @@ const RecordsUpload: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="animate-fadeIn space-y-8">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Records Upload</h2>
         <p className="text-gray-600">

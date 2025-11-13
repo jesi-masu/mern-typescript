@@ -93,7 +93,7 @@ const Reports: React.FC = () => {
   const productPerformance = data?.productPerformance || [];
 
   return (
-    <div className="space-y-8">
+    <div className="animate-fadeIn space-y-8">
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl p-6 text-white">
         <div>
           <h1 className="text-4xl font-bold mb-2">Sales Analytics Dashboard</h1>

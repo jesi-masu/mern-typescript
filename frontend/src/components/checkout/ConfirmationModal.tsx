@@ -42,8 +42,8 @@ const ConfirmationModal = ({
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md">
             <p className="font-semibold text-yellow-900">Please Note:</p>
             <p className="text-yellow-800 text-sm">
-              Once your initial payment is made, this reservation cannot be
-              cancelled.
+              Once your initial payment is made after your item is validated,
+              this reservation cannot be cancelled.
             </p>
           </div>
 
