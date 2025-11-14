@@ -8,6 +8,7 @@ import {
   Truck,
   Loader2,
   CheckCheck,
+  Phone,
 } from "lucide-react"; // Added CheckCheck
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -188,6 +189,8 @@ const CustomerNotifications: React.FC = () => {
 
   const getNotificationIcon = (type: CustomerNotification["type"]) => {
     switch (type) {
+      case "reservation_placed":
+        return <Phone className="h-4 w-4 text-yellow-500 flex-shrink-0" />;
       case "order_update":
         return <Clock className="h-4 w-4 text-blue-500 flex-shrink-0" />;
       case "payment_confirmed":
@@ -206,6 +209,8 @@ const CustomerNotifications: React.FC = () => {
   };
   const getNotificationColor = (type: CustomerNotification["type"]) => {
     switch (type) {
+      case "reservation_placed":
+        return "border-yellow-300";
       case "order_update":
         return "border-blue-300";
       case "payment_confirmed":

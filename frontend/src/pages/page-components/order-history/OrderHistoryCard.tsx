@@ -13,6 +13,7 @@ import {
   Hash,
   XCircle,
   Loader2,
+  Phone,
 } from "lucide-react";
 import { Order, PaymentStatus } from "@/types/order";
 import {
@@ -158,7 +159,9 @@ export const OrderHistoryCard: React.FC<OrderHistoryCardProps> = ({
             </div>
           </div>
 
+          {/* ✏️ 2. UPDATED THIS BLOCK TO INCLUDE THE NEW "CALL US" LINK */}
           <div className="flex flex-row sm:flex-col items-start sm:items-end gap-2 w-full sm:w-auto">
+            {/* Status Badges */}
             <div className="flex items-center gap-2">
               <ClipboardList className="h-3.5 w-3.5 text-muted-foreground" />
               <Badge className={getStatusClasses(order.orderStatus)}>
@@ -171,6 +174,21 @@ export const OrderHistoryCard: React.FC<OrderHistoryCardProps> = ({
                 {currentPaymentStatus}
               </Badge>
             </div>
+
+            {/* ✏️ 3. THIS IS THE NEW "CALL US" LINK */}
+            {/* It only appears if the order is "Pending" */}
+            {order.orderStatus === "Pending" && (
+              <div className="flex items-center gap-1.5 text-xs text-gray-600 sm:justify-end w-full">
+                <Phone className="h-3 w-3" />
+                <span>Waiting for verification. </span>
+                <a
+                  href="tel:09974358037" // Replace with your actual number
+                  className="font-semibold text-blue-600 hover:underline"
+                >
+                  Call us?
+                </a>
+              </div>
+            )}
           </div>
         </div>
 

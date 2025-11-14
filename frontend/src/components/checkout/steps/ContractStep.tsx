@@ -97,6 +97,58 @@ const ContractStep: React.FC<ContractStepProps> = ({
         </div>
       </div>
 
+      {/* --- Terms & Conditions --- */}
+      <Card className="border-2 border-gray-100">
+        <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
+          <CardTitle className="text-gray-900">Terms & Conditions</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <div className="space-y-4">
+            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+              <ul className="space-y-2 text-sm text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 font-bold">•</span>
+                  Standard prefab construction terms and conditions apply
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 font-bold">•</span>
+                  Estimated delivery time: 8-12 weeks from order confirmation
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 font-bold">•</span>
+                  Installation will be scheduled upon delivery
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 font-bold">•</span>
+                  All payments must be completed before delivery
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 font-bold">•</span>
+                  Warranty terms as specified in product documentation
+                </li>
+              </ul>
+            </div>
+            <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <Checkbox
+                id="terms"
+                checked={contractInfo.agreedToTerms}
+                onCheckedChange={(checked) =>
+                  onChange({ agreedToTerms: checked === true })
+                }
+                className="mt-1"
+              />
+              <label
+                htmlFor="terms"
+                className="text-sm text-blue-900 cursor-pointer"
+              >
+                <span className="font-medium">I acknowledge and agree</span> to
+                the terms and conditions stated above.
+              </label>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* --- Order Summary Card --- */}
       <Card className="border-2 border-gray-100">
         <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
@@ -263,58 +315,6 @@ const ContractStep: React.FC<ContractStepProps> = ({
           </CardContent>
         </Card>
       )}
-
-      {/* --- Terms & Conditions --- */}
-      <Card className="border-2 border-gray-100">
-        <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
-          <CardTitle className="text-gray-900">Terms & Conditions</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="space-y-4">
-            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-              <ul className="space-y-2 text-sm text-gray-700">
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600 font-bold">•</span>
-                  Standard prefab construction terms and conditions apply
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600 font-bold">•</span>
-                  Estimated delivery time: 8-12 weeks from order confirmation
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600 font-bold">•</span>
-                  Installation will be scheduled upon delivery
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600 font-bold">•</span>
-                  All payments must be completed before delivery
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600 font-bold">•</span>
-                  Warranty terms as specified in product documentation
-                </li>
-              </ul>
-            </div>
-            <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <Checkbox
-                id="terms"
-                checked={contractInfo.agreedToTerms}
-                onCheckedChange={(checked) =>
-                  onChange({ agreedToTerms: checked === true })
-                }
-                className="mt-1"
-              />
-              <label
-                htmlFor="terms"
-                className="text-sm text-blue-900 cursor-pointer"
-              >
-                <span className="font-medium">I acknowledge and agree</span> to
-                the terms and conditions stated above.
-              </label>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };

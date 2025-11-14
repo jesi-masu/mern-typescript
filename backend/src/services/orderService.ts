@@ -432,7 +432,7 @@ const _createOrderNotifications = async (
     .session(session);
 
   if (staffUsers.length > 0) {
-    const staffMessage = `New order #${newOrder._id
+    const staffMessage = `New reservation #${newOrder._id
       .toString()
       .slice(-6)} placed by ${customerInfo.firstName} ${
       customerInfo.lastName
@@ -441,23 +441,23 @@ const _createOrderNotifications = async (
       userId: staff._id,
       orderId: newOrder._id,
       message: staffMessage,
-      type: "new_order_admin",
+      type: "reservation_new",
     }));
     // --- ADDED FIX ---
     await Notification.create(staffNotifications, { session, ordered: true });
   }
 
   // Notify client
-  const clientMessage = `Your order #${newOrder._id
+  const clientMessage = `Your reservation #${newOrder._id
     .toString()
-    .slice(-6)} has been successfully placed.`;
+    .slice(-6)} has been submitted. We will call you soon for verification.`;
   await Notification.create(
     [
       {
         userId: newOrder.userId,
         orderId: newOrder._id,
         message: clientMessage,
-        type: "order_placed_confirmation",
+        type: "reservation_placed",
       },
     ],
     // --- ADDED FIX ---

@@ -11,7 +11,8 @@ import {
   CheckCheck,
   ListOrdered,
   UserPlus,
-  MessageSquare, // Added icon for messages
+  MessageSquare,
+  Phone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -155,10 +156,13 @@ export const AdminNotifications: React.FC = () => {
             n._id === updatedNotification._id ? { ...n, readStatus: true } : n
           ) ?? []
       );
-      // Navigate based on the notification type after marking as read
+
+      // ✏️ 2. UPDATED NAVIGATION LOGIC
+      // This logic now correctly handles the new type
       if (
         updatedNotification.type.includes("order") ||
         updatedNotification.type === "payment_uploaded" ||
+        updatedNotification.type === "reservation_new" || // Added this check
         updatedNotification.orderId
       ) {
         navigate(`/admin/orders`); // Go to orders page
@@ -212,10 +216,11 @@ export const AdminNotifications: React.FC = () => {
       // If unread, trigger the mutation (which handles navigation on success)
       markAsReadMutation.mutate({ notificationId: notification._id, token });
     } else {
-      // If already read, navigate directly
+      // ✏️ 3. UPDATED DIRECT NAVIGATION LOGIC
       if (
         notification.type.includes("order") ||
         notification.type === "payment_uploaded" ||
+        notification.type === "reservation_new" || // Added this check
         notification.orderId
       ) {
         navigate(`/admin/orders`);
@@ -238,6 +243,8 @@ export const AdminNotifications: React.FC = () => {
   // Returns the appropriate icon based on notification type
   const getNotificationIcon = (type: AdminNotification["type"]) => {
     switch (type) {
+      case "reservation_new":
+        return <Phone className="h-4 w-4 text-yellow-500 flex-shrink-0" />;
       case "new_order_admin":
         return (
           <ListOrdered className="h-4 w-4 text-indigo-500 flex-shrink-0" />
@@ -260,6 +267,8 @@ export const AdminNotifications: React.FC = () => {
   // Returns the appropriate border color based on notification type
   const getNotificationColor = (type: AdminNotification["type"]) => {
     switch (type) {
+      case "reservation_new":
+        return "border-yellow-300";
       case "new_order_admin":
         return "border-indigo-300";
       case "order_update":
