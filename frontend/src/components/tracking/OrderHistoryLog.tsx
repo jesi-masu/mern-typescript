@@ -1,6 +1,5 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Order } from "@/types/order";
 import {
   List,
   CheckCircle,
@@ -9,8 +8,9 @@ import {
   Package,
   Phone,
   XCircle,
+  CreditCard, // ✏️ 1. IMPORT 'CreditCard' ICON
 } from "lucide-react";
-import { format } from "date-fns"; // A more powerful date formatter
+import { format } from "date-fns";
 
 // Define the shape of a single update
 type TrackingUpdate = {
@@ -20,25 +20,36 @@ type TrackingUpdate = {
 };
 
 interface OrderHistoryLogProps {
-  // We just pass the updates array
   updates: TrackingUpdate[] | undefined;
 }
 
-// Helper to format the timestamp
 const formatTimestamp = (dateString: string) => {
   return format(new Date(dateString), "MMM dd, yyyy 'at' hh:mm a");
 };
 
-// Helper to get a relevant icon
 const getStatusIcon = (status: string) => {
+  // ✏️ 2. ADD PAYMENT STATUS LOGIC
+  // This catches "50% Complete Paid", "Payment", etc.
+  if (status.includes("Paid") || status.includes("Payment")) {
+    return <CreditCard className="h-5 w-5 text-emerald-600" />;
+  }
+
   if (status.includes("Cancelled"))
     return <XCircle className="h-5 w-5 text-red-500" />;
-  if (status.includes("Pending") || status.includes("Placed"))
-    return <Phone className="h-5 w-5 text-yellow-500" />;
+
+  if (
+    status.includes("Pending") ||
+    status.includes("Placed") ||
+    status.includes("Reservation")
+  )
+    return <Phone className="h-5 w-5 text-yellow-600" />;
+
   if (status.includes("Processing") || status.includes("Production"))
     return <Clock className="h-5 w-5 text-blue-500" />;
+
   if (status.includes("Shipped"))
     return <Truck className="h-5 w-5 text-indigo-500" />;
+
   if (status.includes("Delivered") || status.includes("Completed"))
     return <CheckCircle className="h-5 w-5 text-green-500" />;
 
@@ -49,7 +60,6 @@ export const OrderHistoryLog: React.FC<OrderHistoryLogProps> = ({
   updates,
 }) => {
   if (!updates || updates.length === 0) {
-    // Show a "pending" state if no updates exist yet
     return (
       <Card>
         <CardHeader>
@@ -70,7 +80,6 @@ export const OrderHistoryLog: React.FC<OrderHistoryLogProps> = ({
     );
   }
 
-  // Sort updates: newest first
   const sortedUpdates = [...updates].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );

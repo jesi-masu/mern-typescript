@@ -9,6 +9,8 @@ import {
   Loader2,
   CheckCheck,
   Phone,
+  Wallet,
+  PartyPopper,
 } from "lucide-react"; // Added CheckCheck
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -189,6 +191,12 @@ const CustomerNotifications: React.FC = () => {
 
   const getNotificationIcon = (type: CustomerNotification["type"]) => {
     switch (type) {
+      case "order_completed":
+        return (
+          <PartyPopper className="h-4 w-4 text-purple-600 flex-shrink-0" />
+        );
+      case "payment_request":
+        return <Wallet className="h-4 w-4 text-orange-600 flex-shrink-0" />;
       case "reservation_confirmed":
         return <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />;
       case "reservation_placed":
@@ -211,6 +219,10 @@ const CustomerNotifications: React.FC = () => {
   };
   const getNotificationColor = (type: CustomerNotification["type"]) => {
     switch (type) {
+      case "order_completed":
+        return "border-purple-400 bg-purple-50/50";
+      case "payment_request":
+        return "border-orange-400 bg-orange-50/50";
       case "reservation_confirmed":
         return "border-green-300";
       case "reservation_placed":
