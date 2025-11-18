@@ -224,19 +224,20 @@ const Orders: React.FC = () => {
     },
   });
 
-  // ✏️ 2. ADD THIS 'useEffect'
-  // This hook syncs the 'selectedOrder' state with the 'orders' list.
-  // When 'orders' refetches, this finds the updated version and updates
-  // the 'selectedOrder', which forces the modal to re-render.
+  // ✏️ 2. THIS IS THE FIX
+  // This effect syncs the 'selectedOrder' with the master 'orders' list.
   useEffect(() => {
+    // If a modal is open (i.e., we have a selectedOrder)
     if (selectedOrder) {
+      // Find the latest version of that order from the main 'orders' list
       const updatedOrder = orders.find((o) => o._id === selectedOrder._id);
+
+      // If we found it, update the state
       if (updatedOrder) {
         setSelectedOrder(updatedOrder);
       }
     }
-    // We add 'selectedOrder' here to be thorough,
-    // but 'orders' is the key dependency that drives the update.
+    // This runs every time the main 'orders' list is refetched
   }, [orders, selectedOrder]);
 
   // --- Filtering Logic ---

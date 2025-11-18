@@ -47,7 +47,7 @@ const ConfirmationModal = ({
               After our team validates your order, you will be asked for an
               initial payment. Once that payment is processed, your reservation
               is{" "}
-              <strong className="font-medium">
+              <strong className="font-medium underline">
                 considered final and cannot be cancelled
               </strong>
               .

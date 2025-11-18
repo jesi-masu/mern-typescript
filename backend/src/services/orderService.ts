@@ -180,12 +180,26 @@ export const updateOrderLogic = async (
       fieldsToSet["paymentInfo.paymentStatus"] = paymentStatus;
       logDetails += `Payment status changed from '${orderBeforeUpdate.paymentInfo.paymentStatus}' to '${paymentStatus}'. `;
 
-      // ✏️ 5. CREATE A TRACKING UPDATE FOR THE PAYMENT CHANGE
-      newTrackingUpdate = {
-        status: paymentStatus,
-        message: `Your payment status has been updated to "${paymentStatus}".`,
-        timestamp: new Date(),
-      };
+      // ✏️ 1. THIS IS YOUR NEW AUTOMATION LOGIC
+      // If payment method is installment and status is updated,
+      // also update the installment stage.
+      if (orderBeforeUpdate.paymentInfo.paymentMethod === "installment") {
+        if (paymentStatus === "90% Complete Paid") {
+          fieldsToSet["paymentInfo.installmentStage"] = "pre_delivery";
+          logDetails += `Installment stage auto-updated to 'pre_delivery'. `;
+        } else if (paymentStatus === "100% Complete Paid") {
+          fieldsToSet["paymentInfo.installmentStage"] = "final";
+          logDetails += `Installment stage auto-updated to 'final'. `;
+        } else if (paymentStatus === "50% Complete Paid") {
+          fieldsToSet["paymentInfo.installmentStage"] = "initial";
+          logDetails += `Installment stage auto-updated to 'initial'. `;
+        } else if (paymentStatus === "Pending") {
+          fieldsToSet["paymentInfo.installmentStage"] = "initial";
+          logDetails += `Installment stage auto-updated to 'initial'. `;
+        }
+        // Note: You can add an 'else if (paymentStatus === "50% Complete Paid")'
+        // if you need to, but 'initial' is already the default.
+      }
     }
     if (Object.keys(fieldsToSet).length > 0) {
       updateData.$set = fieldsToSet;

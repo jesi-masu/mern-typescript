@@ -265,6 +265,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                         {order.paymentInfo.paymentMethod}
                       </Badge>
                     </div>
+                    {/* ... (This block will now refresh) ... */}
                     {order.paymentInfo.paymentMethod === "installment" &&
                       order.paymentInfo.installmentStage && (
                         <div className="flex justify-between items-center">
