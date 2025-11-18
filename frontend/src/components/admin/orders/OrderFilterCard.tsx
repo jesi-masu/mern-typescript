@@ -10,21 +10,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils"; // Assumes you have a lib/utils.ts for shadcn
-import {
   Search,
   Filter,
   LayoutGrid,
   List,
   Calendar as CalendarIcon,
 } from "lucide-react";
-import { format } from "date-fns";
-import { DateRange } from "react-day-picker";
 
 // Define the props this component will need from its parent (Orders.tsx)
 interface OrderFilterCardProps {
@@ -32,8 +23,8 @@ interface OrderFilterCardProps {
   setSearchQuery: (query: string) => void;
   statusFilter: string;
   setStatusFilter: (status: string) => void;
-  dateRange: DateRange | undefined;
-  setDateRange: (range: DateRange | undefined) => void;
+  paymentStatusFilter: string;
+  setPaymentStatusFilter: (status: string) => void;
   viewMode: "card" | "table";
   setViewMode: (mode: "card" | "table") => void;
   filteredOrderCount: number;
@@ -45,8 +36,8 @@ const OrderFilterCard: React.FC<OrderFilterCardProps> = ({
   setSearchQuery,
   statusFilter,
   setStatusFilter,
-  dateRange,
-  setDateRange,
+  paymentStatusFilter,
+  setPaymentStatusFilter,
   viewMode,
   setViewMode,
   filteredOrderCount,
@@ -79,8 +70,13 @@ const OrderFilterCard: React.FC<OrderFilterCardProps> = ({
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="Pending">Pending</SelectItem>
+                <SelectItem value="all">All Order Statuses</SelectItem>
+                <SelectItem value="Pending">
+                  Pending{" "}
+                  <span style={{ fontSize: "0.8em", color: "gray" }}>
+                    <i>verification required</i>
+                  </span>
+                </SelectItem>
                 <SelectItem value="Processing">Processing</SelectItem>
                 <SelectItem value="In Production">In Production</SelectItem>
                 <SelectItem value="Shipped">Shipped</SelectItem>
@@ -89,43 +85,28 @@ const OrderFilterCard: React.FC<OrderFilterCardProps> = ({
               </SelectContent>
             </Select>
 
-            {/* --- NEW: Date Range Picker --- */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  id="date"
-                  variant={"outline"}
-                  className={cn(
-                    "w-full sm:w-64 justify-start text-left font-normal rounded-lg border border-gray-300",
-                    !dateRange && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateRange?.from ? (
-                    dateRange.to ? (
-                      <>
-                        {format(dateRange.from, "LLL dd, y")} -{" "}
-                        {format(dateRange.to, "LLL dd, y")}
-                      </>
-                    ) : (
-                      format(dateRange.from, "LLL dd, y")
-                    )
-                  ) : (
-                    <span>Pick a date range</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
-                <Calendar
-                  initialFocus
-                  mode="range"
-                  defaultMonth={dateRange?.from}
-                  selected={dateRange}
-                  onSelect={setDateRange}
-                  numberOfMonths={2}
-                />
-              </PopoverContent>
-            </Popover>
+            {/* ✏️ 8. REPLACED Date Range Picker with Payment Status Filter */}
+            <Select
+              value={paymentStatusFilter}
+              onValueChange={setPaymentStatusFilter}
+            >
+              <SelectTrigger className="w-full sm:w-52 rounded-lg border border-gray-300">
+                <SelectValue placeholder="Filter by payment status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Payment Statuses</SelectItem>
+                <SelectItem value="Pending">Pending</SelectItem>
+                <SelectItem value="50% Complete Paid">
+                  50% Complete Paid
+                </SelectItem>
+                <SelectItem value="90% Complete Paid">
+                  90% Complete Paid
+                </SelectItem>
+                <SelectItem value="100% Complete Paid">
+                  100% Complete Paid
+                </SelectItem>
+              </SelectContent>
+            </Select>
 
             {/* --- View Mode Toggle --- */}
             <Button

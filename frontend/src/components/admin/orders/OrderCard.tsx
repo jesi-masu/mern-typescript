@@ -5,7 +5,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Order, OrderStatus, PaymentStatus } from "@/types/order";
 import { formatPrice } from "@/lib/formatters";
-import { Eye, CreditCard, Calendar, MapPin, Package, User } from "lucide-react";
+import {
+  Eye,
+  CreditCard,
+  Calendar,
+  MapPin,
+  Package,
+  User,
+  Phone,
+  ListChecks,
+  Clock,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
 
 interface OrderCardProps {
   order: Order;
@@ -73,8 +85,48 @@ const OrderCard: React.FC<OrderCardProps> = ({
     order.products?.map((item) => item.productId.productName).join(", ") ||
     "No products found";
 
+  const isOrderClosed =
+    order.orderStatus === "Completed" ||
+    order.orderStatus === "Delivered" ||
+    order.orderStatus === "Cancelled";
+
   return (
-    <Card className="flex flex-col justify-between rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
+    <Card
+      className={`flex flex-col justify-between rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 ${
+        // ✏️ 4. ADDED FADE FOR ALL CLOSED ORDERS
+        isOrderClosed ? "opacity-70 bg-gray-50" : ""
+      }`}
+    >
+      {/* ✏️ 5. ADDED "Completed" and "Cancelled" BANNERS */}
+      {order.orderStatus === "Pending" ? (
+        <div className="flex items-center gap-3 p-3 bg-yellow-50 text-yellow-800 rounded-t-xl">
+          <Phone className="h-5 w-5 flex-shrink-0" />
+          <div className="flex-1">
+            <h4 className="font-semibold">Verification Required</h4>
+            <p className="text-xs">
+              This new reservation needs to be verified.
+            </p>
+          </div>
+        </div>
+      ) : order.orderStatus === "Completed" ||
+        order.orderStatus === "Delivered" ? (
+        <div className="flex items-center gap-3 p-3 bg-green-50 text-green-800 rounded-t-xl">
+          <CheckCircle className="h-5 w-5 flex-shrink-0" />
+          <div className="flex-1">
+            <h4 className="font-semibold">Order Completed</h4>
+            <p className="text-xs">This order has been finalized.</p>
+          </div>
+        </div>
+      ) : order.orderStatus === "Cancelled" ? (
+        <div className="flex items-center gap-3 p-3 bg-red-50 text-red-800 rounded-t-xl">
+          <XCircle className="h-5 w-5 flex-shrink-0" />
+          <div className="flex-1">
+            <h4 className="font-semibold">Order Cancelled</h4>
+            <p className="text-xs">This order has been cancelled.</p>
+          </div>
+        </div>
+      ) : null}
+
       <CardContent className="p-5 space-y-4">
         <div className="flex justify-between items-start">
           <div>
@@ -91,7 +143,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="flex flex-col gap-y-2">
           <div className="flex items-center gap-2">
             <p className="text-sm text-muted-foreground">Order</p>
             <Badge className={getStatusClasses(order.orderStatus)}>
@@ -99,7 +151,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
             </Badge>
           </div>
           <div className="flex items-center gap-2">
-            <p className="text-sm text-muted-foreground">Payment</p>
+            <p className="text-sm text-muted-foreground">Payment </p>
             <Badge className={getStatusClasses(currentPaymentStatus)}>
               {currentPaymentStatus}
             </Badge>
@@ -141,6 +193,25 @@ const OrderCard: React.FC<OrderCardProps> = ({
               </p>
             </div>
           </div>
+          {/* ✏️ 4. PROMINENT PAYMENT DETAILS */}
+          <div className="flex items-start">
+            <ListChecks className="h-4 w-4 mr-3 mt-1 flex-shrink-0 text-muted-foreground" />
+            <div>
+              <p className="text-xs text-muted-foreground">Payment Method</p>
+              <Badge variant="outline" className="capitalize text-xs">
+                {order.paymentInfo.paymentMethod}
+              </Badge>
+            </div>
+          </div>
+          <div className="flex items-start">
+            <Clock className="h-4 w-4 mr-3 mt-1 flex-shrink-0 text-muted-foreground" />
+            <div>
+              <p className="text-xs text-muted-foreground">Payment Timing</p>
+              <Badge variant="outline" className="capitalize text-xs">
+                <span>Pay {order.paymentInfo.paymentTiming}</span>
+              </Badge>
+            </div>
+          </div>
         </div>
       </CardContent>
 
@@ -160,6 +231,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
           size="sm"
           className="flex-1 bg-green-600 hover:bg-green-700"
           onClick={() => onConfirmPayment(order)}
+          disabled={isOrderClosed}
         >
           <CreditCard className="h-4 w-4 mr-2" />
           Update Payment

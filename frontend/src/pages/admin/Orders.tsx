@@ -1,5 +1,6 @@
 // frontend/src/pages/admin/Orders.tsx
 import React, { useState } from "react";
+import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import {
@@ -29,10 +30,6 @@ import {
 } from "@/services/orderService";
 import { Order, OrderStatus, PaymentStatus } from "@/types/order";
 import { Package, Loader2, AlertCircle, MoreHorizontal } from "lucide-react";
-
-// Imports for new filter components and logic
-import { DateRange } from "react-day-picker";
-import { isAfter, isBefore, isEqual, startOfDay, endOfDay } from "date-fns";
 import OrderFilterCard from "@/components/admin/orders/OrderFilterCard";
 
 const OrderTable: React.FC<{
@@ -46,6 +43,8 @@ const OrderTable: React.FC<{
       currency: "PHP",
     }).format(price);
   };
+
+  const [tableAnimationParent] = useAutoAnimate();
 
   const getStatusClasses = (
     status: OrderStatus | PaymentStatus | undefined
@@ -104,7 +103,7 @@ const OrderTable: React.FC<{
             <TableHead className="text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody ref={tableAnimationParent}>
           {orders.map((order) => {
             const currentPaymentStatus =
               order.paymentInfo?.paymentStatus || "Pending";
@@ -182,7 +181,9 @@ const Orders: React.FC = () => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"card" | "table">("card");
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>("all");
+  // --- animation ---
+  const [cardAnimationParent] = useAutoAnimate();
 
   // --- Queries ---
   const {
@@ -270,24 +271,14 @@ const Orders: React.FC = () => {
     const matchesStatus =
       statusFilter === "all" || order.orderStatus === statusFilter;
 
-    // 3. Date Range Match (from the calendar pop-up)
-    const orderDateObj = new Date(order.createdAt);
-    let matchesDate = true; // Default to true if no range is selected
+    // ✏️ 4. ADDED Payment Status Match
+    const matchesPaymentStatus =
+      paymentStatusFilter === "all" ||
+      order.paymentInfo.paymentStatus === paymentStatusFilter;
 
-    if (dateRange?.from) {
-      const fromDate = startOfDay(dateRange.from);
-      // If 'to' is not set, treat 'from' as a single-day filter
-      const toDate = dateRange.to
-        ? endOfDay(dateRange.to)
-        : endOfDay(dateRange.from);
-
-      matchesDate =
-        (isAfter(orderDateObj, fromDate) || isEqual(orderDateObj, fromDate)) &&
-        (isBefore(orderDateObj, toDate) || isEqual(orderDateObj, toDate));
-    }
-
-    // Return all filter results
-    return matchesSearch && matchesStatus && matchesDate;
+    // ✏️ 5. UPDATED final return
+    return matchesSearch && matchesStatus && matchesPaymentStatus;
+    f;
   });
 
   // --- Event Handlers ---
@@ -357,13 +348,14 @@ const Orders: React.FC = () => {
       <hr className="border-t border-gray-200" />
 
       {/* --- Filter Card Component --- */}
+      {/* ✏️ 6. UPDATED PROPS */}
       <OrderFilterCard
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
-        dateRange={dateRange}
-        setDateRange={setDateRange}
+        paymentStatusFilter={paymentStatusFilter}
+        setPaymentStatusFilter={setPaymentStatusFilter}
         viewMode={viewMode}
         setViewMode={setViewMode}
         filteredOrderCount={filteredOrders.length}
@@ -374,7 +366,11 @@ const Orders: React.FC = () => {
       <div>
         {filteredOrders.length > 0 ? (
           viewMode === "card" ? (
-            <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+            // ✏️ 3. ATTACH THE 'ref' TO THE GRID
+            <div
+              ref={cardAnimationParent}
+              className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3"
+            >
               {filteredOrders.map((order) => (
                 <OrderCard
                   key={order._id}
@@ -386,6 +382,7 @@ const Orders: React.FC = () => {
             </div>
           ) : (
             <div>
+              {/* The OrderTable component will handle its own animation */}
               <OrderTable
                 orders={filteredOrders}
                 onViewDetails={handleViewDetails}
