@@ -1,5 +1,5 @@
 // frontend/src/pages/admin/Orders.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
@@ -224,6 +224,21 @@ const Orders: React.FC = () => {
     },
   });
 
+  // ✏️ 2. ADD THIS 'useEffect'
+  // This hook syncs the 'selectedOrder' state with the 'orders' list.
+  // When 'orders' refetches, this finds the updated version and updates
+  // the 'selectedOrder', which forces the modal to re-render.
+  useEffect(() => {
+    if (selectedOrder) {
+      const updatedOrder = orders.find((o) => o._id === selectedOrder._id);
+      if (updatedOrder) {
+        setSelectedOrder(updatedOrder);
+      }
+    }
+    // We add 'selectedOrder' here to be thorough,
+    // but 'orders' is the key dependency that drives the update.
+  }, [orders, selectedOrder]);
+
   // --- Filtering Logic ---
   const filteredOrders = orders.filter((order) => {
     const searchLower = searchQuery.toLowerCase();
@@ -278,7 +293,6 @@ const Orders: React.FC = () => {
 
     // ✏️ 5. UPDATED final return
     return matchesSearch && matchesStatus && matchesPaymentStatus;
-    f;
   });
 
   // --- Event Handlers ---
@@ -412,12 +426,16 @@ const Orders: React.FC = () => {
         onConfirmPayment={() =>
           selectedOrder && handleConfirmPayment(selectedOrder)
         }
+        // ✏️ 3. PASS THE 'isUpdating' PROP
+        isUpdating={updateOrderMutation.isPending}
       />
       <PaymentConfirmationModal
         order={selectedOrder}
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
         onConfirm={handlePaymentConfirmation}
+        // ✏️ 4. (RECOMMENDED) PASS 'isUpdating' HERE AS WELL
+        isUpdating={updateOrderMutation.isPending}
       />
     </div>
   );

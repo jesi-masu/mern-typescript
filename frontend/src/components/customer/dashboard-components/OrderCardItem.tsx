@@ -8,7 +8,7 @@ import {
   CreditCard,
   XCircle,
   Loader2,
-  Package,
+  Phone,
 } from "lucide-react";
 import { Order, PaymentStatus } from "@/types/order";
 import { useNavigate } from "react-router-dom";
@@ -279,6 +279,20 @@ export const OrderCardItem: React.FC<OrderCardItemProps> = ({ order }) => {
               </CollapsibleTrigger>
             </div>
           </>
+        )}
+
+        {/* It only appears if the order is "Pending" */}
+        {order.orderStatus === "Pending" && (
+          <div className="flex items-center gap-1.5 text-xs text-gray-600 sm:justify-end w-full -ml-4 -mt-2 mb-2">
+            <Phone className="h-3 w-3" />
+            <span>Waiting for verification. </span>
+            <a
+              href="tel:09974358037" // Replace with your actual number
+              className="font-semibold text-blue-600 hover:underline"
+            >
+              Call us?
+            </a>
+          </div>
         )}
       </Collapsible>
     </Card>

@@ -12,7 +12,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { PaymentUpload } from "@/components/customer/PaymentUpload";
-import { OrderDetail, PaymentStatus } from "@/types/order";
+import { Order, PaymentStatus } from "@/types/order";
 import { Separator } from "../ui/separator";
 import {
   Collapsible,
@@ -22,7 +22,7 @@ import {
 
 // ✏️ 1. UPDATE THE 'props' INTERFACE
 interface PaymentStatusCardProps {
-  order: OrderDetail;
+  order: Order;
   autoOpenPayment?: boolean; // Add this line to accept the new prop
 }
 
@@ -231,6 +231,7 @@ export const PaymentStatusCard: React.FC<PaymentStatusCardProps> = ({
               </span>
             </div>
           </div>
+
           {/* --- Installment Payment Section --- */}
           {order.paymentInfo?.paymentMethod === "installment" && (
             // ✏️ 5. ADD THE 'id' FOR SCROLLING

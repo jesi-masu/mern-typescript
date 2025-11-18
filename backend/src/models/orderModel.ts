@@ -6,6 +6,12 @@ interface IOrderProduct {
   quantity: number;
 }
 
+export interface ITrackingUpdate {
+  status: string;
+  message: string;
+  timestamp: Date;
+}
+
 export interface IOrder extends Document {
   _id: Types.ObjectId;
   userId: Types.ObjectId;
@@ -59,6 +65,7 @@ export interface IOrder extends Document {
     | "Delivered"
     | "Completed"
     | "Cancelled";
+  trackingUpdates: ITrackingUpdate[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -69,6 +76,15 @@ const orderProductSchema: Schema = new Schema(
     quantity: { type: Number, required: true, min: 1 },
   },
   { _id: false }
+);
+
+const trackingUpdateSchema: Schema = new Schema(
+  {
+    status: { type: String, required: true },
+    message: { type: String, required: true },
+    timestamp: { type: Date, default: Date.now },
+  },
+  { _id: false } // No separate _id for sub-documents
 );
 
 const orderSchema: Schema = new Schema(
@@ -162,6 +178,10 @@ const orderSchema: Schema = new Schema(
         "Cancelled",
       ],
       default: "Pending",
+    },
+    trackingUpdates: {
+      type: [trackingUpdateSchema],
+      default: [], // Default to an empty array
     },
   },
   { timestamps: true }

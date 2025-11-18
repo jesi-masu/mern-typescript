@@ -7,17 +7,18 @@ import { Button } from "@/components/ui/button";
 import { Loader2, AlertCircle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import CustomerNotifications from "@/components/customer/CustomerNotifications";
-import { OrderDetail } from "@/types/order";
+import { Order } from "@/types/order";
 import { OrderStatusCard } from "@/components/tracking/OrderStatusCard";
 import { PaymentStatusCard } from "@/components/tracking/PaymentStatusCard";
 import { OrderDetailsSidebar } from "@/components/tracking/OrderDetailsSidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { OrderHistoryLog } from "@/components/tracking/OrderHistoryLog";
 
 // --- API FETCHING FUNCTION (No changes needed here) ---
 const fetchOrderById = async (
   orderId: string,
   token: string | null
-): Promise<OrderDetail> => {
+): Promise<Order> => {
   if (!token) {
     throw new Error("You must be logged in to view order details.");
   }
@@ -48,7 +49,7 @@ const OrderTracking = () => {
     isLoading,
     isError,
     error,
-  } = useQuery<OrderDetail>({
+  } = useQuery<Order>({
     queryKey: ["order", id],
     queryFn: () => fetchOrderById(id!, token),
     enabled: !!id && !!token,
@@ -154,6 +155,8 @@ const OrderTracking = () => {
               order={order!}
               autoOpenPayment={autoOpenPayment}
             />
+
+            <OrderHistoryLog updates={order.trackingUpdates} />
 
             {/* This receipt logic is now correct */}
             {allReceipts.length > 0 && (

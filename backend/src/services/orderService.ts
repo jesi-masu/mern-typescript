@@ -63,6 +63,14 @@ export const createOrderLogic = async (
     }
     await Promise.all(productSavePromises);
 
+    // ✏️ 1. DEFINE THE FIRST TRACKING UPDATE
+    const initialTrackingUpdate = {
+      status: "Pending",
+      message:
+        "Your reservation has been submitted and is awaiting verification.",
+      timestamp: new Date(),
+    };
+
     // 2. Create Order
     const [newOrder] = await Order.create(
       [
@@ -75,6 +83,7 @@ export const createOrderLogic = async (
           totalAmount,
           locationImages,
           source: "live",
+          trackingUpdates: [initialTrackingUpdate],
         },
       ],
       { session }
@@ -83,21 +92,22 @@ export const createOrderLogic = async (
       throw new Error("Order creation failed.");
     }
 
-    // 3. Create Activity Log
+    // ✏️ 1. UPDATE THE ACTIVITY LOG MESSAGE
     await ActivityLog.create(
       [
         {
           userId: userId,
           userName: `${customerInfo.firstName} ${customerInfo.lastName}`,
-          action: `Order Created`,
-          details: `Order #${newOrder._id
+          action: `Reservation Placed`, // Changed from "Order Created"
+          details: `Reservation #${newOrder._id
             .toString()
-            .slice(-6)} placed. Total: ₱${totalAmount.toLocaleString()}`,
+            .slice(
+              -6
+            )} submitted by customer. Total: ₱${totalAmount.toLocaleString()}`, // Updated details
           category: "orders",
         },
       ],
-      // --- ADDED FIX ---
-      { session, ordered: true } // Add ordered: true
+      { session, ordered: true }
     );
 
     // 4. Create Notifications
@@ -143,14 +153,24 @@ export const updateOrderLogic = async (
     $set?: { [key: string]: any };
     $push?: { [key: string]: any };
   } = {};
-  const fieldsToSet: { [key: string]: any } = {}; // Use 'any' for flexibility with nested paths
+  const fieldsToSet: { [key: string]: any } = {};
   let logDetails = "";
+
+  // ✏️ 3. PREPARE A NEW TRACKING UPDATE
+  let newTrackingUpdate: any = null;
 
   // Admin-only fields
   if (user.role !== "client") {
     if (orderStatus && orderStatus !== orderBeforeUpdate.orderStatus) {
       fieldsToSet.orderStatus = orderStatus;
       logDetails += `Status changed from '${orderBeforeUpdate.orderStatus}' to '${orderStatus}'. `;
+
+      // ✏️ 4. CREATE A TRACKING UPDATE FOR THE STATUS CHANGE
+      newTrackingUpdate = {
+        status: orderStatus,
+        message: `Your reservation status has been updated to "${orderStatus}".`,
+        timestamp: new Date(),
+      };
     }
     // Correctly check nested paymentStatus
     if (
@@ -159,6 +179,13 @@ export const updateOrderLogic = async (
     ) {
       fieldsToSet["paymentInfo.paymentStatus"] = paymentStatus;
       logDetails += `Payment status changed from '${orderBeforeUpdate.paymentInfo.paymentStatus}' to '${paymentStatus}'. `;
+
+      // ✏️ 5. CREATE A TRACKING UPDATE FOR THE PAYMENT CHANGE
+      newTrackingUpdate = {
+        status: paymentStatus,
+        message: `Your payment status has been updated to "${paymentStatus}".`,
+        timestamp: new Date(),
+      };
     }
     if (Object.keys(fieldsToSet).length > 0) {
       updateData.$set = fieldsToSet;
@@ -184,6 +211,19 @@ export const updateOrderLogic = async (
     updateData.$push[updatePath] = { $each: [paymentReceiptUrl] }; // Use $each for pushing
 
     logDetails += `Receipt uploaded for ${paymentStage} stage. `;
+
+    // ✏️ 6. (OPTIONAL) ADD A TRACKING UPDATE FOR RECEIPT UPLOADS
+    newTrackingUpdate = {
+      status: "Payment",
+      message: `A new receipt was uploaded for the ${paymentStage} stage.`,
+      timestamp: new Date(),
+    };
+  }
+
+  // ✏️ 7. PUSH THE NEW TRACKING UPDATE TO THE ARRAY
+  if (newTrackingUpdate) {
+    if (!updateData.$push) updateData.$push = {};
+    updateData.$push.trackingUpdates = newTrackingUpdate;
   }
 
   if (Object.keys(updateData).length === 0) {
@@ -202,7 +242,15 @@ export const updateOrderLogic = async (
 
   // Side Effects (Non-transactional)
   if (logDetails.trim()) {
-    _createUpdateActivityLog(user._id, userName, orderId, logDetails);
+    // ✏️ 2. PASS THE 'orderStatus' TO THE LOG HELPER
+    // We pass the *new* status so the helper can be smarter
+    _createUpdateActivityLog(
+      user._id,
+      userName,
+      orderId,
+      logDetails,
+      updatedOrder.orderStatus // Pass the new status
+    );
   }
 
   if (paymentReceiptUrl && paymentStage) {
@@ -211,7 +259,11 @@ export const updateOrderLogic = async (
 
   // Use the updated fieldsToSet for notification logic
   if (fieldsToSet.orderStatus || fieldsToSet["paymentInfo.paymentStatus"]) {
-    _createStatusUpdateNotification(updatedOrder, fieldsToSet);
+    _createStatusUpdateNotification(
+      updatedOrder,
+      fieldsToSet,
+      orderBeforeUpdate
+    );
   }
 
   return updatedOrder;
@@ -252,8 +304,19 @@ export const cancelOrderLogic = async (
       );
     }
 
+    const orderBeforeCancel = order.toObject();
+
+    // ✏️ 8. DEFINE THE CANCELLATION UPDATE
+    const cancelUpdate = {
+      status: "Cancelled",
+      message: "Your reservation has been successfully cancelled.",
+      timestamp: new Date(),
+    };
+
     // 4. Update the Order Status
     order.orderStatus = "Cancelled";
+    order.trackingUpdates.push(cancelUpdate); // ✏️ 9. PUSH THE UPDATE
+
     await order.save({ session });
 
     // 5. CRITICAL: Restore the stock for each product in the order
@@ -269,9 +332,21 @@ export const cancelOrderLogic = async (
     await session.commitTransaction();
 
     // 7. Side Effects (Logging & Notifications) - non-transactional
-    const logDetails = `Order status changed from 'Pending' to 'Cancelled' by user.`;
-    _createUpdateActivityLog(userId, userName, orderId, logDetails);
-    _createStatusUpdateNotification(order, { orderStatus: "Cancelled" }); // Re-use your helper
+    // ✏️ 3. UPDATE THE LOG DETAILS
+    const logDetails = `Reservation status changed from 'Pending' to 'Cancelled' by user.`;
+    // Pass "Cancelled" as the new status
+    _createUpdateActivityLog(
+      userId,
+      userName,
+      orderId,
+      logDetails,
+      "Cancelled"
+    );
+    _createStatusUpdateNotification(
+      order,
+      { orderStatus: "Cancelled" },
+      orderBeforeCancel // Pass the state before it was changed
+    );
 
     return order;
   } catch (error: any) {
@@ -470,14 +545,20 @@ const _createUpdateActivityLog = async (
   userId: string,
   userName: string,
   orderId: string,
-  logDetails: string
+  logDetails: string,
+  newStatus: IOrder["orderStatus"]
 ) => {
   try {
+    // Use "Reservation" if status is Pending/Cancelled, otherwise use "Order"
+    const subject = ["Pending", "Cancelled"].includes(newStatus)
+      ? "Reservation"
+      : "Order";
+
     await ActivityLog.create({
       userId: userId || null,
       userName: userName,
-      action: `Order Updated`,
-      details: `Order #${orderId.slice(-6)}: ${logDetails.trim()}`,
+      action: `${subject} Updated`, // e.g., "Reservation Updated" or "Order Updated"
+      details: `${subject} #${orderId.slice(-6)}: ${logDetails.trim()}`,
       category: "orders",
     });
   } catch (logError) {
@@ -529,23 +610,39 @@ const _createReceiptUploadNotification = async (
 };
 
 const _createStatusUpdateNotification = async (
-  updatedOrder: IOrder, // Use the actual type
-  fieldsToSet: any // Can refine this type if needed
+  updatedOrder: IOrder,
+  fieldsToSet: any,
+  orderBeforeUpdate: IOrder
 ) => {
   let notificationMessage = "";
   let notificationType = "general"; // Default type
 
+  const orderIdShort = updatedOrder._id.toString().slice(-6);
+
   if (fieldsToSet.orderStatus) {
-    notificationMessage = `Your order #${updatedOrder._id
-      .toString()
-      .slice(-6)} status has been updated to '${fieldsToSet.orderStatus}'.`;
-    notificationType = "order_update";
+    // ✏️ 3. ADD THIS NEW LOGIC BLOCK
+    // This is the specific "Verified" message
+    if (
+      fieldsToSet.orderStatus === "Processing" &&
+      orderBeforeUpdate.orderStatus === "Pending"
+    ) {
+      notificationMessage = `Great news! Your reservation #${orderIdShort} has been verified by our team. The next step is to complete your initial payment.`;
+      notificationType = "reservation_confirmed";
+    }
+    // This is the "Cancelled" message
+    else if (fieldsToSet.orderStatus === "Cancelled") {
+      notificationMessage = `Your reservation #${orderIdShort} has been cancelled.`;
+      notificationType = "order_update"; // You can use a specific "order_cancelled" type if you prefer
+    }
+    // This is the generic fallback for all other status changes
+    else {
+      notificationMessage = `Your order #${orderIdShort} status has been updated to '${fieldsToSet.orderStatus}'.`;
+      notificationType = "order_update";
+    }
   } else if (fieldsToSet["paymentInfo.paymentStatus"]) {
-    notificationMessage = `Payment status for order #${updatedOrder._id
-      .toString()
-      .slice(-6)} updated to '${fieldsToSet["paymentInfo.paymentStatus"]}'.`;
-    // Assign specific type based on payment status if needed, e.g., 'payment_confirmed'
-    notificationType = "payment_update"; // Example, adjust as needed
+    // This payment logic is fine
+    notificationMessage = `Payment status for order #${orderIdShort} updated to '${fieldsToSet["paymentInfo.paymentStatus"]}'.`;
+    notificationType = "payment_update";
     if (fieldsToSet["paymentInfo.paymentStatus"].includes("Paid")) {
       notificationType = "payment_confirmed";
     }

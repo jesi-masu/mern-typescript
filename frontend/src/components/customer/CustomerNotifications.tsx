@@ -189,6 +189,8 @@ const CustomerNotifications: React.FC = () => {
 
   const getNotificationIcon = (type: CustomerNotification["type"]) => {
     switch (type) {
+      case "reservation_confirmed":
+        return <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />;
       case "reservation_placed":
         return <Phone className="h-4 w-4 text-yellow-500 flex-shrink-0" />;
       case "order_update":
@@ -209,6 +211,8 @@ const CustomerNotifications: React.FC = () => {
   };
   const getNotificationColor = (type: CustomerNotification["type"]) => {
     switch (type) {
+      case "reservation_confirmed":
+        return "border-green-300";
       case "reservation_placed":
         return "border-yellow-300";
       case "order_update":

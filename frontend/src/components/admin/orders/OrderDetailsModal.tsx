@@ -14,8 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-// --- Import IProductPart if not already globally available via index.ts ---
-import { Order, OrderStatus, PaymentStatus, IProductPart } from "@/types"; // Adjust path if needed
+import { Order, OrderStatus, PaymentStatus, IProductPart } from "@/types";
 import { formatPrice } from "@/lib/formatters";
 import {
   CreditCard,
@@ -28,9 +27,10 @@ import {
   MapPin,
   ListChecks,
   Camera,
-  Puzzle, // Icon for Product Parts
+  Puzzle,
+  Loader2,
 } from "lucide-react";
-import { Separator } from "@/components/ui/separator"; // Import Separator
+import { Separator } from "@/components/ui/separator"; // ✏️ 2. IMPORT SEPARATOR
 
 interface OrderDetailsModalProps {
   order: Order | null;
@@ -38,12 +38,12 @@ interface OrderDetailsModalProps {
   onClose: () => void;
   onStatusUpdate: (orderId: string, newStatus: OrderStatus) => void;
   onConfirmPayment: (order: Order) => void;
+  isUpdating: boolean; // ✏️ 4. ADD THIS PROP
 }
 
 const getStatusClasses = (
   status: OrderStatus | PaymentStatus | undefined
 ): string => {
-  // ... (getStatusClasses function is unchanged)
   const baseClasses = "font-semibold border-transparent text-xs px-2 py-1";
   switch (status) {
     case "Pending":
@@ -75,6 +75,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   onClose,
   onStatusUpdate,
   onConfirmPayment,
+  isUpdating, // ✏️ 5. RECEIVE THE PROP
 }) => {
   if (!order) return null;
 
@@ -95,7 +96,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     } else {
       setPreviewImage(null);
     }
-  }, [order?._id, isOpen]); // Added availableStages dependency
+  }, [order?._id, isOpen]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -105,7 +106,6 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     });
   };
 
-  // Ensure this function uses the correct path based on your updated Order type
   const formatFullAddress = (
     address: Order["customerInfo"]["deliveryAddress"]
   ) => {
@@ -115,7 +115,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
       address.subdivision,
       address.cityMunicipality,
       address.province,
-      address.postalCode, // Use postalCode
+      address.postalCode,
     ]
       .filter(Boolean)
       .join(", ");
@@ -125,7 +125,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
   return (
     <>
-      {/* Image Preview Dialog (unchanged) */}
+      {/* Image Preview Dialog */}
       <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
         <DialogContent className="max-w-6xl p-2 bg-transparent border-none shadow-none">
           <img
@@ -146,7 +146,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-6 p-1">
-            {/* Status Update Section (unchanged) */}
+            {/* Status Update Section */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-4 bg-gray-50 rounded-lg">
               {/* ... (Order Status Select) ... */}
               <div>
@@ -159,9 +159,15 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                     onValueChange={(value: OrderStatus) =>
                       onStatusUpdate(order._id, value)
                     }
+                    disabled={isUpdating} // ✏️ 6. DISABLE WHILE UPDATING
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue />
+                      <div className="flex items-center gap-2">
+                        {isUpdating && ( // ✏️ 7. SHOW SPINNER
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        )}
+                        <SelectValue />
+                      </div>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Pending">Pending</SelectItem>
@@ -190,6 +196,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                       size="sm"
                       onClick={() => onConfirmPayment(order)}
                       className="bg-green-600 hover:bg-green-700"
+                      disabled={isUpdating} // ✏️ 8. DISABLE WHILE UPDATING
                     >
                       <CreditCard className="h-4 w-4 mr-2" />
                       Update Payment
@@ -200,7 +207,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Left Column (unchanged structure) */}
+              {/* Left Column */}
               <div className="space-y-6 pt-4">
                 {/* ... (Customer Info) ... */}
                 <div>
@@ -291,7 +298,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 </div>
               </div>
 
-              {/* Right Column (unchanged structure) */}
+              {/* Right Column */}
               <div className="space-y-6">
                 {/* ... (Total Amount) ... */}
                 <div className="p-4 bg-green-50 rounded-lg">
@@ -382,7 +389,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
               </div>
             </div>
 
-            {/* --- START: PRODUCT PARTS MODIFICATION --- */}
+            {/*  PRODUCT PARTS */}
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <Package className="h-5 w-5 text-gray-500" />
@@ -391,23 +398,19 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 </h3>
               </div>
               <div className="space-y-4">
-                {" "}
-                {/* Increased spacing */}
                 {order.products.map((item) => (
                   <div
                     key={item.productId._id}
-                    className="border rounded-lg bg-white overflow-hidden" // Card-like appearance
+                    className="border rounded-lg bg-white overflow-hidden"
                   >
                     <div className="flex items-start gap-4 p-4">
-                      {" "}
-                      {/* Increased padding */}
                       <img
                         src={
                           item.productId.image ||
                           "https://placehold.co/150x150/E2E8F0/4A5568?text=No+Image"
                         }
                         alt={item.productId.productName || "Product"}
-                        className="w-20 h-20 object-cover rounded border" // Slightly larger image
+                        className="w-20 h-20 object-cover rounded border"
                       />
                       <div className="flex-1">
                         <h4 className="font-semibold text-gray-900 text-base">
@@ -418,12 +421,10 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                             "No description available."}
                         </p>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 text-xs">
-                          {/* (Existing product details remain) */}
                           <div>
                             <span className="text-gray-500">Category:</span>
                             <p className="font-medium">
-                              {item.productId.category || "N/A"}{" "}
-                              {/* Added fallback */}
+                              {item.productId.category || "N/A"}
                             </p>
                           </div>
                           <div>
@@ -501,12 +502,10 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                           </div>
                         </div>
                       )}
-                    {/* --- End Display Product Parts --- */}
                   </div>
                 ))}
               </div>
             </div>
-            {/* --- END: PRODUCT PARTS MODIFICATION --- */}
           </div>
         </DialogContent>
       </Dialog>

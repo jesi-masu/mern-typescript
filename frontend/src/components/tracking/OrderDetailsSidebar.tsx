@@ -1,9 +1,19 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Phone, Mail, User, Landmark, ListTree } from "lucide-react"; // ✏️ 1. IMPORT 'ListTree'
+import {
+  MapPin,
+  Phone,
+  Mail,
+  User,
+  Landmark,
+  ListTree,
+  CreditCard,
+  Clock,
+  ListChecks,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Order } from "../../types/order";
 import { Separator } from "../ui/separator";
-// ✏️ 2. IMPORT 'Accordion'
 import {
   Accordion,
   AccordionContent,
@@ -59,7 +69,6 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
           <CardTitle>Products in this Order</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* ✏️ 1. Reduced vertical spacing between products */}
           <div className="space-y-3">
             {order.products.map((item, index) => {
               const hasParts =
@@ -68,7 +77,6 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
 
               return (
                 <div key={item.productId._id}>
-                  {/* ✏️ 2. Reduced gap between image and text */}
                   <div className="flex gap-3">
                     <img
                       src={
@@ -76,19 +84,17 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
                         "https://placehold.co/400x300/E2E8F0/4A5568?text=No+Image"
                       }
                       alt={item.productId.productName}
-                      // ✏️ 3. Made image smaller
                       className="w-16 h-16 object-cover rounded flex-shrink-0"
                     />
                     <div className="min-w-0">
                       <h3
-                        className="font-semibold text-base truncate" // ✏️ 4. Made title 'text-base'
+                        className="font-semibold text-base truncate"
                         title={item.productId.productName}
                       >
                         {item.productId.productName}
                       </h3>
                       {item.productId.productShortDescription && (
                         <p
-                          // ✏️ 5. Made description 'text-xs'
                           className="text-xs text-gray-500 truncate"
                           title={item.productId.productShortDescription}
                         >
@@ -97,23 +103,20 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
                       )}
                       <p className="text-xs text-gray-500">
                         {" "}
-                        {/* ✏️ 6. Made quantity 'text-xs' */}
                         Quantity: {item.quantity}
                       </p>
                       <p className="text-blue-600 font-semibold text-sm mt-0.5">
                         {" "}
-                        {/* Kept price at text-sm to stand out */}
                         {formatPrice(item.productId.productPrice)}
                       </p>
                     </div>
                   </div>
 
-                  {/* (No changes to the "Parts" accordion logic) */}
                   {hasParts && (
                     <Accordion
                       type="single"
                       collapsible
-                      className="w-full mt-2" // ✏️ 7. Reduced top margin
+                      className="w-full mt-2"
                     >
                       <AccordionItem value="item-1" className="border-b-0">
                         <AccordionTrigger className="text-xs font-medium py-1.5 text-gray-600 hover:no-underline">
@@ -154,22 +157,38 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
                   )}
 
                   {index < order.products.length - 1 && (
-                    <Separator className="mt-3" /> // ✏️ 8. Reduced separator margin
+                    <Separator className="mt-3" />
                   )}
                 </div>
               );
             })}
           </div>
+
+          <Separator className="my-4" />
+
+          {/* --- Order Summary Section --- */}
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span>Order Date:</span>
+              <span>{formatDate(order.createdAt)}</span>
+            </div>
+            <div className="flex justify-between font-semibold pt-2 border-t">
+              <span>Total:</span>
+              <span>{formatPrice(order.totalAmount)}</span>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
+      {/* ✏️ 1. MERGED "Order Summary" AND "Customer & Delivery" CARD */}
       <Card>
         <CardHeader>
-          <CardTitle>Customer & Delivery</CardTitle>
+          <CardTitle>Order & Customer Details</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          {address && (
-            <>
+        <CardContent className="space-y-4 text-sm">
+          {/* --- Customer Info Section --- */}
+          {customer && (
+            <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <User className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
                 <span className="font-medium">
@@ -180,46 +199,80 @@ export const OrderDetailsSidebar: React.FC<OrderDetailsSidebarProps> = ({
                 <Phone className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
                 <span>{address.phone}</span>
               </div>
-            </>
-          )}
-
-          {customer && (
-            <div className="flex items-start gap-3">
-              <Mail className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
-              <span>{customer.email}</span>
+              <div className="flex items-start gap-3">
+                <Mail className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                <span>{customer.email}</span>
+              </div>
             </div>
           )}
 
+          {/* --- Delivery Info Section --- */}
           {address && (
-            <div className="space-y-3 pt-3 border-t">
+            <div className="space-y-3 pt-4 border-t">
               <div className="flex items-start gap-3">
                 <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                <span>{formatFullAddress(address)}</span>
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    Delivery Address
+                  </p>
+                  <span className="font-medium">
+                    {formatFullAddress(address)}
+                  </span>
+                </div>
               </div>
               <div className="flex items-start gap-3">
                 <Landmark className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                <span>
-                  {address.additionalAddressLine || "No landmark provided"}
-                </span>
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    Landmark/Notes
+                  </p>
+                  <span className="font-medium">
+                    {address.additionalAddressLine || "No landmark provided"}
+                  </span>
+                </div>
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Order Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span>Order Date:</span>
-              <span>{formatDate(order.createdAt)}</span>
+          <Separator className="my-4" />
+
+          {/* --- Payment Details Section --- */}
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <ListChecks className="h-4 w-4 text-gray-400 mt-1 flex-shrink-0" />
+              <div>
+                <p className="text-xs text-muted-foreground">Payment Method</p>
+                <Badge
+                  variant="outline"
+                  className="capitalize text-xs font-medium"
+                >
+                  {order.paymentInfo.paymentMethod}
+                </Badge>
+              </div>
             </div>
-            <div className="flex justify-between font-semibold pt-2 border-t">
-              <span>Total:</span>
-              <span>{formatPrice(order.totalAmount)}</span>
+            <div className="flex items-start gap-3">
+              <CreditCard className="h-4 w-4 text-gray-400 mt-1 flex-shrink-0" />
+              <div>
+                <p className="text-xs text-muted-foreground">Payment Type</p>
+                <Badge
+                  variant="outline"
+                  className="uppercase text-xs font-medium"
+                >
+                  {order.paymentInfo.paymentMode}
+                </Badge>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <Clock className="h-4 w-4 text-gray-400 mt-1 flex-shrink-0" />
+              <div>
+                <p className="text-xs text-muted-foreground">Payment Timing</p>
+                <Badge
+                  variant="outline"
+                  className="capitalize text-xs font-medium"
+                >
+                  Pay {order.paymentInfo.paymentTiming}
+                </Badge>
+              </div>
             </div>
           </div>
         </CardContent>

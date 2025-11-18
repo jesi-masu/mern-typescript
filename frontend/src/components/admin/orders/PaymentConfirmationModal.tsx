@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Order, PaymentStatus } from "@/types/order";
 import { formatPrice } from "@/lib/formatters";
-import { CreditCard, AlertTriangle, CheckCircle } from "lucide-react";
+import { CreditCard, AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
 
 interface PaymentConfirmationModalProps {
   order: Order | null;
@@ -23,6 +24,7 @@ interface PaymentConfirmationModalProps {
     newStatus: PaymentStatus,
     notes?: string
   ) => void;
+  isUpdating: boolean;
 }
 
 const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
@@ -30,18 +32,19 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
   isOpen,
   onClose,
   onConfirm,
+  isUpdating,
 }) => {
   const [selectedStatus, setSelectedStatus] = useState<PaymentStatus | null>(
     null
   );
-  const [isConfirming, setIsConfirming] = useState(false);
+  // const [isConfirming, setIsConfirming] = useState(false);
 
   useEffect(() => {
-    if (isOpen) {
-      setSelectedStatus(null);
-      setIsConfirming(false);
+    if (isOpen && order) {
+      // Set the initial value to the order's current status
+      setSelectedStatus(order.paymentInfo.paymentStatus || "Pending");
     }
-  }, [isOpen]);
+  }, [isOpen, order]);
 
   const getPaymentStatusClasses = (status: PaymentStatus): string => {
     const baseClasses = "font-semibold border-transparent text-xs px-2 py-1";
@@ -63,13 +66,10 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
 
   const handleConfirm = () => {
     if (!selectedStatus) return;
-    setIsConfirming(true);
-    // Using a short timeout to give feedback to the user
-    setTimeout(() => {
-      onConfirm(order._id, selectedStatus);
-      setIsConfirming(false);
-      onClose();
-    }, 500);
+    // ✏️ 7. REMOVE 'isConfirming' AND 'setTimeout'
+    // Just call the parent function directly.
+    // The parent will close the modal on success.
+    onConfirm(order._id, selectedStatus);
   };
 
   const paymentStages: PaymentStatus[] = [
@@ -94,6 +94,10 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
             <CreditCard className="h-6 w-6 text-green-600" />
             Confirm Payment Stage
           </DialogTitle>
+          <DialogDescription>
+            Verify and update the payment status for Order #
+            {order._id.slice(-6)}.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="max-h-[70vh] overflow-y-auto pr-6 space-y-4">
@@ -159,7 +163,9 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
               onValueChange={(value) =>
                 setSelectedStatus(value as PaymentStatus)
               }
+              value={selectedStatus || ""} // Control the component
               className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3"
+              disabled={isUpdating} // ✏️ 9. DISABLE GROUP WHILE UPDATING
             >
               {paymentStages.map((stage) => (
                 <Label
@@ -188,22 +194,24 @@ const PaymentConfirmationModal: React.FC<PaymentConfirmationModalProps> = ({
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t">
-          <Button variant="outline" onClick={onClose} disabled={isConfirming}>
+          <Button variant="outline" onClick={onClose} disabled={isUpdating}>
             Cancel
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={!selectedStatus || isConfirming}
+            disabled={
+              !selectedStatus ||
+              isUpdating ||
+              selectedStatus === currentPaymentStatus // Disable if status is unchanged
+            }
             className="bg-green-600 hover:bg-green-700 min-w-[140px]"
           >
-            {isConfirming ? (
-              "Confirming..."
+            {isUpdating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
-              <>
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Confirm Payment
-              </>
+              <CheckCircle className="h-4 w-4 mr-2" />
             )}
+            {isUpdating ? "Confirming..." : "Confirm Payment"}
           </Button>
         </div>
       </DialogContent>
