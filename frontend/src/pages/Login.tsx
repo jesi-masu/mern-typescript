@@ -13,11 +13,18 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+// ✏️ 1. ADD ACCORDION IMPORTS
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Mail, Lock, Eye, EyeOff, Shield } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { AuthLayout } from "@/layouts/AuthLayout"; // Import the new layout
+import { AuthLayout } from "@/layouts/AuthLayout";
 
-// Zod schema for form validation (no changes needed here)
+// Zod schema for form validation
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
   password: z.string().min(1, "Password is required."),
@@ -50,6 +57,12 @@ const Login = () => {
         });
       }
     }
+  };
+
+  // Helper to auto-fill credentials (Optional UX improvement)
+  const fillCredentials = (email: string, pass: string) => {
+    form.setValue("email", email);
+    form.setValue("password", pass);
   };
 
   const loginFormComponent = (
@@ -163,7 +176,6 @@ const Login = () => {
           </div>
         </div>
         <div className="mt-6 flex justify-center">
-          {/* Replace with your social login component or function */}
           <Button
             variant="outline"
             className="rounded-full w-14 h-14 p-0 border-2 border-white/30 bg-white/10 text-white hover:bg-white/20 hover:border-white/50 transition-all duration-300 hover:scale-110"
@@ -175,26 +187,67 @@ const Login = () => {
     </div>
   );
 
+  // ✏️ 2. REPLACED STATIC DIV WITH ACCORDION
   const demoAccountsComponent = (
-    <div className="bg-black/20 rounded-xl p-4 border border-white/20">
-      <div className="flex items-center justify-center gap-2 text-white/90 mb-4">
-        <Shield className="h-4 w-4" />
-        <span className="text-sm font-medium">Demo Accounts</span>
-      </div>
-      <div className="space-y-2 text-sm text-white/80">
-        <div className="bg-white/10 rounded p-2 text-center">
-          <div className="font-medium">Admin:</div>
-          <div>admin@prefabplus.com / Admin1234</div>
-        </div>
-        <div className="bg-white/10 rounded p-2 text-center">
-          <div className="font-medium">Personnel:</div>
-          <div>personnel@prefabplus.com / personnel123</div>
-        </div>
-        <div className="bg-white/10 rounded p-2 text-center">
-          <div className="font-medium">Client:</div>
-          <div>test@mail.com / Test1234</div>
-        </div>
-      </div>
+    <div className="bg-black/20 rounded-xl border border-white/20 overflow-hidden w-full max-w-md">
+      <Accordion type="single" collapsible className="w-full">
+        <AccordionItem value="demo-accounts" className="border-none">
+          <AccordionTrigger className="px-4 py-3 text-white/90 hover:text-white hover:bg-white/5 hover:no-underline transition-all">
+            <div className="flex items-center gap-2">
+              <Shield className="h-4 w-4 text-blue-200" />
+              <span className="text-sm font-medium">Demo Accounts</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4 pt-0 bg-black/10">
+            <div className="space-y-2 text-sm text-white/80 mt-2">
+              {/* Admin Card - Click to fill */}
+              <div
+                onClick={() =>
+                  fillCredentials("admin@prefabplus.com", "Admin1234")
+                }
+                className="bg-white/10 rounded p-3 text-center cursor-pointer hover:bg-white/20 transition-colors border border-white/5 hover:border-white/20"
+              >
+                <div className="font-bold text-xs uppercase tracking-wider text-blue-200 mb-1">
+                  Admin
+                </div>
+                <div className="font-mono text-xs">admin@prefabplus.com</div>
+                <div className="font-mono text-xs opacity-70">Admin1234</div>
+              </div>
+
+              {/* Personnel Card */}
+              <div
+                onClick={() =>
+                  fillCredentials("personnel@prefabplus.com", "personnel123")
+                }
+                className="bg-white/10 rounded p-3 text-center cursor-pointer hover:bg-white/20 transition-colors border border-white/5 hover:border-white/20"
+              >
+                <div className="font-bold text-xs uppercase tracking-wider text-green-200 mb-1">
+                  Personnel
+                </div>
+                <div className="font-mono text-xs">
+                  personnel@prefabplus.com
+                </div>
+                <div className="font-mono text-xs opacity-70">personnel123</div>
+              </div>
+
+              {/* Client Card */}
+              <div
+                onClick={() => fillCredentials("juan@mail.com", "Juan1234")}
+                className="bg-white/10 rounded p-3 text-center cursor-pointer hover:bg-white/20 transition-colors border border-white/5 hover:border-white/20"
+              >
+                <div className="font-bold text-xs uppercase tracking-wider text-orange-200 mb-1">
+                  Client
+                </div>
+                <div className="font-mono text-xs">juan@mail.com</div>
+                <div className="font-mono text-xs opacity-70">Juan1234</div>
+              </div>
+            </div>
+            <p className="text-center text-xs text-white/50 mt-3 italic">
+              (Click a card to auto-fill)
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 

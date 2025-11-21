@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // Import Tabs
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ResponsiveContainer,
   LineChart,
@@ -13,7 +13,6 @@ import {
 } from "recharts";
 import { TrendingUp } from "lucide-react";
 
-// Define the shape of the sales data
 interface SalesRecord {
   period: string | number;
   revenue: number;
@@ -21,7 +20,6 @@ interface SalesRecord {
   avgOrderValue: number;
 }
 
-// Update props to accept all data periods
 interface GrowthTrendsTabProps {
   dailyData: SalesRecord[];
   weeklyData: SalesRecord[];
@@ -29,11 +27,10 @@ interface GrowthTrendsTabProps {
   annualData: SalesRecord[];
 }
 
-// Reusable function to calculate growth rate for any period
 const calculateGrowthRate = (data: SalesRecord[]) => {
   return data.map((currentPeriod, index) => {
     if (index === 0) {
-      return { ...currentPeriod, growthRate: 0 }; // No growth for the first period
+      return { ...currentPeriod, growthRate: 0 };
     }
     const previousPeriod = data[index - 1];
     const previousRevenue = previousPeriod.revenue;
@@ -61,7 +58,6 @@ export const GrowthTrendsTab: React.FC<GrowthTrendsTabProps> = ({
     "daily" | "weekly" | "monthly" | "annual"
   >("monthly");
 
-  // Calculate growth data based on the selected tab
   const growthData = useMemo(() => {
     switch (selectedPeriod) {
       case "daily":
@@ -77,19 +73,65 @@ export const GrowthTrendsTab: React.FC<GrowthTrendsTabProps> = ({
     }
   }, [selectedPeriod, dailyData, weeklyData, monthlyData, annualData]);
 
+  // --- 1. UPDATED AXIS FORMATTER ---
   const formatXAxis = (tickItem: string | number) => {
-    if (selectedPeriod === "daily") {
-      try {
+    try {
+      if (selectedPeriod === "daily") {
+        // Display: "Jan 01"
         const date = new Date(tickItem);
-        return `${date.getUTCMonth() + 1}/${date.getUTCDate()}`;
-      } catch {
+        return date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
+      }
+      if (selectedPeriod === "weekly") {
+        // Display: "Wk 12"
+        return `Wk ${tickItem}`;
+      }
+      if (selectedPeriod === "monthly") {
+        // Display: "Jan" (if date object) or "Month X"
+        const date = new Date(tickItem);
+        // Check if it's a valid date string (e.g. "2023-01-01")
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleDateString("en-US", { month: "short" });
+        }
+        // Fallback if data is just numbers 1-12
         return tickItem;
       }
+      // Annual: "2023"
+      return tickItem;
+    } catch (e) {
+      return tickItem;
     }
-    if (selectedPeriod === "weekly") {
-      return `W${tickItem}`;
+  };
+
+  // --- 2. ADDED TOOLTIP LABEL FORMATTER (For better UX on hover) ---
+  const formatTooltipLabel = (label: string | number) => {
+    try {
+      const date = new Date(label);
+      if (selectedPeriod === "daily") {
+        return date.toLocaleDateString("en-US", {
+          weekday: "short",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }); // "Mon, January 1, 2024"
+      }
+      if (selectedPeriod === "weekly") {
+        return `Week ${label}`;
+      }
+      if (selectedPeriod === "monthly") {
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleDateString("en-US", {
+            month: "long",
+            year: "numeric",
+          }); // "January 2024"
+        }
+      }
+      return label;
+    } catch (e) {
+      return label;
     }
-    return tickItem;
   };
 
   return (
@@ -115,21 +157,36 @@ export const GrowthTrendsTab: React.FC<GrowthTrendsTabProps> = ({
               Revenue Growth Rate
             </CardTitle>
           </CardHeader>
-          <CardContent className="pl-2">
+          <CardContent className="pl-5">
             <ResponsiveContainer width="100%" height={400}>
               <LineChart data={growthData}>
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                 <XAxis
                   dataKey="period"
                   fontSize={12}
                   tickFormatter={formatXAxis}
+                  minTickGap={30} // Prevents labels from overlapping
                 />
-                <YAxis tickFormatter={(value) => `${value}%`} fontSize={12} />
+                <YAxis
+                  tickFormatter={(value) => `${value}%`}
+                  fontSize={12}
+                  width={40} // Ensure enough space for "-100%"
+                />
                 <RechartsTooltip
+                  labelFormatter={formatTooltipLabel} // Apply the tooltip formatter here
                   formatter={(value: number) => [
-                    `${value.toFixed(2)}%`,
+                    <span
+                      className={value >= 0 ? "text-green-600" : "text-red-600"}
+                    >
+                      {value > 0 ? "+" : ""}
+                      {value.toFixed(2)}%
+                    </span>,
                     "Growth Rate",
                   ]}
+                  contentStyle={{
+                    borderRadius: "8px",
+                    border: "1px solid #e2e8f0",
+                  }}
                 />
                 <Legend />
                 <Line
@@ -137,11 +194,9 @@ export const GrowthTrendsTab: React.FC<GrowthTrendsTabProps> = ({
                   dataKey="growthRate"
                   stroke="#f59e0b"
                   strokeWidth={3}
-                  name={`${
-                    selectedPeriod.charAt(0).toUpperCase() +
-                    selectedPeriod.slice(1)
-                  } Growth Rate (%)`}
-                  dot={false} // Optionally hide dots for daily/weekly views if too cluttered
+                  activeDot={{ r: 8 }}
+                  name="Growth Rate"
+                  dot={growthData.length < 20} // Only show dots if fewer than 20 data points
                 />
               </LineChart>
             </ResponsiveContainer>

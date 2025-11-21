@@ -34,7 +34,7 @@ const ShopFilters = ({
   };
 
   // Define new min and max values for the slider in PHP
-  const minPrice = 50000;
+  const minPrice = 5000;
   const maxPrice = 2000000;
 
   return (

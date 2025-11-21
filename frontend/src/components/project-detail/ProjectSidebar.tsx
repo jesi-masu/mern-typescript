@@ -100,12 +100,6 @@ const ProjectSidebar = ({ project }: ProjectSidebarProps) => {
         </p>
         <div className="space-y-3">
           <Dialog>
-            <DialogTrigger asChild>
-              <Button className="w-full bg-white text-slate-900 hover:bg-slate-100 font-medium">
-                Request Consultation
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Project Consultation</DialogTitle>
@@ -114,20 +108,12 @@ const ProjectSidebar = ({ project }: ProjectSidebarProps) => {
                 Our experts will help you explore how our prefab solutions can
                 bring your vision to life.
               </p>
-              <div className="space-y-3">
-                <Button className="w-full bg-slate-900 hover:bg-slate-800">
-                  Contact Sales Team
-                </Button>
-                <Button variant="outline" className="w-full">
-                  Download Project Brief
-                </Button>
-              </div>
             </DialogContent>
           </Dialog>
           <Link to="/contact">
             <Button
               variant="outline"
-              className="w-full border-slate-400 text-slate-300 hover:bg-white/10"
+              className="w-full border-slate-400 text-slate-700 hover:bg-white/10"
             >
               Get In Touch
             </Button>

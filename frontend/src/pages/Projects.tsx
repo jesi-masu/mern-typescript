@@ -101,7 +101,7 @@ const Projects = () => {
             </>
           )}
 
-          <CallToAction />
+          {/* <CallToAction /> */}
         </div>
       </section>
     </Layout>

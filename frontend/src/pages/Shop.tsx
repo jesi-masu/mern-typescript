@@ -14,7 +14,7 @@ const Shop = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const initialMinPrice = 50000;
+  const initialMinPrice = 5000;
   const initialMaxPrice = 2000000;
   const [priceRange, setPriceRange] = useState([
     initialMinPrice,

@@ -19,7 +19,6 @@ import { useAuth } from "@/context/AuthContext";
 import { OverviewTab } from "@/components/reports/OverviewTab";
 import { RevenueAnalysisTab } from "@/components/reports/RevenueAnalysisTab";
 import { ProductPerformanceTab } from "@/components/reports/ProductPerformanceTab";
-import { CustomerInsightsTab } from "@/components/reports/CustomerInsightsTab";
 import { GrowthTrendsTab } from "@/components/reports/GrowthTrendsTab";
 
 interface ReportData {
@@ -163,11 +162,10 @@ const Reports: React.FC = () => {
         </Card>
       </div>
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="revenue">Revenue Analysis</TabsTrigger>
           <TabsTrigger value="products">Product Performance</TabsTrigger>
-          <TabsTrigger value="customers">Customer Insights</TabsTrigger>
           <TabsTrigger value="trends">Growth Trends</TabsTrigger>
         </TabsList>
         <TabsContent value="overview">
@@ -191,9 +189,6 @@ const Reports: React.FC = () => {
             productData={productPerformance}
             formatCurrency={formatCurrency}
           />
-        </TabsContent>
-        <TabsContent value="customers">
-          <CustomerInsightsTab formatCurrency={formatCurrency} />
         </TabsContent>
         <TabsContent value="trends">
           <GrowthTrendsTab
